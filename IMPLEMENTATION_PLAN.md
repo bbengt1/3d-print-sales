@@ -496,13 +496,15 @@ Base URL: `/api/v1`
 
 **Phase 3 Notes:** Added `CurrentAdmin` dependency guard for role-based access control. Admin-only endpoints: user registration, user list/get/update/deactivate, settings mutations. All other mutation endpoints (materials, rates, customers, jobs POST/PUT/DELETE) require any authenticated user. GET endpoints remain public. Added user management CRUD (register, list, get, update, deactivate) under `/auth/users`. Password change endpoint at `/auth/me/password`. Self-protection: admins cannot deactivate or demote themselves. Deactivated users are blocked at login. 71 tests passing (19 auth tests including RBAC checks).
 
-### Phase 4: Frontend Foundation
-1. Set up Tailwind CSS + shadcn/ui
-2. Build layout components (Header, Sidebar, Footer)
-3. Configure React Router with all routes
-4. Set up API client with auth interceptor
-5. Implement dark/light theme toggle
-6. Build auth pages (Login) and auth state management
+### Phase 4: Frontend Foundation - COMPLETED
+1. ~~Set up Tailwind CSS + shadcn/ui~~
+2. ~~Build layout components (Header, Sidebar, Footer)~~
+3. ~~Configure React Router with all routes~~
+4. ~~Set up API client with auth interceptor~~
+5. ~~Implement dark/light theme toggle~~
+6. ~~Build auth pages (Login) and auth state management~~
+
+**Phase 4 Notes:** Added ProtectedRoute wrapper that auto-fetches user profile on page load if token exists, redirects to login if unauthenticated, and preserves redirect-back location. Dark/light theme now persists to localStorage and respects system preference on first visit via `useTheme` hook. Header enhanced with active nav highlighting (current route highlighted in primary color), user name display with avatar icon, admin-only nav item visibility, and mobile-responsive menu. Login page enhanced with Zod schema validation (email format, required fields), inline field error messages, loading spinner, server error display (including "Account deactivated"), redirect to original page after login, theme toggle on login page, and default credentials hint. Toast notifications (sonner) wired up globally via `<Toaster>` component with `richColors` and welcome toast on login. Auth store extended with `setUser` and `isAuthenticated()` helper. Frontend TypeScript compilation and production build verified.
 
 ### Phase 5: Frontend Pages
 1. Dashboard page with summary cards and charts

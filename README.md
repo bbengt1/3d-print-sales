@@ -107,7 +107,17 @@ Price       = cost_per_piece / (1 - margin%)
 Profit      = revenue - costs - platform_fees
 ```
 
-## Frontend Pages
+## Frontend Features
+
+- **Protected Routes** — Auto-redirect to login, preserves original URL
+- **Dark/Light Theme** — Persisted to localStorage, respects system preference
+- **Active Navigation** — Current route highlighted, admin-only items
+- **User Display** — Authenticated user name shown in header
+- **Toast Notifications** — Success/error feedback via sonner
+- **Zod Validation** — Client-side form validation on login
+- **Auth State** — Zustand store with auto-restore from token
+
+### Pages
 
 - **Dashboard** — Summary cards with key metrics
 - **Jobs** — List, create, view, edit jobs with full cost breakdown
@@ -116,7 +126,7 @@ Profit      = revenue - costs - platform_fees
 - **Customers** — Customer management (placeholder)
 - **Calculator** — Standalone cost calculator (placeholder)
 - **Admin Settings** — Business configuration grouped by category
-- **Login** — JWT authentication
+- **Login** — JWT authentication with validation
 
 ## Testing
 
@@ -173,7 +183,7 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 - [x] **Phase 1** — Project scaffolding, database, Docker, seed data
 - [x] **Phase 2** — Core backend API: schemas, validation, OpenAPI docs, filtering, 52 tests
 - [x] **Phase 3** — RBAC, user management, auth guards on mutations, 71 tests
-- [ ] **Phase 4** — Frontend foundation polish
+- [x] **Phase 4** — Protected routes, theme persistence, Zod login, toasts, nav polish
 - [ ] **Phase 5** — Full frontend pages (forms, detail views, calculator)
 - [ ] **Phase 6** — Admin section
 - [ ] **Phase 7** — Polish & production readiness
