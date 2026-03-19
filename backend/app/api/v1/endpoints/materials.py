@@ -6,7 +6,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
-from app.api.deps import DB
+from app.api.deps import DB, CurrentUser
 from app.models.material import Material
 from app.schemas.material import MaterialCreate, MaterialResponse, MaterialUpdate
 
@@ -57,7 +57,7 @@ async def get_material(material_id: uuid.UUID, db: DB):
     summary="Create a material",
     description="Add a new filament material. Cost per gram is automatically calculated from spool price and net usable grams.",
 )
-async def create_material(body: MaterialCreate, db: DB):
+async def create_material(body: MaterialCreate, user: CurrentUser, db: DB):
     cost_per_g = body.spool_price / body.net_usable_g
     mat = Material(**body.model_dump(), cost_per_g=cost_per_g)
     db.add(mat)
@@ -72,7 +72,7 @@ async def create_material(body: MaterialCreate, db: DB):
     summary="Update a material",
     description="Update one or more fields of a material. Cost per gram is recalculated if price or usable weight changes.",
 )
-async def update_material(material_id: uuid.UUID, body: MaterialUpdate, db: DB):
+async def update_material(material_id: uuid.UUID, body: MaterialUpdate, user: CurrentUser, db: DB):
     result = await db.execute(select(Material).where(Material.id == material_id))
     mat = result.scalar_one_or_none()
     if not mat:
@@ -92,7 +92,7 @@ async def update_material(material_id: uuid.UUID, body: MaterialUpdate, db: DB):
     summary="Deactivate a material",
     description="Soft-deletes a material by setting active=false. Historical job data referencing this material is preserved.",
 )
-async def delete_material(material_id: uuid.UUID, db: DB):
+async def delete_material(material_id: uuid.UUID, user: CurrentUser, db: DB):
     result = await db.execute(select(Material).where(Material.id == material_id))
     mat = result.scalar_one_or_none()
     if not mat:

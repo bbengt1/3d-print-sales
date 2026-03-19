@@ -13,6 +13,9 @@ from app.core.database import get_db
 from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
+optional_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_PREFIX}/auth/login", auto_error=False
+)
 
 DB = Annotated[AsyncSession, Depends(get_db)]
 
@@ -42,4 +45,16 @@ async def get_current_user(
     return user
 
 
+async def get_current_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+    return current_user
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]

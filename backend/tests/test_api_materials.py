@@ -27,7 +27,7 @@ async def test_list_materials_search(client, seed_material):
 
 
 @pytest.mark.asyncio
-async def test_create_material(client):
+async def test_create_material(client, auth_headers):
     resp = await client.post(
         "/api/v1/materials",
         json={
@@ -38,6 +38,7 @@ async def test_create_material(client):
             "net_usable_g": 950,
             "notes": "Stronger",
         },
+        headers=auth_headers,
     )
     assert resp.status_code == 201
     data = resp.json()
@@ -46,7 +47,22 @@ async def test_create_material(client):
 
 
 @pytest.mark.asyncio
-async def test_create_material_validation(client):
+async def test_create_material_requires_auth(client):
+    resp = await client.post(
+        "/api/v1/materials",
+        json={
+            "name": "PETG",
+            "brand": "Generic",
+            "spool_weight_g": 1000,
+            "spool_price": 24,
+            "net_usable_g": 950,
+        },
+    )
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_create_material_validation(client, auth_headers):
     resp = await client.post(
         "/api/v1/materials",
         json={
@@ -56,6 +72,7 @@ async def test_create_material_validation(client):
             "spool_price": 20,
             "net_usable_g": 950,
         },
+        headers=auth_headers,
     )
     assert resp.status_code == 422
 
@@ -68,21 +85,23 @@ async def test_get_material(client, seed_material):
 
 
 @pytest.mark.asyncio
-async def test_update_material(client, seed_material):
+async def test_update_material(client, seed_material, auth_headers):
     resp = await client.put(
         f"/api/v1/materials/{seed_material.id}",
         json={"spool_price": 25},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     assert float(resp.json()["spool_price"]) == 25
 
 
 @pytest.mark.asyncio
-async def test_delete_material(client, seed_material):
-    resp = await client.delete(f"/api/v1/materials/{seed_material.id}")
+async def test_delete_material(client, seed_material, auth_headers):
+    resp = await client.delete(
+        f"/api/v1/materials/{seed_material.id}", headers=auth_headers
+    )
     assert resp.status_code == 204
 
-    # Should still exist but inactive
     resp = await client.get(f"/api/v1/materials/{seed_material.id}")
     assert resp.status_code == 200
     assert resp.json()["active"] is False

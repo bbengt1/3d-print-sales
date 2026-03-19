@@ -7,7 +7,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
-from app.api.deps import DB
+from app.api.deps import DB, CurrentUser
 from app.models.job import Job
 from app.schemas.job import (
     CalculateRequest,
@@ -97,7 +97,7 @@ async def get_job(job_id: uuid.UUID, db: DB):
     summary="Create a job",
     description="Create a new print job. All cost fields (electricity, material, labor, etc.) are automatically calculated from the input parameters and current business settings/rates.",
 )
-async def create_job(body: JobCreate, db: DB):
+async def create_job(body: JobCreate, user: CurrentUser, db: DB):
     # Check for duplicate job number
     existing = await db.execute(select(Job.id).where(Job.job_number == body.job_number))
     if existing.scalar_one_or_none():
@@ -134,7 +134,7 @@ async def create_job(body: JobCreate, db: DB):
     summary="Update a job",
     description="Update one or more fields of a job. Costs are automatically recalculated when print parameters change.",
 )
-async def update_job(job_id: uuid.UUID, body: JobUpdate, db: DB):
+async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: DB):
     result = await db.execute(
         select(Job).where(Job.id == job_id, Job.is_deleted == False)
     )
@@ -181,7 +181,7 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, db: DB):
     summary="Delete a job",
     description="Soft-deletes a job by marking it as deleted. The record is preserved for historical reporting.",
 )
-async def delete_job(job_id: uuid.UUID, db: DB):
+async def delete_job(job_id: uuid.UUID, user: CurrentUser, db: DB):
     result = await db.execute(
         select(Job).where(Job.id == job_id, Job.is_deleted == False)
     )
