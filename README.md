@@ -125,7 +125,9 @@ Profit      = revenue - costs - platform_fees
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle
 - **Customers** — Full CRUD with modal, search, delete, job count
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
-- **Admin Settings** — Business configuration grouped by category
+- **Admin Settings** — Editable business settings with bulk save, grouped by category
+- **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
+- **Admin Data** — CSV export for jobs, materials, rates, customers, settings
 - **Login** — JWT authentication with Zod validation
 
 ## Testing
@@ -185,5 +187,5 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 - [x] **Phase 3** — RBAC, user management, auth guards on mutations, 71 tests
 - [x] **Phase 4** — Protected routes, theme persistence, Zod login, toasts, nav polish
 - [x] **Phase 5** — All pages: dashboard charts, job CRUD with live preview, materials/rates/customers CRUD, calculator
-- [ ] **Phase 6** — Admin section
+- [x] **Phase 6** — Admin section: sidebar layout, editable settings, user management, CSV export
 - [ ] **Phase 7** — Polish & production readiness

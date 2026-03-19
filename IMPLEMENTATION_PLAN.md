@@ -518,11 +518,13 @@ Base URL: `/api/v1`
 
 **Phase 5 Notes:** Dashboard enhanced with 3 Recharts visualizations: revenue over time (line chart), material usage (pie chart), and profit margin by job (bar chart). Jobs page enhanced with search filter, status dropdown filter, pagination with page controls, color-coded status badges, and profit coloring (green/red). Job detail page shows full cost breakdown table, pricing/profit analysis with actual margin calculation, info cards (date, customer, pieces, print time), edit/delete actions. Job form with multi-section layout (job info, print details, labor/costs), material dropdown, target margin slider, status select, client-side validation, and sticky live cost preview sidebar that updates in real-time via the `/jobs/calculate` API. Materials page with full CRUD modal (create/edit), inline cost-per-gram calculation preview, active/inactive toggle. Rates page with CRUD modal, unit dropdown. Customers page with CRUD modal, search, delete confirmation, job count display. Standalone calculator with same live preview as job form plus "Save as Job" button that pre-fills the job form.
 
-### Phase 6: Admin Section
-1. Admin layout with sidebar navigation
-2. Settings management page (grouped form)
-3. User management page (placeholder for future)
-4. Data import/export page (placeholder for future)
+### Phase 6: Admin Section - COMPLETED
+1. ~~Admin layout with sidebar navigation~~
+2. ~~Settings management page (grouped form)~~
+3. ~~User management page (placeholder for future)~~
+4. ~~Data import/export page (placeholder for future)~~
+
+**Phase 6 Notes:** Built AdminLayout component with persistent sidebar navigation (Settings, Users, Data Export) and admin-only access guard (redirects non-admins to dashboard). Mobile-responsive with horizontal tab bar on small screens. Settings page converted from read-only to fully editable grouped form with bulk save via PUT /settings/bulk, dirty state tracking, and Save Changes button. User management page with full CRUD: create users with role assignment, edit name/email/role, deactivate/reactivate users, role badges (admin=purple, user=blue), "(you)" indicator for current user, self-protection (can't deactivate yourself). Data export page with CSV download for all 5 resources (jobs, materials, rates, customers, settings) with proper CSV escaping and timestamped filenames. Admin routes nested under /admin with index redirect to /admin/settings.
 
 ### Phase 7: Polish & Production Readiness
 1. Loading states and skeleton loaders
