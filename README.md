@@ -119,14 +119,14 @@ Profit      = revenue - costs - platform_fees
 
 ### Pages
 
-- **Dashboard** — Summary cards with key metrics
-- **Jobs** — List, create, view, edit jobs with full cost breakdown
-- **Materials** — View and manage filament inventory
-- **Rates** — View and manage labor/machine/overhead rates
-- **Customers** — Customer management (placeholder)
-- **Calculator** — Standalone cost calculator (placeholder)
+- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar)
+- **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
+- **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle
+- **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle
+- **Customers** — Full CRUD with modal, search, delete, job count
+- **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Business configuration grouped by category
-- **Login** — JWT authentication with validation
+- **Login** — JWT authentication with Zod validation
 
 ## Testing
 
@@ -184,6 +184,6 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 - [x] **Phase 2** — Core backend API: schemas, validation, OpenAPI docs, filtering, 52 tests
 - [x] **Phase 3** — RBAC, user management, auth guards on mutations, 71 tests
 - [x] **Phase 4** — Protected routes, theme persistence, Zod login, toasts, nav polish
-- [ ] **Phase 5** — Full frontend pages (forms, detail views, calculator)
+- [x] **Phase 5** — All pages: dashboard charts, job CRUD with live preview, materials/rates/customers CRUD, calculator
 - [ ] **Phase 6** — Admin section
 - [ ] **Phase 7** — Polish & production readiness

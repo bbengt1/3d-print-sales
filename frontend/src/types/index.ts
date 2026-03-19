@@ -70,6 +70,13 @@ export interface Job {
   status: string;
 }
 
+export interface PaginatedJobs {
+  items: Job[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 export interface DashboardSummary {
   total_jobs: number;
   total_pieces: number;
@@ -80,6 +87,44 @@ export interface DashboardSummary {
   avg_profit_per_piece: number;
   avg_margin_pct: number;
   top_material: string | null;
+}
+
+export interface RevenueDataPoint {
+  date: string;
+  revenue: number;
+}
+
+export interface MaterialUsageDataPoint {
+  material: string;
+  count: number;
+}
+
+export interface ProfitMarginDataPoint {
+  date: string;
+  job: string;
+  product: string;
+  margin: number;
+}
+
+export interface CalculateResponse {
+  total_pieces: number;
+  electricity_cost: number;
+  material_cost: number;
+  labor_cost: number;
+  design_cost: number;
+  machine_cost: number;
+  packaging_cost: number;
+  shipping_cost: number;
+  failure_buffer: number;
+  subtotal_cost: number;
+  overhead: number;
+  total_cost: number;
+  cost_per_piece: number;
+  price_per_piece: number;
+  total_revenue: number;
+  platform_fees: number;
+  net_profit: number;
+  profit_per_piece: number;
 }
 
 export interface User {
