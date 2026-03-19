@@ -474,17 +474,19 @@ Base URL: `/api/v1`
 
 **Phase 1 Notes:** All 6 database tables created (settings, materials, rates, customers, jobs, users). Seed data from spreadsheet loaded and verified. Docker Compose running with PostgreSQL 16, FastAPI backend, and Vite React frontend. OpenAPI 3.1 Swagger docs available at `/api/v1/docs`. All CRUD endpoints implemented for settings, materials, rates, customers, jobs, and dashboard. JWT auth with admin seed user working. Frontend scaffolded with Tailwind CSS, React Router, TanStack Query, dark/light theme toggle, and all page routes wired up. Cost calculation engine service implemented replicating all spreadsheet formulas.
 
-### Phase 2: Core Backend API
-1. Implement settings CRUD endpoints
-2. Implement materials CRUD endpoints
-3. Implement rates CRUD endpoints
-4. Implement customers CRUD endpoints
-5. Build cost calculation engine service
-6. Implement jobs CRUD with auto-calculation
-7. Implement `/jobs/calculate` preview endpoint
-8. Implement dashboard aggregation endpoints
-9. Add OpenAPI tags, descriptions, and examples to all endpoints
-10. Write backend tests for calculation engine and endpoints
+### Phase 2: Core Backend API - COMPLETED
+1. ~~Implement settings CRUD endpoints~~
+2. ~~Implement materials CRUD endpoints~~
+3. ~~Implement rates CRUD endpoints~~
+4. ~~Implement customers CRUD endpoints~~
+5. ~~Build cost calculation engine service~~
+6. ~~Implement jobs CRUD with auto-calculation~~
+7. ~~Implement `/jobs/calculate` preview endpoint~~
+8. ~~Implement dashboard aggregation endpoints~~
+9. ~~Add OpenAPI tags, descriptions, and examples to all endpoints~~
+10. ~~Write backend tests for calculation engine and endpoints~~
+
+**Phase 2 Notes:** Extracted all inline Pydantic schemas into dedicated schema files (`backend/app/schemas/`) with full Field validation (min/max lengths, gt/ge/le constraints, regex patterns, examples). Enhanced all endpoints with OpenAPI summary/description documentation and tag metadata. Added pagination (skip/limit) to materials and rates endpoints. Added search by name/brand to materials, search by name/email to customers. Enhanced jobs list with date range filtering (date_from/date_to), customer_id filter, product name/job number search, configurable sorting (sort_by/sort_dir), and paginated response with total count. Added date range filtering to all dashboard endpoints. Cost calculator now validates material exists and is active, checks for zero total pieces, and validates margin < 100%. Job creation checks for duplicate job numbers (409 conflict). 52 tests passing covering: cost calculator (6 tests), auth (5), settings (5), materials (8), rates (5), customers (7), jobs (10), dashboard (6).
 
 ### Phase 3: Authentication
 1. Implement user model and password hashing

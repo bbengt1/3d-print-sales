@@ -4,59 +4,44 @@ import uuid
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.api.deps import DB
 from app.models.material import Material
+from app.schemas.material import MaterialCreate, MaterialResponse, MaterialUpdate
 
 router = APIRouter(prefix="/materials", tags=["Materials"])
 
 
-class MaterialResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    brand: str
-    spool_weight_g: Decimal
-    spool_price: Decimal
-    net_usable_g: Decimal
-    cost_per_g: Decimal
-    notes: str | None = None
-    active: bool
-
-    model_config = {"from_attributes": True}
-
-
-class MaterialCreate(BaseModel):
-    name: str
-    brand: str
-    spool_weight_g: Decimal
-    spool_price: Decimal
-    net_usable_g: Decimal
-    notes: str | None = None
-    active: bool = True
-
-
-class MaterialUpdate(BaseModel):
-    name: str | None = None
-    brand: str | None = None
-    spool_weight_g: Decimal | None = None
-    spool_price: Decimal | None = None
-    net_usable_g: Decimal | None = None
-    notes: str | None = None
-    active: bool | None = None
-
-
-@router.get("", response_model=list[MaterialResponse])
-async def list_materials(db: DB, active: bool | None = Query(None)):
+@router.get(
+    "",
+    response_model=list[MaterialResponse],
+    summary="List materials",
+    description="Returns filament materials with optional filtering by active status and search by name/brand. Supports pagination.",
+)
+async def list_materials(
+    db: DB,
+    active: bool | None = Query(None, description="Filter by active status"),
+    search: str | None = Query(None, description="Search by name or brand"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=100, description="Max records to return"),
+):
     stmt = select(Material)
     if active is not None:
         stmt = stmt.where(Material.active == active)
-    result = await db.execute(stmt.order_by(Material.name))
+    if search:
+        pattern = f"%{search}%"
+        stmt = stmt.where(Material.name.ilike(pattern) | Material.brand.ilike(pattern))
+    result = await db.execute(stmt.order_by(Material.name).offset(skip).limit(limit))
     return result.scalars().all()
 
 
-@router.get("/{material_id}", response_model=MaterialResponse)
+@router.get(
+    "/{material_id}",
+    response_model=MaterialResponse,
+    summary="Get material by ID",
+    description="Retrieve a single filament material including its calculated cost per gram.",
+)
 async def get_material(material_id: uuid.UUID, db: DB):
     result = await db.execute(select(Material).where(Material.id == material_id))
     mat = result.scalar_one_or_none()
@@ -65,9 +50,15 @@ async def get_material(material_id: uuid.UUID, db: DB):
     return mat
 
 
-@router.post("", response_model=MaterialResponse, status_code=201)
+@router.post(
+    "",
+    response_model=MaterialResponse,
+    status_code=201,
+    summary="Create a material",
+    description="Add a new filament material. Cost per gram is automatically calculated from spool price and net usable grams.",
+)
 async def create_material(body: MaterialCreate, db: DB):
-    cost_per_g = body.spool_price / body.net_usable_g if body.net_usable_g else Decimal(0)
+    cost_per_g = body.spool_price / body.net_usable_g
     mat = Material(**body.model_dump(), cost_per_g=cost_per_g)
     db.add(mat)
     await db.commit()
@@ -75,7 +66,12 @@ async def create_material(body: MaterialCreate, db: DB):
     return mat
 
 
-@router.put("/{material_id}", response_model=MaterialResponse)
+@router.put(
+    "/{material_id}",
+    response_model=MaterialResponse,
+    summary="Update a material",
+    description="Update one or more fields of a material. Cost per gram is recalculated if price or usable weight changes.",
+)
 async def update_material(material_id: uuid.UUID, body: MaterialUpdate, db: DB):
     result = await db.execute(select(Material).where(Material.id == material_id))
     mat = result.scalar_one_or_none()
@@ -83,14 +79,19 @@ async def update_material(material_id: uuid.UUID, body: MaterialUpdate, db: DB):
         raise HTTPException(status_code=404, detail="Material not found")
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(mat, field, value)
-    if mat.net_usable_g:
+    if mat.net_usable_g and mat.net_usable_g > 0:
         mat.cost_per_g = mat.spool_price / mat.net_usable_g
     await db.commit()
     await db.refresh(mat)
     return mat
 
 
-@router.delete("/{material_id}", status_code=204)
+@router.delete(
+    "/{material_id}",
+    status_code=204,
+    summary="Deactivate a material",
+    description="Soft-deletes a material by setting active=false. Historical job data referencing this material is preserved.",
+)
 async def delete_material(material_id: uuid.UUID, db: DB):
     result = await db.execute(select(Material).where(Material.id == material_id))
     mat = result.scalar_one_or_none()

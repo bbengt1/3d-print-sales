@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,7 +22,9 @@ class CostCalculator:
         return Decimal(setting.value) if setting else Decimal(0)
 
     async def _get_rate(self, name: str) -> Decimal:
-        result = await self.db.execute(select(Rate).where(Rate.name == name, Rate.active == True))
+        result = await self.db.execute(
+            select(Rate).where(Rate.name == name, Rate.active == True)
+        )
         rate = result.scalar_one_or_none()
         return rate.value if rate else Decimal(0)
 
@@ -37,6 +40,15 @@ class CostCalculator:
         shipping_cost: Decimal,
         target_margin_pct: Decimal,
     ) -> dict:
+        # Validate material exists
+        result = await self.db.execute(select(Material).where(Material.id == material_id))
+        material = result.scalar_one_or_none()
+        if not material:
+            raise HTTPException(status_code=404, detail=f"Material '{material_id}' not found")
+        if not material.active:
+            raise HTTPException(status_code=400, detail=f"Material '{material.name}' is inactive")
+        cost_per_g = material.cost_per_g
+
         # Fetch settings
         electricity_rate = await self._get_setting("electricity_cost_per_kwh")
         printer_watts = await self._get_setting("printer_power_draw_watts")
@@ -50,12 +62,10 @@ class CostCalculator:
         machine_rate = await self._get_rate("Machine rate")
         overhead_pct = await self._get_rate("Overhead %")
 
-        # Fetch material
-        result = await self.db.execute(select(Material).where(Material.id == material_id))
-        material = result.scalar_one_or_none()
-        cost_per_g = material.cost_per_g if material else Decimal(0)
-
         total_pieces = qty_per_plate * num_plates
+        if total_pieces <= 0:
+            raise HTTPException(status_code=400, detail="Total pieces must be greater than 0")
+
         total_print_hrs = print_time_per_plate_hrs * num_plates
 
         # Cost calculations
@@ -77,17 +87,19 @@ class CostCalculator:
         overhead = subtotal_with_buffer * (overhead_pct / Decimal(100))
         total_cost = subtotal_with_buffer + overhead
 
-        cost_per_piece = total_cost / total_pieces if total_pieces > 0 else Decimal(0)
+        cost_per_piece = total_cost / total_pieces
 
         # Pricing
         margin_divisor = Decimal(1) - target_margin_pct / Decimal(100)
-        price_per_piece = cost_per_piece / margin_divisor if margin_divisor > 0 else Decimal(0)
+        if margin_divisor <= 0:
+            raise HTTPException(status_code=400, detail="Target margin must be less than 100%")
+        price_per_piece = cost_per_piece / margin_divisor
         total_revenue = price_per_piece * total_pieces
 
         platform_fees = total_revenue * (platform_fee_pct / Decimal(100)) + fixed_fee
 
         net_profit = total_revenue - total_cost - platform_fees
-        profit_per_piece = net_profit / total_pieces if total_pieces > 0 else Decimal(0)
+        profit_per_piece = net_profit / total_pieces
 
         return {
             "electricity_cost": electricity_cost,

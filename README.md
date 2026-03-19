@@ -69,15 +69,15 @@ Password: admin123
 
 All endpoints are under `/api/v1`:
 
-| Resource | Endpoints |
-|----------|-----------|
-| **Auth** | `POST /auth/login`, `GET /auth/me` |
-| **Settings** | `GET/PUT /settings`, `GET/PUT /settings/{key}`, `PUT /settings/bulk` |
-| **Materials** | Full CRUD at `/materials` (filter: `?active=true`) |
-| **Rates** | Full CRUD at `/rates` (filter: `?active=true`) |
-| **Customers** | Full CRUD at `/customers` (search, pagination) |
-| **Jobs** | Full CRUD at `/jobs`, `POST /jobs/calculate` (preview) |
-| **Dashboard** | `GET /dashboard/summary`, `/charts/revenue`, `/charts/materials`, `/charts/profit-margins` |
+| Resource | Endpoints | Filters |
+|----------|-----------|---------|
+| **Auth** | `POST /auth/login`, `GET /auth/me` | — |
+| **Settings** | `GET/PUT /settings`, `GET/PUT /settings/{key}`, `PUT /settings/bulk` | — |
+| **Materials** | Full CRUD at `/materials` | `?active`, `?search`, pagination |
+| **Rates** | Full CRUD at `/rates` | `?active`, pagination |
+| **Customers** | Full CRUD at `/customers` | `?search` (name/email), pagination |
+| **Jobs** | Full CRUD at `/jobs`, `POST /jobs/calculate` | `?status`, `?material_id`, `?customer_id`, `?date_from`, `?date_to`, `?search`, `?sort_by`, `?sort_dir`, pagination |
+| **Dashboard** | `GET /dashboard/summary`, `/charts/revenue`, `/charts/materials`, `/charts/profit-margins` | `?date_from`, `?date_to` |
 
 ## Database
 
@@ -118,6 +118,25 @@ Profit      = revenue - costs - platform_fees
 - **Admin Settings** — Business configuration grouped by category
 - **Login** — JWT authentication
 
+## Testing
+
+```bash
+# Run all backend tests (52 tests)
+cd backend
+pip install -r requirements.txt
+python -m pytest tests/ -v
+
+# Test categories:
+#   test_cost_calculator.py   - Cost calculation engine (6 tests)
+#   test_api_auth.py          - Authentication (5 tests)
+#   test_api_settings.py      - Settings CRUD (5 tests)
+#   test_api_materials.py     - Materials CRUD + validation (8 tests)
+#   test_api_rates.py         - Rates CRUD + validation (5 tests)
+#   test_api_customers.py     - Customers CRUD + search (7 tests)
+#   test_api_jobs.py          - Jobs CRUD + filtering + calculator (10 tests)
+#   test_api_dashboard.py     - Dashboard aggregation + date filtering (6 tests)
+```
+
 ## Development
 
 ```bash
@@ -152,7 +171,7 @@ See `.env.example` for all configuration options. Key variables:
 See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 
 - [x] **Phase 1** — Project scaffolding, database, Docker, seed data
-- [ ] **Phase 2** — Core backend API refinement & tests
+- [x] **Phase 2** — Core backend API: schemas, validation, OpenAPI docs, filtering, 52 tests
 - [ ] **Phase 3** — Authentication guards & role-based access
 - [ ] **Phase 4** — Frontend foundation polish
 - [ ] **Phase 5** — Full frontend pages (forms, detail views, calculator)
