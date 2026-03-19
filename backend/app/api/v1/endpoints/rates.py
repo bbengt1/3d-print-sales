@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 
-from app.api.deps import DB
+from app.api.deps import DB, CurrentUser
 from app.models.rate import Rate
 from app.schemas.rate import RateCreate, RateResponse, RateUpdate
 
@@ -52,7 +52,7 @@ async def get_rate(rate_id: uuid.UUID, db: DB):
     summary="Create a rate",
     description="Add a new business rate (e.g. labor rate, machine rate, overhead percentage).",
 )
-async def create_rate(body: RateCreate, db: DB):
+async def create_rate(body: RateCreate, user: CurrentUser, db: DB):
     rate = Rate(**body.model_dump())
     db.add(rate)
     await db.commit()
@@ -66,7 +66,7 @@ async def create_rate(body: RateCreate, db: DB):
     summary="Update a rate",
     description="Update one or more fields of a business rate.",
 )
-async def update_rate(rate_id: uuid.UUID, body: RateUpdate, db: DB):
+async def update_rate(rate_id: uuid.UUID, body: RateUpdate, user: CurrentUser, db: DB):
     result = await db.execute(select(Rate).where(Rate.id == rate_id))
     rate = result.scalar_one_or_none()
     if not rate:
@@ -84,7 +84,7 @@ async def update_rate(rate_id: uuid.UUID, body: RateUpdate, db: DB):
     summary="Deactivate a rate",
     description="Soft-deletes a rate by setting active=false.",
 )
-async def delete_rate(rate_id: uuid.UUID, db: DB):
+async def delete_rate(rate_id: uuid.UUID, user: CurrentUser, db: DB):
     result = await db.execute(select(Rate).where(Rate.id == rate_id))
     rate = result.scalar_one_or_none()
     if not rate:

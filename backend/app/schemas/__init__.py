@@ -1,4 +1,12 @@
-from app.schemas.auth import LoginRequest, TokenResponse, UserResponse
+from app.schemas.auth import (
+    LoginRequest,
+    PasswordChange,
+    TokenResponse,
+    UserCreate,
+    UserResponse,
+    UserRole,
+    UserUpdate,
+)
 from app.schemas.customer import CustomerCreate, CustomerResponse, CustomerUpdate
 from app.schemas.dashboard import (
     DashboardSummary,
@@ -32,6 +40,7 @@ __all__ = [
     "JobStatus",
     "JobUpdate",
     "LoginRequest",
+    "PasswordChange",
     "MaterialCreate",
     "MaterialResponse",
     "MaterialUpdate",
@@ -45,5 +54,8 @@ __all__ = [
     "SettingResponse",
     "SettingUpdate",
     "TokenResponse",
+    "UserCreate",
     "UserResponse",
+    "UserRole",
+    "UserUpdate",
 ]

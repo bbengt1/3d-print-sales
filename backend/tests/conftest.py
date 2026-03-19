@@ -64,10 +64,11 @@ async def client():
 
 @pytest_asyncio.fixture
 async def auth_headers(client: AsyncClient, db_session: AsyncSession):
+    """Admin auth headers."""
     user = User(
         email="test@example.com",
         hashed_password=hash_password("testpass"),
-        full_name="Test User",
+        full_name="Test Admin",
         role="admin",
     )
     db_session.add(user)
@@ -76,6 +77,26 @@ async def auth_headers(client: AsyncClient, db_session: AsyncSession):
     resp = await client.post(
         "/api/v1/auth/login",
         json={"email": "test@example.com", "password": "testpass"},
+    )
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest_asyncio.fixture
+async def user_headers(client: AsyncClient, db_session: AsyncSession):
+    """Non-admin user auth headers."""
+    user = User(
+        email="regular@example.com",
+        hashed_password=hash_password("userpass"),
+        full_name="Regular User",
+        role="user",
+    )
+    db_session.add(user)
+    await db_session.commit()
+
+    resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "regular@example.com", "password": "userpass"},
     )
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

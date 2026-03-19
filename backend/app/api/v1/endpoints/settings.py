@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
-from app.api.deps import DB
+from app.api.deps import DB, CurrentAdmin
 from app.schemas.setting import BulkSettingUpdate, SettingResponse, SettingUpdate
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
@@ -44,7 +44,7 @@ async def get_setting(key: str, db: DB):
     summary="Update a setting",
     description="Update the value of an existing configuration setting.",
 )
-async def update_setting(key: str, body: SettingUpdate, db: DB):
+async def update_setting(key: str, body: SettingUpdate, admin: CurrentAdmin, db: DB):
     from app.models.setting import Setting
 
     result = await db.execute(select(Setting).where(Setting.key == key))
@@ -63,7 +63,7 @@ async def update_setting(key: str, body: SettingUpdate, db: DB):
     summary="Bulk update settings",
     description="Update multiple settings in a single request. Keys that don't exist are silently skipped.",
 )
-async def bulk_update_settings(body: BulkSettingUpdate, db: DB):
+async def bulk_update_settings(body: BulkSettingUpdate, admin: CurrentAdmin, db: DB):
     from app.models.setting import Setting
 
     updated = []

@@ -488,11 +488,13 @@ Base URL: `/api/v1`
 
 **Phase 2 Notes:** Extracted all inline Pydantic schemas into dedicated schema files (`backend/app/schemas/`) with full Field validation (min/max lengths, gt/ge/le constraints, regex patterns, examples). Enhanced all endpoints with OpenAPI summary/description documentation and tag metadata. Added pagination (skip/limit) to materials and rates endpoints. Added search by name/brand to materials, search by name/email to customers. Enhanced jobs list with date range filtering (date_from/date_to), customer_id filter, product name/job number search, configurable sorting (sort_by/sort_dir), and paginated response with total count. Added date range filtering to all dashboard endpoints. Cost calculator now validates material exists and is active, checks for zero total pieces, and validates margin < 100%. Job creation checks for duplicate job numbers (409 conflict). 52 tests passing covering: cost calculator (6 tests), auth (5), settings (5), materials (8), rates (5), customers (7), jobs (10), dashboard (6).
 
-### Phase 3: Authentication
-1. Implement user model and password hashing
-2. Build JWT login/register endpoints
-3. Add auth middleware and role-based guards
-4. Create admin user seed
+### Phase 3: Authentication - COMPLETED
+1. ~~Implement user model and password hashing~~
+2. ~~Build JWT login/register endpoints~~
+3. ~~Add auth middleware and role-based guards~~
+4. ~~Create admin user seed~~
+
+**Phase 3 Notes:** Added `CurrentAdmin` dependency guard for role-based access control. Admin-only endpoints: user registration, user list/get/update/deactivate, settings mutations. All other mutation endpoints (materials, rates, customers, jobs POST/PUT/DELETE) require any authenticated user. GET endpoints remain public. Added user management CRUD (register, list, get, update, deactivate) under `/auth/users`. Password change endpoint at `/auth/me/password`. Self-protection: admins cannot deactivate or demote themselves. Deactivated users are blocked at login. 71 tests passing (19 auth tests including RBAC checks).
 
 ### Phase 4: Frontend Foundation
 1. Set up Tailwind CSS + shadcn/ui

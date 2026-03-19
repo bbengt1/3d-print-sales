@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
-from app.api.deps import DB
+from app.api.deps import DB, CurrentUser
 from app.models.customer import Customer
 from app.models.job import Job
 from app.schemas.customer import CustomerCreate, CustomerResponse, CustomerUpdate
@@ -91,7 +91,7 @@ async def get_customer(customer_id: uuid.UUID, db: DB):
     summary="Create a customer",
     description="Add a new customer record. Customers can be linked to jobs for tracking.",
 )
-async def create_customer(body: CustomerCreate, db: DB):
+async def create_customer(body: CustomerCreate, user: CurrentUser, db: DB):
     customer = Customer(**body.model_dump())
     db.add(customer)
     await db.commit()
@@ -114,7 +114,7 @@ async def create_customer(body: CustomerCreate, db: DB):
     summary="Update a customer",
     description="Update one or more fields of a customer record.",
 )
-async def update_customer(customer_id: uuid.UUID, body: CustomerUpdate, db: DB):
+async def update_customer(customer_id: uuid.UUID, body: CustomerUpdate, user: CurrentUser, db: DB):
     result = await db.execute(select(Customer).where(Customer.id == customer_id))
     customer = result.scalar_one_or_none()
     if not customer:
@@ -149,7 +149,7 @@ async def update_customer(customer_id: uuid.UUID, body: CustomerUpdate, db: DB):
     summary="Delete a customer",
     description="Permanently delete a customer record. Jobs linked to this customer will retain the customer_name field.",
 )
-async def delete_customer(customer_id: uuid.UUID, db: DB):
+async def delete_customer(customer_id: uuid.UUID, user: CurrentUser, db: DB):
     result = await db.execute(select(Customer).where(Customer.id == customer_id))
     customer = result.scalar_one_or_none()
     if not customer:

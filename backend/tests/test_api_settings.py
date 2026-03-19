@@ -28,15 +28,39 @@ async def test_get_setting_not_found(client, seed_settings):
 
 
 @pytest.mark.asyncio
-async def test_update_setting(client, seed_settings):
+async def test_update_setting(client, seed_settings, auth_headers):
     resp = await client.put(
-        "/api/v1/settings/platform_fee_pct", json={"value": "12.5"}
+        "/api/v1/settings/platform_fee_pct",
+        json={"value": "12.5"},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     assert resp.json()["value"] == "12.5"
 
 
 @pytest.mark.asyncio
-async def test_update_setting_validation(client, seed_settings):
-    resp = await client.put("/api/v1/settings/currency", json={"value": ""})
+async def test_update_setting_validation(client, seed_settings, auth_headers):
+    resp = await client.put(
+        "/api/v1/settings/currency",
+        json={"value": ""},
+        headers=auth_headers,
+    )
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_update_setting_requires_admin(client, seed_settings, user_headers):
+    resp = await client.put(
+        "/api/v1/settings/currency",
+        json={"value": "EUR"},
+        headers=user_headers,
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_setting_requires_auth(client, seed_settings):
+    resp = await client.put(
+        "/api/v1/settings/currency", json={"value": "EUR"}
+    )
+    assert resp.status_code == 401

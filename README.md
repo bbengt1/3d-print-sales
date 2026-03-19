@@ -71,7 +71,7 @@ All endpoints are under `/api/v1`:
 
 | Resource | Endpoints | Filters |
 |----------|-----------|---------|
-| **Auth** | `POST /auth/login`, `GET /auth/me` | — |
+| **Auth** | `POST /auth/login`, `GET /auth/me`, `PUT /auth/me/password`, `POST /auth/register` (admin), `GET/PUT/DELETE /auth/users` (admin) | `?is_active` |
 | **Settings** | `GET/PUT /settings`, `GET/PUT /settings/{key}`, `PUT /settings/bulk` | — |
 | **Materials** | Full CRUD at `/materials` | `?active`, `?search`, pagination |
 | **Rates** | Full CRUD at `/rates` | `?active`, pagination |
@@ -121,19 +121,19 @@ Profit      = revenue - costs - platform_fees
 ## Testing
 
 ```bash
-# Run all backend tests (52 tests)
+# Run all backend tests (71 tests)
 cd backend
 pip install -r requirements.txt
 python -m pytest tests/ -v
 
 # Test categories:
 #   test_cost_calculator.py   - Cost calculation engine (6 tests)
-#   test_api_auth.py          - Authentication (5 tests)
-#   test_api_settings.py      - Settings CRUD (5 tests)
-#   test_api_materials.py     - Materials CRUD + validation (8 tests)
-#   test_api_rates.py         - Rates CRUD + validation (5 tests)
-#   test_api_customers.py     - Customers CRUD + search (7 tests)
-#   test_api_jobs.py          - Jobs CRUD + filtering + calculator (10 tests)
+#   test_api_auth.py          - Auth, RBAC, user management (18 tests)
+#   test_api_settings.py      - Settings CRUD + admin guard (7 tests)
+#   test_api_materials.py     - Materials CRUD + auth guard (9 tests)
+#   test_api_rates.py         - Rates CRUD + auth guard (6 tests)
+#   test_api_customers.py     - Customers CRUD + auth guard (8 tests)
+#   test_api_jobs.py          - Jobs CRUD + auth guard + filtering (11 tests)
 #   test_api_dashboard.py     - Dashboard aggregation + date filtering (6 tests)
 ```
 
@@ -172,7 +172,7 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 
 - [x] **Phase 1** — Project scaffolding, database, Docker, seed data
 - [x] **Phase 2** — Core backend API: schemas, validation, OpenAPI docs, filtering, 52 tests
-- [ ] **Phase 3** — Authentication guards & role-based access
+- [x] **Phase 3** — RBAC, user management, auth guards on mutations, 71 tests
 - [ ] **Phase 4** — Frontend foundation polish
 - [ ] **Phase 5** — Full frontend pages (forms, detail views, calculator)
 - [ ] **Phase 6** — Admin section
