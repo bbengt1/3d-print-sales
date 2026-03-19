@@ -506,15 +506,17 @@ Base URL: `/api/v1`
 
 **Phase 4 Notes:** Added ProtectedRoute wrapper that auto-fetches user profile on page load if token exists, redirects to login if unauthenticated, and preserves redirect-back location. Dark/light theme now persists to localStorage and respects system preference on first visit via `useTheme` hook. Header enhanced with active nav highlighting (current route highlighted in primary color), user name display with avatar icon, admin-only nav item visibility, and mobile-responsive menu. Login page enhanced with Zod schema validation (email format, required fields), inline field error messages, loading spinner, server error display (including "Account deactivated"), redirect to original page after login, theme toggle on login page, and default credentials hint. Toast notifications (sonner) wired up globally via `<Toaster>` component with `richColors` and welcome toast on login. Auth store extended with `setUser` and `isAuthenticated()` helper. Frontend TypeScript compilation and production build verified.
 
-### Phase 5: Frontend Pages
-1. Dashboard page with summary cards and charts
-2. Jobs list page with table, filters, pagination
-3. Job detail page with cost breakdown
-4. Job create/edit form with live cost preview
-5. Materials management page
-6. Rates management page
-7. Customers list and detail pages
-8. Standalone cost calculator page
+### Phase 5: Frontend Pages - COMPLETED
+1. ~~Dashboard page with summary cards and charts~~
+2. ~~Jobs list page with table, filters, pagination~~
+3. ~~Job detail page with cost breakdown~~
+4. ~~Job create/edit form with live cost preview~~
+5. ~~Materials management page~~
+6. ~~Rates management page~~
+7. ~~Customers list and detail pages~~
+8. ~~Standalone cost calculator page~~
+
+**Phase 5 Notes:** Dashboard enhanced with 3 Recharts visualizations: revenue over time (line chart), material usage (pie chart), and profit margin by job (bar chart). Jobs page enhanced with search filter, status dropdown filter, pagination with page controls, color-coded status badges, and profit coloring (green/red). Job detail page shows full cost breakdown table, pricing/profit analysis with actual margin calculation, info cards (date, customer, pieces, print time), edit/delete actions. Job form with multi-section layout (job info, print details, labor/costs), material dropdown, target margin slider, status select, client-side validation, and sticky live cost preview sidebar that updates in real-time via the `/jobs/calculate` API. Materials page with full CRUD modal (create/edit), inline cost-per-gram calculation preview, active/inactive toggle. Rates page with CRUD modal, unit dropdown. Customers page with CRUD modal, search, delete confirmation, job count display. Standalone calculator with same live preview as job form plus "Save as Job" button that pre-fills the job form.
 
 ### Phase 6: Admin Section
 1. Admin layout with sidebar navigation

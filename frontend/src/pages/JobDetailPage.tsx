@@ -1,8 +1,148 @@
-export default function JobDetailPage() {
+import { useQuery } from '@tanstack/react-query';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Edit, Calendar, User, Package, Printer } from 'lucide-react';
+import { toast } from 'sonner';
+import api from '@/api/client';
+import { formatCurrency, formatPercent } from '@/lib/utils';
+import type { Job } from '@/types';
+
+function CostRow({ label, value }: { label: string; value: number }) {
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8">Job Detail</h1>
-      <p className="text-muted-foreground">Job detail view — coming in Phase 5.</p>
+    <div className="flex justify-between py-2 border-b border-border last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{formatCurrency(value)}</span>
+    </div>
+  );
+}
+
+export default function JobDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  const { data: job, isLoading } = useQuery<Job>({
+    queryKey: ['job', id],
+    queryFn: () => api.get(`/jobs/${id}`).then((r) => r.data),
+  });
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this job?')) return;
+    try {
+      await api.delete(`/jobs/${id}`);
+      toast.success('Job deleted');
+      navigate('/jobs');
+    } catch {
+      toast.error('Failed to delete job');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => (
+      <div key={i} className="bg-card border border-border rounded-lg h-48 animate-pulse" />
+    ))}</div>;
+  }
+
+  if (!job) return <p className="text-muted-foreground">Job not found</p>;
+
+  const marginPct = job.total_revenue > 0 ? (job.net_profit / job.total_revenue) * 100 : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/jobs" className="p-2 rounded-md hover:bg-accent text-muted-foreground no-underline">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold">{job.job_number}</h1>
+            <p className="text-muted-foreground text-sm">{job.product_name}</p>
+          </div>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+            {job.status}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <Link to={`/jobs/${id}/edit`} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors no-underline">
+            <Edit className="w-4 h-4" /> Edit
+          </Link>
+          <button onClick={handleDelete} className="px-4 py-2 border border-destructive/30 text-destructive rounded-lg text-sm font-medium hover:bg-destructive/10 transition-colors">
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+          <Calendar className="w-5 h-5 text-muted-foreground" />
+          <div><p className="text-xs text-muted-foreground">Date</p><p className="font-medium">{job.date}</p></div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+          <User className="w-5 h-5 text-muted-foreground" />
+          <div><p className="text-xs text-muted-foreground">Customer</p><p className="font-medium">{job.customer_name || '—'}</p></div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+          <Package className="w-5 h-5 text-muted-foreground" />
+          <div><p className="text-xs text-muted-foreground">Total Pieces</p><p className="font-medium">{job.total_pieces} ({job.qty_per_plate} x {job.num_plates} plates)</p></div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+          <Printer className="w-5 h-5 text-muted-foreground" />
+          <div><p className="text-xs text-muted-foreground">Print Time</p><p className="font-medium">{Number(job.print_time_per_plate_hrs).toFixed(1)}h x {job.num_plates} plates</p></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Cost Breakdown */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">Cost Breakdown</h3>
+          <CostRow label="Electricity" value={job.electricity_cost} />
+          <CostRow label="Material" value={job.material_cost} />
+          <CostRow label="Labor" value={job.labor_cost} />
+          <CostRow label="Design" value={job.design_cost} />
+          <CostRow label="Machine" value={job.machine_cost} />
+          <CostRow label="Packaging" value={job.packaging_cost} />
+          <CostRow label="Shipping" value={job.shipping_cost} />
+          <CostRow label="Failure Buffer" value={job.failure_buffer} />
+          <CostRow label="Overhead" value={job.overhead} />
+          <div className="flex justify-between py-2 mt-2 border-t-2 border-border font-bold">
+            <span>Total Cost</span>
+            <span>{formatCurrency(job.total_cost)}</span>
+          </div>
+          <div className="text-sm text-muted-foreground mt-1 text-right">
+            {formatCurrency(job.cost_per_piece)} per piece
+          </div>
+        </div>
+
+        {/* Pricing & Profit */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">Pricing & Profit</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between py-2 border-b border-border">
+              <span className="text-muted-foreground">Target Margin</span>
+              <span className="font-medium">{formatPercent(job.target_margin_pct)}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-border">
+              <span className="text-muted-foreground">Price per Piece</span>
+              <span className="font-medium">{formatCurrency(job.price_per_piece)}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-border">
+              <span className="text-muted-foreground">Total Revenue</span>
+              <span className="font-bold text-lg">{formatCurrency(job.total_revenue)}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-border">
+              <span className="text-muted-foreground">Platform Fees</span>
+              <span className="font-medium text-destructive">-{formatCurrency(job.platform_fees)}</span>
+            </div>
+            <div className="flex justify-between py-2 mt-2 border-t-2 border-border">
+              <span className="font-bold">Net Profit</span>
+              <span className={`font-bold text-lg ${job.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                {formatCurrency(job.net_profit)}
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground text-right">
+              {formatCurrency(job.profit_per_piece)} per piece &middot; {formatPercent(marginPct)} actual margin
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
