@@ -5,122 +5,81 @@ import uuid
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy import func, select
 
 from app.api.deps import DB
 from app.models.job import Job
+from app.schemas.job import (
+    CalculateRequest,
+    CalculateResponse,
+    JobCreate,
+    JobResponse,
+    JobStatus,
+    JobUpdate,
+    PaginatedJobs,
+)
 from app.services.cost_calculator import CostCalculator
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 
-class JobCreate(BaseModel):
-    job_number: str
-    date: datetime.date
-    customer_id: uuid.UUID | None = None
-    customer_name: str | None = None
-    product_name: str
-    qty_per_plate: int
-    num_plates: int
-    material_id: uuid.UUID
-    material_per_plate_g: Decimal
-    print_time_per_plate_hrs: Decimal
-    labor_mins: Decimal = Decimal(0)
-    design_time_hrs: Decimal | None = Decimal(0)
-    shipping_cost: Decimal = Decimal(0)
-    target_margin_pct: Decimal = Decimal(40)
-    status: str = "completed"
-
-
-class JobUpdate(BaseModel):
-    job_number: str | None = None
-    date: datetime.date | None = None
-    customer_id: uuid.UUID | None = None
-    customer_name: str | None = None
-    product_name: str | None = None
-    qty_per_plate: int | None = None
-    num_plates: int | None = None
-    material_id: uuid.UUID | None = None
-    material_per_plate_g: Decimal | None = None
-    print_time_per_plate_hrs: Decimal | None = None
-    labor_mins: Decimal | None = None
-    design_time_hrs: Decimal | None = None
-    shipping_cost: Decimal | None = None
-    target_margin_pct: Decimal | None = None
-    status: str | None = None
-
-
-class JobResponse(BaseModel):
-    id: uuid.UUID
-    job_number: str
-    date: datetime.date
-    customer_id: uuid.UUID | None = None
-    customer_name: str | None = None
-    product_name: str
-    qty_per_plate: int
-    num_plates: int
-    material_id: uuid.UUID
-    total_pieces: int
-    material_per_plate_g: Decimal
-    print_time_per_plate_hrs: Decimal
-    labor_mins: Decimal
-    design_time_hrs: Decimal | None = None
-    electricity_cost: Decimal
-    material_cost: Decimal
-    labor_cost: Decimal
-    design_cost: Decimal
-    machine_cost: Decimal
-    packaging_cost: Decimal
-    shipping_cost: Decimal
-    failure_buffer: Decimal
-    subtotal_cost: Decimal
-    overhead: Decimal
-    total_cost: Decimal
-    cost_per_piece: Decimal
-    target_margin_pct: Decimal
-    price_per_piece: Decimal
-    total_revenue: Decimal
-    platform_fees: Decimal
-    net_profit: Decimal
-    profit_per_piece: Decimal
-    status: str
-
-    model_config = {"from_attributes": True}
-
-
-class CalculateRequest(BaseModel):
-    qty_per_plate: int
-    num_plates: int
-    material_id: uuid.UUID
-    material_per_plate_g: Decimal
-    print_time_per_plate_hrs: Decimal
-    labor_mins: Decimal = Decimal(0)
-    design_time_hrs: Decimal | None = Decimal(0)
-    shipping_cost: Decimal = Decimal(0)
-    target_margin_pct: Decimal = Decimal(40)
-
-
-@router.get("", response_model=list[JobResponse])
+@router.get(
+    "",
+    response_model=PaginatedJobs,
+    summary="List jobs",
+    description="Returns paginated print jobs with filtering by status, material, customer, date range, and product name search.",
+)
 async def list_jobs(
     db: DB,
-    status: str | None = Query(None),
-    material_id: uuid.UUID | None = Query(None),
-    skip: int = 0,
-    limit: int = 50,
+    status: JobStatus | None = Query(None, description="Filter by job status"),
+    material_id: uuid.UUID | None = Query(None, description="Filter by material ID"),
+    customer_id: uuid.UUID | None = Query(None, description="Filter by customer ID"),
+    date_from: datetime.date | None = Query(None, description="Start date (inclusive)"),
+    date_to: datetime.date | None = Query(None, description="End date (inclusive)"),
+    search: str | None = Query(None, description="Search by product name or job number"),
+    sort_by: str = Query("date", description="Sort field", pattern="^(date|job_number|total_revenue|net_profit|created_at)$"),
+    sort_dir: str = Query("desc", description="Sort direction", pattern="^(asc|desc)$"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=100, description="Max records to return"),
 ):
-    stmt = select(Job).where(Job.is_deleted == False)
+    base = select(Job).where(Job.is_deleted == False)
+
     if status:
-        stmt = stmt.where(Job.status == status)
+        base = base.where(Job.status == status.value)
     if material_id:
-        stmt = stmt.where(Job.material_id == material_id)
-    stmt = stmt.order_by(Job.date.desc()).offset(skip).limit(limit)
-    result = await db.execute(stmt)
-    return result.scalars().all()
+        base = base.where(Job.material_id == material_id)
+    if customer_id:
+        base = base.where(Job.customer_id == customer_id)
+    if date_from:
+        base = base.where(Job.date >= date_from)
+    if date_to:
+        base = base.where(Job.date <= date_to)
+    if search:
+        pattern = f"%{search}%"
+        base = base.where(
+            Job.product_name.ilike(pattern) | Job.job_number.ilike(pattern)
+        )
+
+    # Total count
+    count_stmt = select(func.count()).select_from(base.subquery())
+    total = (await db.execute(count_stmt)).scalar() or 0
+
+    # Sorting
+    sort_column = getattr(Job, sort_by, Job.date)
+    order = sort_column.desc() if sort_dir == "desc" else sort_column.asc()
+
+    result = await db.execute(base.order_by(order).offset(skip).limit(limit))
+    items = result.scalars().all()
+
+    return PaginatedJobs(items=items, total=total, skip=skip, limit=limit)
 
 
-@router.get("/{job_id}", response_model=JobResponse)
+@router.get(
+    "/{job_id}",
+    response_model=JobResponse,
+    summary="Get job by ID",
+    description="Retrieve a single job with its full cost breakdown, pricing, and profit analysis.",
+)
 async def get_job(job_id: uuid.UUID, db: DB):
     result = await db.execute(
         select(Job).where(Job.id == job_id, Job.is_deleted == False)
@@ -131,8 +90,19 @@ async def get_job(job_id: uuid.UUID, db: DB):
     return job
 
 
-@router.post("", response_model=JobResponse, status_code=201)
+@router.post(
+    "",
+    response_model=JobResponse,
+    status_code=201,
+    summary="Create a job",
+    description="Create a new print job. All cost fields (electricity, material, labor, etc.) are automatically calculated from the input parameters and current business settings/rates.",
+)
 async def create_job(body: JobCreate, db: DB):
+    # Check for duplicate job number
+    existing = await db.execute(select(Job.id).where(Job.job_number == body.job_number))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail=f"Job number '{body.job_number}' already exists")
+
     calc = CostCalculator(db)
     costs = await calc.calculate(
         material_id=body.material_id,
@@ -145,8 +115,10 @@ async def create_job(body: JobCreate, db: DB):
         shipping_cost=body.shipping_cost,
         target_margin_pct=body.target_margin_pct,
     )
+    # Exclude shipping_cost from body since it's included in calculated costs
+    body_data = body.model_dump(exclude={"shipping_cost"})
     job = Job(
-        **body.model_dump(),
+        **body_data,
         total_pieces=body.qty_per_plate * body.num_plates,
         **costs,
     )
@@ -156,7 +128,12 @@ async def create_job(body: JobCreate, db: DB):
     return job
 
 
-@router.put("/{job_id}", response_model=JobResponse)
+@router.put(
+    "/{job_id}",
+    response_model=JobResponse,
+    summary="Update a job",
+    description="Update one or more fields of a job. Costs are automatically recalculated when print parameters change.",
+)
 async def update_job(job_id: uuid.UUID, body: JobUpdate, db: DB):
     result = await db.execute(
         select(Job).where(Job.id == job_id, Job.is_deleted == False)
@@ -164,6 +141,14 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, db: DB):
     job = result.scalar_one_or_none()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    # Check unique job_number if it's being changed
+    if body.job_number and body.job_number != job.job_number:
+        existing = await db.execute(
+            select(Job.id).where(Job.job_number == body.job_number, Job.id != job_id)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail=f"Job number '{body.job_number}' already exists")
 
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(job, field, value)
@@ -190,7 +175,12 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, db: DB):
     return job
 
 
-@router.delete("/{job_id}", status_code=204)
+@router.delete(
+    "/{job_id}",
+    status_code=204,
+    summary="Delete a job",
+    description="Soft-deletes a job by marking it as deleted. The record is preserved for historical reporting.",
+)
 async def delete_job(job_id: uuid.UUID, db: DB):
     result = await db.execute(
         select(Job).where(Job.id == job_id, Job.is_deleted == False)
@@ -202,7 +192,12 @@ async def delete_job(job_id: uuid.UUID, db: DB):
     await db.commit()
 
 
-@router.post("/calculate")
+@router.post(
+    "/calculate",
+    response_model=CalculateResponse,
+    summary="Preview cost calculation",
+    description="Run the cost calculation engine without saving a job. Use this for the live cost preview in the job form or the standalone calculator.",
+)
 async def calculate_preview(body: CalculateRequest, db: DB):
     calc = CostCalculator(db)
     costs = await calc.calculate(
@@ -216,6 +211,7 @@ async def calculate_preview(body: CalculateRequest, db: DB):
         shipping_cost=body.shipping_cost,
         target_margin_pct=body.target_margin_pct,
     )
-    costs["total_pieces"] = body.qty_per_plate * body.num_plates
-    # Convert Decimal to float for JSON serialization
-    return {k: float(v) if isinstance(v, Decimal) else v for k, v in costs.items()}
+    return CalculateResponse(
+        total_pieces=body.qty_per_plate * body.num_plates,
+        **{k: float(v) if isinstance(v, Decimal) else v for k, v in costs.items()},
+    )

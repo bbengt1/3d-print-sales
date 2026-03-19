@@ -6,10 +6,11 @@ import { formatCurrency } from '@/lib/utils';
 import type { Job } from '@/types';
 
 export default function JobsPage() {
-  const { data: jobs, isLoading } = useQuery<Job[]>({
+  const { data, isLoading } = useQuery<{ items: Job[]; total: number }>({
     queryKey: ['jobs'],
     queryFn: () => api.get('/jobs').then((r) => r.data),
   });
+  const jobs = data?.items;
 
   return (
     <div>
