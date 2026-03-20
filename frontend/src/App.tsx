@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import Layout from '@/components/layout/Layout';
 import AdminLayout from '@/components/layout/AdminLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -25,38 +26,40 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/jobs" element={<JobsPage />} />
-            <Route path="/jobs/new" element={<JobFormPage />} />
-            <Route path="/jobs/:id" element={<JobDetailPage />} />
-            <Route path="/jobs/:id/edit" element={<JobFormPage />} />
-            <Route path="/materials" element={<MaterialsPage />} />
-            <Route path="/rates" element={<RatesPage />} />
-            <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/calculator" element={<CalculatorPage />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/jobs" element={<JobsPage />} />
+              <Route path="/jobs/new" element={<JobFormPage />} />
+              <Route path="/jobs/:id" element={<JobDetailPage />} />
+              <Route path="/jobs/:id/edit" element={<JobFormPage />} />
+              <Route path="/materials" element={<MaterialsPage />} />
+              <Route path="/rates" element={<RatesPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/calculator" element={<CalculatorPage />} />
 
-            {/* Admin section with sidebar */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="/admin/settings" replace />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="data" element={<DataPage />} />
+              {/* Admin section with sidebar */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/settings" replace />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="users" element={<UsersPage />} />
+                <Route path="data" element={<DataPage />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </BrowserRouter>
-      <Toaster richColors position="top-right" />
-    </QueryClientProvider>
+          </Routes>
+        </BrowserRouter>
+        <Toaster richColors position="top-right" />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

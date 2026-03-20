@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { SkeletonTable } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import type { Rate } from '@/types';
 
 const emptyForm = { name: '', value: 0, unit: '$/hour', notes: '' };
@@ -17,16 +19,27 @@ export default function RatesPage() {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const openNew = () => { setForm(emptyForm); setEditing('new'); };
+  const openNew = () => { setForm(emptyForm); setFormErrors({}); setEditing('new'); };
   const openEdit = (r: Rate) => {
     setForm({ name: r.name, value: r.value, unit: r.unit, notes: r.notes || '' });
+    setFormErrors({});
     setEditing(r.id);
   };
   const close = () => setEditing(null);
 
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'Name is required';
+    if (form.value < 0) errs.value = 'Must be >= 0';
+    if (!form.unit) errs.unit = 'Unit is required';
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const save = async () => {
-    if (!form.name || !form.unit) { toast.error('Name and unit are required'); return; }
+    if (!validate()) return;
     setSaving(true);
     try {
       if (editing === 'new') {
@@ -56,6 +69,9 @@ export default function RatesPage() {
     } catch { toast.error('Failed to update'); }
   };
 
+  const inputCls = (field: string) =>
+    `w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${formErrors[field] ? 'border-destructive' : 'border-input'}`;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -73,10 +89,19 @@ export default function RatesPage() {
               <button onClick={close} className="p-1 hover:bg-accent rounded-md"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="block text-sm font-medium mb-1">Name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Name *</label>
+                <input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormErrors({ ...formErrors, name: '' }); }} className={inputCls('name')} />
+                {formErrors.name && <p className="text-destructive text-xs mt-1">{formErrors.name}</p>}
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium mb-1">Value</label><input type="number" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-                <div><label className="block text-sm font-medium mb-1">Unit</label>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Value *</label>
+                  <input type="number" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: Number(e.target.value) })} className={inputCls('value')} />
+                  {formErrors.value && <p className="text-destructive text-xs mt-1">{formErrors.value}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Unit *</label>
                   <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                     <option value="$/hour">$/hour</option>
                     <option value="$/order">$/order</option>
@@ -95,42 +120,79 @@ export default function RatesPage() {
       )}
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-lg p-4 h-48 animate-pulse" />
+        <SkeletonTable rows={3} cols={5} />
+      ) : !rates?.length ? (
+        <EmptyState
+          icon="rates"
+          title="No rates configured"
+          description="Add labor, machine, and overhead rates to enable cost calculations."
+          action={
+            <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 cursor-pointer">
+              <Plus className="w-4 h-4" /> Add Rate
+            </button>
+          }
+        />
       ) : (
-        <div className="overflow-x-auto bg-card border border-border rounded-lg">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium text-right">Value</th>
-                <th className="px-4 py-3 font-medium">Unit</th>
-                <th className="px-4 py-3 font-medium">Notes</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rates?.map((r) => (
-                <tr key={r.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                  <td className="px-4 py-3 font-medium">{r.name}</td>
-                  <td className="px-4 py-3 text-right">{Number(r.value).toFixed(2)}</td>
-                  <td className="px-4 py-3">{r.unit}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.notes || '—'}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleActive(r)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${r.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto bg-card border border-border rounded-lg">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium text-right">Value</th>
+                  <th className="px-4 py-3 font-medium">Unit</th>
+                  <th className="px-4 py-3 font-medium">Notes</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rates.map((r) => (
+                  <tr key={r.id} className="border-b border-border last:border-0 hover:bg-accent/50">
+                    <td className="px-4 py-3 font-medium">{r.name}</td>
+                    <td className="px-4 py-3 text-right">{Number(r.value).toFixed(2)}</td>
+                    <td className="px-4 py-3">{r.unit}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{r.notes || '—'}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => toggleActive(r)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${r.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {r.active ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {rates.map((r) => (
+              <div key={r.id} className="bg-card border border-border rounded-lg p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-semibold">{r.name}</p>
+                    {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleActive(r)} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer ${r.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
                       {r.active ? 'Active' : 'Inactive'}
                     </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
+                    <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer">
                       <Edit className="w-4 h-4" />
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </div>
+                <p className="text-lg font-bold">{Number(r.value).toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{r.unit}</span></p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
