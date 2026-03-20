@@ -144,6 +144,36 @@ Full-stack web application for managing a 3D printing business. Includes a publi
 | created_at | TIMESTAMP | |
 | updated_at | TIMESTAMP | |
 
+### Table: `products`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID (PK) | |
+| sku | VARCHAR(50) UNIQUE | Auto-generated: PRD-{MATERIAL}-{NNNN} |
+| upc | VARCHAR(14) | Optional UPC/EAN barcode |
+| name | VARCHAR(200) | |
+| description | TEXT | |
+| material_id | UUID (FK -> materials) | Primary material used |
+| unit_cost | DECIMAL(10,4) | Rolling avg production cost |
+| unit_price | DECIMAL(10,4) | Default selling price |
+| stock_qty | INTEGER | Current stock on hand |
+| reorder_point | INTEGER | Low-stock alert threshold |
+| is_active | BOOLEAN | Default true |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
+
+### Table: `inventory_transactions`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID (PK) | |
+| product_id | UUID (FK -> products) | |
+| job_id | UUID (FK -> jobs) | Nullable, source job if produced |
+| type | VARCHAR(20) | production, sale, adjustment, return, waste |
+| quantity | INTEGER | Positive = add, negative = remove |
+| unit_cost | DECIMAL(10,4) | Cost at time of transaction |
+| notes | TEXT | |
+| created_by | UUID (FK -> users) | |
+| created_at | TIMESTAMP | |
+
 ### Table: `users`
 | Column | Type | Notes |
 |--------|------|-------|
@@ -238,6 +268,22 @@ Base URL: `/api/v1`
 | DELETE | `/jobs/{id}` | Soft-delete |
 | POST | `/jobs/calculate` | Preview cost calculation without saving |
 
+### Products
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/products` | List products (search, filter by material/stock/active, pagination) |
+| GET | `/products/{id}` | Get single product |
+| POST | `/products` | Create product (auto-generates SKU) |
+| PUT | `/products/{id}` | Update product |
+| DELETE | `/products/{id}` | Soft-delete (set is_active=false) |
+
+### Inventory
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/inventory/transactions` | List transactions (filter by product, type, pagination) |
+| POST | `/inventory/transactions` | Manual stock adjustment |
+| GET | `/inventory/alerts` | Products & materials below reorder point |
+
 ### Dashboard
 | Method | Path | Description |
 |--------|------|-------------|
@@ -300,6 +346,19 @@ Base URL: `/api/v1`
 - **Customer List**: Name, email, phone, # of jobs
 - **Customer Detail**: Contact info + job history table
 - **Add/Edit modal**
+
+### Page: Products (`/products`)
+- **Product List Table**: SKU, name, price, cost, stock (with low-stock warnings), active status
+- **Search** by name or SKU
+- **CRUD Modal**: Add/edit products with material dropdown, price, reorder point, optional UPC
+- **Active/Inactive toggle**
+- **Row click** -> detail view
+- **Pagination**
+
+### Page: Product Detail (`/products/:id`)
+- **Product Info Card**: SKU, UPC, name, description, price, cost, margin, stock, inventory value
+- **Transaction History Table**: Date, type (color-coded badges), quantity (+/-), unit cost, notes
+- **Adjust Stock Modal**: Type selector, quantity, notes
 
 ### Page: Cost Calculator (`/calculator`)
 - **Standalone calculator** (same form as New Job but doesn't save)
@@ -537,6 +596,57 @@ Base URL: `/api/v1`
 8. ~~Production Docker setup~~
 
 **Phase 7 Notes:** Created reusable UI components: Skeleton (with SkeletonCard, SkeletonTable, SkeletonStatCards variants), EmptyState (with icon map for jobs, materials, rates, customers), and ErrorBoundary (class component with error display and reload button). ErrorBoundary wraps the entire app at the top level. Materials and Rates pages updated with proper SkeletonTable loading, EmptyState with CTA buttons, and mobile-responsive card layouts (tables on desktop, stacked cards on mobile). All form modals enhanced with inline validation and error messages. Backend rate limiter middleware added using token-bucket algorithm keyed by client IP (configurable via RATE_LIMIT_PER_MINUTE and RATE_LIMIT_BURST env vars, defaults 120/30). Config extended with ENVIRONMENT and rate limit settings. Multi-stage Docker builds: backend has development (with --reload) and production (with --workers 4 and non-root user) targets; frontend has development, build, and production (nginx:alpine with gzip, asset caching, API proxy, SPA fallback) targets. Added docker-compose.prod.yml for production deployment with env-var driven config, restart policies, and nginx on port 80. Updated .env.example with all new variables.
+
+### Phase 8: Inventory Management - COMPLETED
+1. ~~Create `products` table with auto-generated SKU (PRD-{MATERIAL}-{NNNN}), optional UPC/EAN field~~
+2. ~~Create `inventory_transactions` table for stock movement ledger~~
+3. ~~Extend `materials` table with spools_in_stock and reorder_point columns~~
+4. ~~Extend `jobs` table with product_id FK and inventory_added flag~~
+5. ~~SKU auto-generation service~~
+6. ~~Inventory service: stock adjustments, production auto-add, rolling average cost~~
+7. ~~Product CRUD API endpoints with search, pagination, low-stock filter~~
+8. ~~Inventory transaction endpoints (list, create adjustments)~~
+9. ~~Low-stock alerts endpoint (products and materials below reorder point)~~
+10. ~~Auto-inventory: completed jobs with linked product auto-create production transactions~~
+11. ~~Products page with CRUD modal, search, pagination, stock warnings~~
+12. ~~Product detail page with transaction history and stock adjustment modal~~
+13. ~~Dashboard inventory alerts widget~~
+14. ~~Job form product dropdown with inventory auto-add hint~~
+15. ~~Materials page spool stock column and edit fields~~
+16. ~~Navigation update with Products link~~
+17. ~~16 backend tests (9 product + 7 inventory)~~
+
+**Phase 8 Notes:** Two new database tables: `products` (finished product catalog with SKU, UPC, stock tracking, pricing, reorder point) and `inventory_transactions` (stock movement ledger with types: production, sale, adjustment, return, waste). Extended `materials` with spools_in_stock and reorder_point for filament inventory tracking. Extended `jobs` with product_id FK and inventory_added boolean for auto-stock integration. SKU auto-generation follows PRD-{MATERIAL_CODE}-{NNNN} format (e.g., PRD-PLA-0001). Inventory service handles stock adjustments with rolling average unit cost calculation. When a job is created/updated to "completed" status and linked to a product, a production transaction is auto-created and product stock is incremented. Low-stock alerts endpoint returns both products and materials below their reorder points. Frontend Products page follows existing CRUD modal pattern with search, pagination, active/inactive toggle, and low-stock warning indicators. Product detail page shows full transaction history with color-coded transaction types and manual stock adjustment modal. Dashboard enhanced with low-stock alerts panel linking to affected products/materials. Job form enhanced with product dropdown and inventory auto-add hint. Materials page updated with spool stock column and edit fields.
+
+### Phase 9: Sales Tracking
+1. Create `sales_channels` table with per-channel fee configuration
+2. Create `sales` table with sale_number auto-generation, status flow, payment tracking
+3. Create `sale_items` table linking to products/jobs
+4. Sales channel CRUD endpoints
+5. Sales CRUD endpoints with auto-computation (fees, totals, net revenue)
+6. Sale creation auto-deducts inventory
+7. Refund flow with inventory restoration
+8. Sales metrics endpoint (revenue, units, AOV, refund rate, by-channel)
+9. Sales page with filters and pagination
+10. Sale detail page with line items and P&L
+11. New sale form with product/job line items
+12. Sales channels management page
+13. Dashboard sales metrics and charts
+14. Customer detail purchase history
+15. Backend tests (~15 tests)
+
+### Phase 10: Reports
+1. Inventory reports: stock levels with valuation, turnover rate, material usage, dead stock
+2. Sales reports: revenue over time with period comparison, by product/channel/customer
+3. Profit & Loss report combining all data
+4. Report generation service with date range and period grouping
+5. CSV export for all reports
+6. Reports section with sub-navigation (Inventory, Sales, P&L)
+7. Shared report controls (date picker, period toggle, export button)
+8. Inventory reports page with stock table, turnover chart, material usage chart
+9. Sales reports page with revenue chart, product ranking, channel breakdown
+10. P&L page with summary cards and trend chart
+11. Backend tests (~10 tests)
 
 ---
 

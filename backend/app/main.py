@@ -35,6 +35,14 @@ OPENAPI_TAGS = [
         "description": "Print jobs with automatic cost calculation, pricing, and profit analysis.",
     },
     {
+        "name": "Products",
+        "description": "Product catalog with SKU tracking, inventory levels, and pricing.",
+    },
+    {
+        "name": "Inventory",
+        "description": "Inventory transactions, stock adjustments, and low-stock alerts.",
+    },
+    {
         "name": "Dashboard",
         "description": "Aggregated business metrics and chart data for the admin dashboard.",
     },

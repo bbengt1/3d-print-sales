@@ -14,6 +14,8 @@ class MaterialCreate(BaseModel):
     spool_price: Decimal = Field(..., gt=0, examples=[20.00])
     net_usable_g: Decimal = Field(..., gt=0, examples=[950])
     notes: str | None = Field(None, max_length=500, examples=["Standard PLA spool"])
+    spools_in_stock: int = Field(0, ge=0, examples=[5])
+    reorder_point: int = Field(2, ge=0, examples=[2])
     active: bool = Field(True)
 
 
@@ -24,6 +26,8 @@ class MaterialUpdate(BaseModel):
     spool_price: Decimal | None = Field(None, gt=0)
     net_usable_g: Decimal | None = Field(None, gt=0)
     notes: str | None = Field(None, max_length=500)
+    spools_in_stock: int | None = Field(None, ge=0)
+    reorder_point: int | None = Field(None, ge=0)
     active: bool | None = None
 
 
@@ -36,6 +40,8 @@ class MaterialResponse(BaseModel):
     net_usable_g: Decimal
     cost_per_g: Decimal
     notes: str | None = None
+    spools_in_stock: int
+    reorder_point: int
     active: bool
     created_at: datetime | None = None
     updated_at: datetime | None = None

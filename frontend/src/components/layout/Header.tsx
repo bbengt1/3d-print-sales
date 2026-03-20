@@ -10,6 +10,7 @@ const navLinks = [
   { to: '/jobs', label: 'Jobs' },
   { to: '/materials', label: 'Materials' },
   { to: '/rates', label: 'Rates' },
+  { to: '/products', label: 'Products' },
   { to: '/customers', label: 'Customers' },
   { to: '/calculator', label: 'Calculator' },
 ];

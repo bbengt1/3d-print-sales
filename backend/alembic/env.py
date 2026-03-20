@@ -13,6 +13,8 @@ from app.models.rate import Rate  # noqa
 from app.models.customer import Customer  # noqa
 from app.models.job import Job  # noqa
 from app.models.user import User  # noqa
+from app.models.product import Product  # noqa
+from app.models.inventory_transaction import InventoryTransaction  # noqa
 
 config = context.config
 if config.config_file_name is not None:

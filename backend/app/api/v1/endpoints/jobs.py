@@ -19,6 +19,7 @@ from app.schemas.job import (
     PaginatedJobs,
 )
 from app.services.cost_calculator import CostCalculator
+from app.services.inventory_service import add_inventory_from_job
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -123,6 +124,20 @@ async def create_job(body: JobCreate, user: CurrentUser, db: DB):
         **costs,
     )
     db.add(job)
+    await db.flush()
+
+    # Auto-add to inventory if job is completed and linked to a product
+    if job.product_id and job.status == "completed":
+        await add_inventory_from_job(
+            db=db,
+            product_id=job.product_id,
+            job_id=job.id,
+            quantity=job.total_pieces,
+            unit_cost=job.cost_per_piece,
+            user_id=user.id,
+        )
+        job.inventory_added = True
+
     await db.commit()
     await db.refresh(job)
     return job
@@ -150,6 +165,7 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: 
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=409, detail=f"Job number '{body.job_number}' already exists")
 
+    old_status = job.status
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(job, field, value)
 
@@ -169,6 +185,23 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: 
     )
     for k, v in costs.items():
         setattr(job, k, v)
+
+    # Auto-add to inventory when status changes to completed
+    if (
+        job.product_id
+        and job.status == "completed"
+        and old_status != "completed"
+        and not job.inventory_added
+    ):
+        await add_inventory_from_job(
+            db=db,
+            product_id=job.product_id,
+            job_id=job.id,
+            quantity=job.total_pieces,
+            unit_cost=job.cost_per_piece,
+            user_id=user.id,
+        )
+        job.inventory_added = True
 
     await db.commit()
     await db.refresh(job)

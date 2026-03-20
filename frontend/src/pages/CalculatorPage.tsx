@@ -7,6 +7,29 @@ import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
 import type { Material, CalculateResponse } from '@/types';
 
+interface CalcFieldProps {
+  label: string;
+  field: string;
+  value: number;
+  onChange: (field: string, value: number) => void;
+  [k: string]: any;
+}
+
+function CalcField({ label, field, value, onChange, ...rest }: CalcFieldProps) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1.5">{label}</label>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(field, Number(e.target.value))}
+        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        {...rest}
+      />
+    </div>
+  );
+}
+
 export default function CalculatorPage() {
   const navigate = useNavigate();
 
@@ -55,19 +78,6 @@ export default function CalculatorPage() {
     toast.info('Fill in job number and details to save');
   };
 
-  const Field = ({ label, field, ...rest }: { label: string; field: string; [k: string]: any }) => (
-    <div>
-      <label className="block text-sm font-medium mb-1.5">{label}</label>
-      <input
-        type="number"
-        value={(form as any)[field]}
-        onChange={(e) => update(field, Number(e.target.value))}
-        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        {...rest}
-      />
-    </div>
-  );
-
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
@@ -93,19 +103,19 @@ export default function CalculatorPage() {
                   ))}
                 </select>
               </div>
-              <Field label="Qty per Plate" field="qty_per_plate" min={1} />
-              <Field label="Number of Plates" field="num_plates" min={1} />
-              <Field label="Material per Plate (g)" field="material_per_plate_g" min={0} step="0.01" />
-              <Field label="Print Time per Plate (hrs)" field="print_time_per_plate_hrs" min={0} step="0.01" />
+              <CalcField label="Qty per Plate" field="qty_per_plate" value={form.qty_per_plate} onChange={update} min={1} />
+              <CalcField label="Number of Plates" field="num_plates" value={form.num_plates} onChange={update} min={1} />
+              <CalcField label="Material per Plate (g)" field="material_per_plate_g" value={form.material_per_plate_g} onChange={update} min={0} step="0.01" />
+              <CalcField label="Print Time per Plate (hrs)" field="print_time_per_plate_hrs" value={form.print_time_per_plate_hrs} onChange={update} min={0} step="0.01" />
             </div>
           </div>
 
           <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Labor & Costs</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Labor Time (mins)" field="labor_mins" min={0} />
-              <Field label="Design Time (hrs)" field="design_time_hrs" min={0} step="0.01" />
-              <Field label="Shipping Cost ($)" field="shipping_cost" min={0} step="0.01" />
+              <CalcField label="Labor Time (mins)" field="labor_mins" value={form.labor_mins} onChange={update} min={0} />
+              <CalcField label="Design Time (hrs)" field="design_time_hrs" value={form.design_time_hrs} onChange={update} min={0} step="0.01" />
+              <CalcField label="Shipping Cost ($)" field="shipping_cost" value={form.shipping_cost} onChange={update} min={0} step="0.01" />
               <div>
                 <label className="block text-sm font-medium mb-1.5">Target Margin: {form.target_margin_pct}%</label>
                 <input

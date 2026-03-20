@@ -52,6 +52,11 @@ class Job(Base):
     net_profit: Mapped[Decimal] = mapped_column(Numeric(10, 4), default=0)
     profit_per_piece: Mapped[Decimal] = mapped_column(Numeric(10, 4), default=0)
 
+    product_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("products.id"), nullable=True
+    )
+    inventory_added: Mapped[bool] = mapped_column(Boolean, default=False)
+
     status: Mapped[str] = mapped_column(String(20), default="completed")
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -65,3 +70,4 @@ class Job(Base):
 
     customer = relationship("Customer", back_populates="jobs")
     material = relationship("Material")
+    product = relationship("Product")
