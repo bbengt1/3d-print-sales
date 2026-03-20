@@ -14,6 +14,10 @@ import RatesPage from '@/pages/RatesPage';
 import CustomersPage from '@/pages/CustomersPage';
 import ProductsPage from '@/pages/ProductsPage';
 import ProductDetailPage from '@/pages/ProductDetailPage';
+import SalesPage from '@/pages/SalesPage';
+import SaleDetailPage from '@/pages/SaleDetailPage';
+import SaleFormPage from '@/pages/SaleFormPage';
+import SalesChannelsPage from '@/pages/SalesChannelsPage';
 import CalculatorPage from '@/pages/CalculatorPage';
 import LoginPage from '@/pages/LoginPage';
 import SettingsPage from '@/pages/admin/SettingsPage';
@@ -47,6 +51,10 @@ export default function App() {
               <Route path="/jobs/:id/edit" element={<JobFormPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/sales" element={<SalesPage />} />
+              <Route path="/sales/new" element={<SaleFormPage />} />
+              <Route path="/sales/channels" element={<SalesChannelsPage />} />
+              <Route path="/sales/:id" element={<SaleDetailPage />} />
               <Route path="/materials" element={<MaterialsPage />} />
               <Route path="/rates" element={<RatesPage />} />
               <Route path="/customers" element={<CustomersPage />} />

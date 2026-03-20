@@ -49,12 +49,12 @@ Password: admin123
 3d-print-sales/
 ├── backend/               # FastAPI application
 │   ├── app/
-│   │   ├── api/v1/        # REST endpoints (auth, settings, materials, rates, customers, jobs, dashboard)
+│   │   ├── api/v1/        # REST endpoints (auth, settings, materials, rates, customers, jobs, products, inventory, sales, dashboard)
 │   │   ├── core/          # Config, database, security
 │   │   ├── middleware/     # Rate limiting
-│   │   ├── models/        # SQLAlchemy models (6 tables)
+│   │   ├── models/        # SQLAlchemy models (11 tables)
 │   │   ├── schemas/       # Pydantic schemas
-│   │   ├── services/      # Cost calculation engine
+│   │   ├── services/      # Cost calculation, inventory, sales engines
 │   │   ├── seed.py        # Database seed data
 │   │   └── main.py        # App entry point
 │   ├── alembic/           # Database migrations
@@ -91,11 +91,13 @@ All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 | **Jobs** | Full CRUD at `/jobs`, `POST /jobs/calculate` | `?status`, `?material_id`, `?customer_id`, `?date_from`, `?date_to`, `?search`, `?sort_by`, `?sort_dir`, pagination |
 | **Products** | Full CRUD at `/products` | `?is_active`, `?material_id`, `?low_stock`, `?search`, pagination |
 | **Inventory** | `GET/POST /inventory/transactions`, `GET /inventory/alerts` | `?product_id`, `?type`, pagination |
+| **Sales Channels** | Full CRUD at `/sales/channels` | `?is_active` |
+| **Sales** | Full CRUD at `/sales`, `GET /sales/metrics`, `POST /sales/{id}/refund` | `?status`, `?channel_id`, `?customer_id`, `?date_from`, `?date_to`, `?search`, pagination |
 | **Dashboard** | `GET /dashboard/summary`, `/charts/revenue`, `/charts/materials`, `/charts/profit-margins` | `?date_from`, `?date_to` |
 
 ## Database
 
-Eight tables (6 seeded from the original spreadsheet + 2 for inventory):
+Eleven tables (6 seeded from the original spreadsheet + 2 for inventory + 3 for sales):
 
 - **settings** — Business configuration (currency, margins, fees, electricity rates)
 - **materials** — Filament inventory (PLA, PETG, TPU, ABS, PLA+) with cost-per-gram, spool stock tracking
@@ -105,6 +107,9 @@ Eight tables (6 seeded from the original spreadsheet + 2 for inventory):
 - **users** — Admin authentication
 - **products** — Product catalog with auto-generated SKU, optional UPC, stock tracking, reorder points
 - **inventory_transactions** — Stock movement ledger (production, sale, adjustment, return, waste)
+- **sales_channels** — Sales platforms (Etsy, Amazon, Direct) with platform fee % and fixed fee per order
+- **sales** — Order tracking with auto-generated sale number (S-YYYY-NNNN), status flow, computed totals and net revenue
+- **sale_items** — Line items per sale linking to products/jobs with quantity, pricing, and cost
 
 ## Cost Calculation Engine
 
@@ -139,13 +144,16 @@ Profit      = revenue - costs - platform_fees
 
 ### Pages
 
-- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts
+- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, revenue, profit, AOV) + revenue by channel chart
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
 - **Products** — Product catalog with CRUD modal, SKU/UPC, stock tracking, reorder alerts, search, pagination
 - **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
+- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, financial summary, status management, refund
+- **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
+- **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Editable business settings with bulk save, grouped by category
 - **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
@@ -155,7 +163,7 @@ Profit      = revenue - costs - platform_fees
 ## Testing
 
 ```bash
-# Run all backend tests (87 tests)
+# Run all backend tests (103 tests)
 cd backend
 pip install -r requirements.txt
 python -m pytest tests/ -v
@@ -170,6 +178,7 @@ python -m pytest tests/ -v
 #   test_api_jobs.py          - Jobs CRUD + auth guard + filtering (11 tests)
 #   test_api_products.py       - Products CRUD + SKU generation (9 tests)
 #   test_api_inventory.py      - Inventory transactions + alerts + auto-stock (7 tests)
+#   test_api_sales.py          - Sales + channels CRUD, refunds, inventory, metrics (16 tests)
 #   test_api_dashboard.py     - Dashboard aggregation + date filtering (6 tests)
 ```
 
@@ -217,5 +226,5 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 - [x] **Phase 6** — Admin section: sidebar layout, editable settings, user management, CSV export
 - [x] **Phase 7** — Polish: skeleton loaders, empty states, error boundary, responsive tables, form validation, rate limiting, production Docker
 - [x] **Phase 8** — Inventory: product catalog with SKU/UPC, stock tracking, transaction ledger, auto-stock from jobs, low-stock alerts, 87 tests
-- [ ] **Phase 9** — Sales tracking: sales channels, orders, line items, metrics, refund flow
+- [x] **Phase 9** — Sales tracking: sales channels, orders with line items, platform fee computation, inventory deduction, refund flow, sales metrics, 103 tests
 - [ ] **Phase 10** — Reports: inventory reports, sales reports, P&L, CSV export, charts

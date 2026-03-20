@@ -188,3 +188,85 @@ export interface InventoryAlert {
   current_stock: number;
   reorder_point: number;
 }
+
+export interface SalesChannel {
+  id: string;
+  name: string;
+  platform_fee_pct: number;
+  fixed_fee: number;
+  is_active: boolean;
+  created_at: string | null;
+}
+
+export interface SaleItem {
+  id: string;
+  sale_id: string;
+  product_id: string | null;
+  job_id: string | null;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  unit_cost: number;
+  created_at: string | null;
+}
+
+export interface Sale {
+  id: string;
+  sale_number: string;
+  date: string;
+  customer_id: string | null;
+  customer_name: string | null;
+  channel_id: string | null;
+  status: string;
+  subtotal: number;
+  shipping_charged: number;
+  shipping_cost: number;
+  platform_fees: number;
+  tax_collected: number;
+  total: number;
+  net_revenue: number;
+  payment_method: string | null;
+  tracking_number: string | null;
+  notes: string | null;
+  items: SaleItem[];
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface SaleListItem {
+  id: string;
+  sale_number: string;
+  date: string;
+  customer_name: string | null;
+  channel_id: string | null;
+  status: string;
+  total: number;
+  net_revenue: number;
+  item_count: number;
+  created_at: string | null;
+}
+
+export interface PaginatedSales {
+  items: SaleListItem[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface SalesMetrics {
+  total_sales: number;
+  total_revenue: number;
+  total_cost: number;
+  total_profit: number;
+  total_units_sold: number;
+  avg_order_value: number;
+  refund_count: number;
+  refund_rate: number;
+  revenue_by_channel: {
+    channel_id: string | null;
+    channel_name: string;
+    revenue: number;
+    order_count: number;
+  }[];
+}

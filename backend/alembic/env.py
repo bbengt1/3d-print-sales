@@ -15,6 +15,9 @@ from app.models.job import Job  # noqa
 from app.models.user import User  # noqa
 from app.models.product import Product  # noqa
 from app.models.inventory_transaction import InventoryTransaction  # noqa
+from app.models.sales_channel import SalesChannel  # noqa
+from app.models.sale import Sale  # noqa
+from app.models.sale_item import SaleItem  # noqa
 
 config = context.config
 if config.config_file_name is not None:
