@@ -6,6 +6,7 @@ const icons: Record<string, typeof Package> = {
   materials: Layers,
   rates: Calculator,
   customers: Users,
+  products: Package,
   settings: Settings,
   default: Inbox,
 };

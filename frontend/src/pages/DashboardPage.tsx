@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
-import type { DashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint } from '@/types';
+import type { DashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
 
@@ -45,6 +46,11 @@ export default function DashboardPage() {
     queryFn: () => api.get('/dashboard/charts/profit-margins').then((r) => r.data),
   });
 
+  const { data: alerts } = useQuery<InventoryAlert[]>({
+    queryKey: ['inventory', 'alerts'],
+    queryFn: () => api.get('/inventory/alerts').then((r) => r.data),
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -73,6 +79,31 @@ export default function DashboardPage() {
         <StatCard icon={Award} label="Top Material" value={data.top_material || 'N/A'}
           sub={`Avg profit/piece: ${formatCurrency(data.avg_profit_per_piece)}`} />
       </div>
+
+      {/* Inventory Alerts */}
+      {alerts && alerts.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <h3 className="font-semibold text-amber-800 dark:text-amber-300">Low Stock Alerts</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {alerts.map((a) => (
+              <Link
+                key={`${a.type}-${a.id}`}
+                to={a.type === 'product' ? `/products/${a.id}` : '/materials'}
+                className="flex items-center justify-between bg-white/60 dark:bg-white/5 rounded-md px-3 py-2 text-sm hover:bg-white/80 dark:hover:bg-white/10 transition-colors"
+              >
+                <div>
+                  <p className="font-medium">{a.name}</p>
+                  <p className="text-xs text-muted-foreground">{a.type === 'product' ? a.sku : 'Material'}</p>
+                </div>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">{a.current_stock}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Over Time */}

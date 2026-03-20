@@ -30,6 +30,7 @@ class JobCreate(BaseModel):
     design_time_hrs: Decimal | None = Field(Decimal(0), ge=0, examples=[0.5])
     shipping_cost: Decimal = Field(Decimal(0), ge=0, examples=[0])
     target_margin_pct: Decimal = Field(Decimal(40), ge=0, le=99, examples=[40])
+    product_id: uuid.UUID | None = None
     status: JobStatus = Field(JobStatus.completed, examples=["completed"])
 
 
@@ -48,6 +49,7 @@ class JobUpdate(BaseModel):
     design_time_hrs: Decimal | None = Field(None, ge=0)
     shipping_cost: Decimal | None = Field(None, ge=0)
     target_margin_pct: Decimal | None = Field(None, ge=0, le=99)
+    product_id: uuid.UUID | None = None
     status: JobStatus | None = None
 
 
@@ -117,6 +119,8 @@ class JobResponse(BaseModel):
     platform_fees: Decimal
     net_profit: Decimal
     profit_per_piece: Decimal
+    product_id: uuid.UUID | None = None
+    inventory_added: bool = False
     status: str
     created_at: datetime.datetime | None = None
     updated_at: datetime.datetime | None = None

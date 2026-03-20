@@ -4,7 +4,33 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
-import type { Material, Job, CalculateResponse } from '@/types';
+import type { Material, Job, CalculateResponse, PaginatedProducts, Product } from '@/types';
+
+interface FieldProps {
+  label: string;
+  field: string;
+  type?: string;
+  value: string | number;
+  error?: string;
+  onChange: (field: string, value: string | number) => void;
+  [k: string]: any;
+}
+
+function Field({ label, field, type = 'text', value, error, onChange, ...rest }: FieldProps) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1.5">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(field, type === 'number' ? Number(e.target.value) : e.target.value)}
+        className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${error ? 'border-destructive' : 'border-input'}`}
+        {...rest}
+      />
+      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
 
 export default function JobFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +41,11 @@ export default function JobFormPage() {
   const { data: materials } = useQuery<Material[]>({
     queryKey: ['materials', 'active'],
     queryFn: () => api.get('/materials?active=true').then((r) => r.data),
+  });
+
+  const { data: productsData } = useQuery<PaginatedProducts>({
+    queryKey: ['products', 'active'],
+    queryFn: () => api.get('/products?is_active=true&limit=100').then((r) => r.data),
   });
 
   const { data: existingJob } = useQuery<Job>({
@@ -37,6 +68,7 @@ export default function JobFormPage() {
     design_time_hrs: 0,
     shipping_cost: 0,
     target_margin_pct: 40,
+    product_id: '',
     status: 'completed',
   });
 
@@ -60,6 +92,7 @@ export default function JobFormPage() {
         design_time_hrs: existingJob.design_time_hrs || 0,
         shipping_cost: existingJob.shipping_cost,
         target_margin_pct: existingJob.target_margin_pct,
+        product_id: existingJob.product_id || '',
         status: existingJob.status,
       });
     }
@@ -119,6 +152,7 @@ export default function JobFormPage() {
         ...form,
         customer_name: form.customer_name || null,
         design_time_hrs: form.design_time_hrs || 0,
+        product_id: form.product_id || null,
       };
       if (isEdit) {
         await api.put(`/jobs/${id}`, payload);
@@ -138,20 +172,6 @@ export default function JobFormPage() {
     }
   };
 
-  const Field = ({ label, field, type = 'text', ...rest }: { label: string; field: string; type?: string; [k: string]: any }) => (
-    <div>
-      <label className="block text-sm font-medium mb-1.5">{label}</label>
-      <input
-        type={type}
-        value={(form as any)[field]}
-        onChange={(e) => update(field, type === 'number' ? Number(e.target.value) : e.target.value)}
-        className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${errors[field] ? 'border-destructive' : 'border-input'}`}
-        {...rest}
-      />
-      {errors[field] && <p className="text-destructive text-xs mt-1">{errors[field]}</p>}
-    </div>
-  );
-
   return (
     <div className="max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">{isEdit ? 'Edit Job' : 'New Job'}</h1>
@@ -162,10 +182,10 @@ export default function JobFormPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Job Info</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Job Number" field="job_number" placeholder="2026.3.4.001" />
-              <Field label="Date" field="date" type="date" />
-              <Field label="Customer" field="customer_name" placeholder="Optional" />
-              <Field label="Product Name" field="product_name" placeholder="Phone Stand" />
+              <Field label="Job Number" field="job_number" value={form.job_number} error={errors.job_number} onChange={update} placeholder="2026.3.4.001" />
+              <Field label="Date" field="date" type="date" value={form.date} error={errors.date} onChange={update} />
+              <Field label="Customer" field="customer_name" value={form.customer_name} error={errors.customer_name} onChange={update} placeholder="Optional" />
+              <Field label="Product Name" field="product_name" value={form.product_name} error={errors.product_name} onChange={update} placeholder="Phone Stand" />
               <div>
                 <label className="block text-sm font-medium mb-1.5">Status</label>
                 <select
@@ -178,6 +198,22 @@ export default function JobFormPage() {
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Link to Product (optional)</label>
+                <select
+                  value={form.product_id}
+                  onChange={(e) => update('product_id', e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">None</option>
+                  {productsData?.items?.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                  ))}
+                </select>
+                {form.product_id && form.status === 'completed' && (
+                  <p className="text-xs text-muted-foreground mt-1">Inventory will be auto-updated when job is completed</p>
+                )}
               </div>
             </div>
           </div>
@@ -200,10 +236,10 @@ export default function JobFormPage() {
                 </select>
                 {errors.material_id && <p className="text-destructive text-xs mt-1">{errors.material_id}</p>}
               </div>
-              <Field label="Qty per Plate" field="qty_per_plate" type="number" min={1} />
-              <Field label="Number of Plates" field="num_plates" type="number" min={1} />
-              <Field label="Material per Plate (g)" field="material_per_plate_g" type="number" min={0} step="0.01" />
-              <Field label="Print Time per Plate (hrs)" field="print_time_per_plate_hrs" type="number" min={0} step="0.01" />
+              <Field label="Qty per Plate" field="qty_per_plate" type="number" value={form.qty_per_plate} error={errors.qty_per_plate} onChange={update} min={1} />
+              <Field label="Number of Plates" field="num_plates" type="number" value={form.num_plates} error={errors.num_plates} onChange={update} min={1} />
+              <Field label="Material per Plate (g)" field="material_per_plate_g" type="number" value={form.material_per_plate_g} error={errors.material_per_plate_g} onChange={update} min={0} step="0.01" />
+              <Field label="Print Time per Plate (hrs)" field="print_time_per_plate_hrs" type="number" value={form.print_time_per_plate_hrs} error={errors.print_time_per_plate_hrs} onChange={update} min={0} step="0.01" />
             </div>
           </div>
 
@@ -211,9 +247,9 @@ export default function JobFormPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Labor & Additional Costs</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Labor Time (mins)" field="labor_mins" type="number" min={0} />
-              <Field label="Design Time (hrs)" field="design_time_hrs" type="number" min={0} step="0.01" />
-              <Field label="Shipping Cost ($)" field="shipping_cost" type="number" min={0} step="0.01" />
+              <Field label="Labor Time (mins)" field="labor_mins" type="number" value={form.labor_mins} error={errors.labor_mins} onChange={update} min={0} />
+              <Field label="Design Time (hrs)" field="design_time_hrs" type="number" value={form.design_time_hrs} error={errors.design_time_hrs} onChange={update} min={0} step="0.01" />
+              <Field label="Shipping Cost ($)" field="shipping_cost" type="number" value={form.shipping_cost} error={errors.shipping_cost} onChange={update} min={0} step="0.01" />
               <div>
                 <label className="block text-sm font-medium mb-1.5">Target Margin: {form.target_margin_pct}%</label>
                 <input

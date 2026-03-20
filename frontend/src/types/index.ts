@@ -13,6 +13,8 @@ export interface Material {
   net_usable_g: number;
   cost_per_g: number;
   notes: string | null;
+  spools_in_stock: number;
+  reorder_point: number;
   active: boolean;
 }
 
@@ -67,6 +69,8 @@ export interface Job {
   platform_fees: number;
   net_profit: number;
   profit_per_piece: number;
+  product_id: string | null;
+  inventory_added: boolean;
   status: string;
 }
 
@@ -132,4 +136,55 @@ export interface User {
   email: string;
   full_name: string;
   role: string;
+}
+
+export interface Product {
+  id: string;
+  sku: string;
+  upc: string | null;
+  name: string;
+  description: string | null;
+  material_id: string;
+  unit_cost: number;
+  unit_price: number;
+  stock_qty: number;
+  reorder_point: number;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PaginatedProducts {
+  items: Product[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  product_id: string;
+  job_id: string | null;
+  type: string;
+  quantity: number;
+  unit_cost: number;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string | null;
+}
+
+export interface PaginatedTransactions {
+  items: InventoryTransaction[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface InventoryAlert {
+  type: string;
+  id: string;
+  name: string;
+  sku: string | null;
+  current_stock: number;
+  reorder_point: number;
 }

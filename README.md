@@ -89,18 +89,22 @@ All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 | **Rates** | Full CRUD at `/rates` | `?active`, pagination |
 | **Customers** | Full CRUD at `/customers` | `?search` (name/email), pagination |
 | **Jobs** | Full CRUD at `/jobs`, `POST /jobs/calculate` | `?status`, `?material_id`, `?customer_id`, `?date_from`, `?date_to`, `?search`, `?sort_by`, `?sort_dir`, pagination |
+| **Products** | Full CRUD at `/products` | `?is_active`, `?material_id`, `?low_stock`, `?search`, pagination |
+| **Inventory** | `GET/POST /inventory/transactions`, `GET /inventory/alerts` | `?product_id`, `?type`, pagination |
 | **Dashboard** | `GET /dashboard/summary`, `/charts/revenue`, `/charts/materials`, `/charts/profit-margins` | `?date_from`, `?date_to` |
 
 ## Database
 
-Six tables seeded from the original spreadsheet:
+Eight tables (6 seeded from the original spreadsheet + 2 for inventory):
 
 - **settings** — Business configuration (currency, margins, fees, electricity rates)
-- **materials** — Filament inventory (PLA, PETG, TPU, ABS, PLA+) with cost-per-gram
+- **materials** — Filament inventory (PLA, PETG, TPU, ABS, PLA+) with cost-per-gram, spool stock tracking
 - **rates** — Labor rate ($25/hr), machine rate ($1.50/hr), overhead (10%)
 - **customers** — Customer contact information
-- **jobs** — Full job tracking with 17 computed cost/pricing fields
+- **jobs** — Full job tracking with 17 computed cost/pricing fields, optional product link
 - **users** — Admin authentication
+- **products** — Product catalog with auto-generated SKU, optional UPC, stock tracking, reorder points
+- **inventory_transactions** — Stock movement ledger (production, sale, adjustment, return, waste)
 
 ## Cost Calculation Engine
 
@@ -135,11 +139,13 @@ Profit      = revenue - costs - platform_fees
 
 ### Pages
 
-- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar)
+- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
+- **Products** — Product catalog with CRUD modal, SKU/UPC, stock tracking, reorder alerts, search, pagination
+- **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Editable business settings with bulk save, grouped by category
 - **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
@@ -149,7 +155,7 @@ Profit      = revenue - costs - platform_fees
 ## Testing
 
 ```bash
-# Run all backend tests (71 tests)
+# Run all backend tests (87 tests)
 cd backend
 pip install -r requirements.txt
 python -m pytest tests/ -v
@@ -162,6 +168,8 @@ python -m pytest tests/ -v
 #   test_api_rates.py         - Rates CRUD + auth guard (6 tests)
 #   test_api_customers.py     - Customers CRUD + auth guard (8 tests)
 #   test_api_jobs.py          - Jobs CRUD + auth guard + filtering (11 tests)
+#   test_api_products.py       - Products CRUD + SKU generation (9 tests)
+#   test_api_inventory.py      - Inventory transactions + alerts + auto-stock (7 tests)
 #   test_api_dashboard.py     - Dashboard aggregation + date filtering (6 tests)
 ```
 
@@ -208,3 +216,6 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 - [x] **Phase 5** — All pages: dashboard charts, job CRUD with live preview, materials/rates/customers CRUD, calculator
 - [x] **Phase 6** — Admin section: sidebar layout, editable settings, user management, CSV export
 - [x] **Phase 7** — Polish: skeleton loaders, empty states, error boundary, responsive tables, form validation, rate limiting, production Docker
+- [x] **Phase 8** — Inventory: product catalog with SKU/UPC, stock tracking, transaction ledger, auto-stock from jobs, low-stock alerts, 87 tests
+- [ ] **Phase 9** — Sales tracking: sales channels, orders, line items, metrics, refund flow
+- [ ] **Phase 10** — Reports: inventory reports, sales reports, P&L, CSV export, charts

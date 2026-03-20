@@ -12,6 +12,8 @@ import JobFormPage from '@/pages/JobFormPage';
 import MaterialsPage from '@/pages/MaterialsPage';
 import RatesPage from '@/pages/RatesPage';
 import CustomersPage from '@/pages/CustomersPage';
+import ProductsPage from '@/pages/ProductsPage';
+import ProductDetailPage from '@/pages/ProductDetailPage';
 import CalculatorPage from '@/pages/CalculatorPage';
 import LoginPage from '@/pages/LoginPage';
 import SettingsPage from '@/pages/admin/SettingsPage';
@@ -43,6 +45,8 @@ export default function App() {
               <Route path="/jobs/new" element={<JobFormPage />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/jobs/:id/edit" element={<JobFormPage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/products/:id" element={<ProductDetailPage />} />
               <Route path="/materials" element={<MaterialsPage />} />
               <Route path="/rates" element={<RatesPage />} />
               <Route path="/customers" element={<CustomersPage />} />

@@ -8,7 +8,7 @@ import { SkeletonTable } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import type { Material } from '@/types';
 
-const emptyForm = { name: '', brand: '', spool_weight_g: 1000, spool_price: 20, net_usable_g: 950, notes: '' };
+const emptyForm = { name: '', brand: '', spool_weight_g: 1000, spool_price: 20, net_usable_g: 950, notes: '', spools_in_stock: 0, reorder_point: 2 };
 
 export default function MaterialsPage() {
   const queryClient = useQueryClient();
@@ -24,7 +24,7 @@ export default function MaterialsPage() {
 
   const openNew = () => { setForm(emptyForm); setFormErrors({}); setEditing('new'); };
   const openEdit = (m: Material) => {
-    setForm({ name: m.name, brand: m.brand, spool_weight_g: m.spool_weight_g, spool_price: m.spool_price, net_usable_g: m.net_usable_g, notes: m.notes || '' });
+    setForm({ name: m.name, brand: m.brand, spool_weight_g: m.spool_weight_g, spool_price: m.spool_price, net_usable_g: m.net_usable_g, notes: m.notes || '', spools_in_stock: m.spools_in_stock, reorder_point: m.reorder_point });
     setFormErrors({});
     setEditing(m.id);
   };
@@ -121,6 +121,16 @@ export default function MaterialsPage() {
                   {formErrors.net_usable_g && <p className="text-destructive text-xs mt-1">{formErrors.net_usable_g}</p>}
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Spools in Stock</label>
+                  <input type="number" min="0" value={form.spools_in_stock} onChange={(e) => setForm({ ...form, spools_in_stock: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Reorder Point</label>
+                  <input type="number" min="0" value={form.reorder_point} onChange={(e) => setForm({ ...form, reorder_point: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+              </div>
               <div><label className="block text-sm font-medium mb-1">Notes</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
               {form.net_usable_g > 0 && (
                 <p className="text-sm text-muted-foreground">Cost/g: ${(form.spool_price / form.net_usable_g).toFixed(4)}</p>
@@ -160,6 +170,7 @@ export default function MaterialsPage() {
                   <th className="px-4 py-3 font-medium text-right">Price</th>
                   <th className="px-4 py-3 font-medium text-right">Usable (g)</th>
                   <th className="px-4 py-3 font-medium text-right">Cost/g</th>
+                  <th className="px-4 py-3 font-medium text-right">Spools</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
@@ -173,6 +184,7 @@ export default function MaterialsPage() {
                     <td className="px-4 py-3 text-right">{formatCurrency(m.spool_price)}</td>
                     <td className="px-4 py-3 text-right">{m.net_usable_g}</td>
                     <td className="px-4 py-3 text-right">${Number(m.cost_per_g).toFixed(4)}</td>
+                    <td className={`px-4 py-3 text-right ${m.spools_in_stock <= m.reorder_point ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}`}>{m.spools_in_stock}</td>
                     <td className="px-4 py-3">
                       <button onClick={() => toggleActive(m)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${m.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
                         {m.active ? 'Active' : 'Inactive'}
