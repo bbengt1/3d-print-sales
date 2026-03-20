@@ -637,18 +637,20 @@ Base URL: `/api/v1`
 
 **Phase 9 Notes:** Three new database tables: `sales_channels` (Etsy, Amazon Handmade, Direct Sale, Craft Fair with per-channel platform fee percentage and fixed fee), `sales` (order tracking with auto-generated sale number S-YYYY-NNNN, status flow pending/paid/shipped/delivered/refunded/cancelled, customer, channel, payment method, tracking number, computed subtotal/platform_fees/total/net_revenue), and `sale_items` (line items linking to products/jobs with quantity, unit price, unit cost, line total). Sales service handles: sale number generation, total computation with platform fee deduction from channel config, inventory deduction on sale creation, inventory restoration on refund. Sales channels seeded with Etsy (6.5% + $0.20), Amazon Handmade (15%), Direct Sale (0%), Craft Fair (0%). Sales metrics endpoint provides total_sales, total_revenue, total_cost, total_profit, total_units_sold, avg_order_value, refund_count, refund_rate, and revenue_by_channel breakdown. Frontend: Sales list page with search, status/channel filters, pagination; Sale detail page with line items table, financial summary (subtotal, shipping, tax, platform fees, net revenue), status management, refund action; New sale form with customer autocomplete, channel select, product-linked line items with auto-fill pricing, shipping/tax inputs, live total preview; Sales channels management page with CRUD modal; Dashboard enhanced with sales overview section (order count, revenue, profit, AOV cards) and revenue-by-channel bar chart. 16 backend tests covering channel CRUD, sale CRUD, filtering, refunds, inventory deduction, and metrics.
 
-### Phase 10: Reports
-1. Inventory reports: stock levels with valuation, turnover rate, material usage, dead stock
-2. Sales reports: revenue over time with period comparison, by product/channel/customer
-3. Profit & Loss report combining all data
-4. Report generation service with date range and period grouping
-5. CSV export for all reports
-6. Reports section with sub-navigation (Inventory, Sales, P&L)
-7. Shared report controls (date picker, period toggle, export button)
-8. Inventory reports page with stock table, turnover chart, material usage chart
-9. Sales reports page with revenue chart, product ranking, channel breakdown
-10. P&L page with summary cards and trend chart
-11. Backend tests (~10 tests)
+### Phase 10: Reports - COMPLETED
+1. ~~Inventory reports: stock levels with valuation, turnover rate, material usage, dead stock~~
+2. ~~Sales reports: revenue over time with period comparison, by product/channel/customer~~
+3. ~~Profit & Loss report combining all data~~
+4. ~~Report generation service with date range and period grouping~~
+5. ~~CSV export for all reports~~
+6. ~~Reports section with sub-navigation (Inventory, Sales, P&L)~~
+7. ~~Shared report controls (date picker, period toggle, export button)~~
+8. ~~Inventory reports page with stock table, turnover chart, material usage chart~~
+9. ~~Sales reports page with revenue chart, product ranking, channel breakdown~~
+10. ~~P&L page with summary cards and trend chart~~
+11. ~~Backend tests (11 tests)~~
+
+**Phase 10 Notes:** Report generation service with date range filtering and configurable period grouping (daily, weekly, monthly, yearly). Three report types: (1) Inventory Report — stock levels with valuation, low-stock detection, material usage from jobs, and inventory turnover rates calculated from sales vs stock; (2) Sales Report — revenue/cost/profit over time by period, top products ranked by revenue, and channel breakdown with platform fees and net revenue; (3) Profit & Loss — combines job production revenue with sales revenue, itemizes costs by category (materials, labor, machine, overhead, platform fees, shipping), calculates gross profit and profit margin percentage. All reports support CSV export via StreamingResponse. Frontend features a Reports section at /reports with tab-based sub-navigation (Inventory, Sales, P&L), shared ReportControls component (date range pickers, period selector, CSV export button), Recharts visualizations (bar charts for turnover/P&L trends, pie charts for material usage, line charts for revenue over time), and detailed data tables with color-coded profit/loss values. 11 backend tests covering all three report types, CSV export, date filtering, and period grouping.
 
 ---
 

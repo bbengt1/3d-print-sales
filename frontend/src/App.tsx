@@ -19,6 +19,10 @@ import SaleDetailPage from '@/pages/SaleDetailPage';
 import SaleFormPage from '@/pages/SaleFormPage';
 import SalesChannelsPage from '@/pages/SalesChannelsPage';
 import CalculatorPage from '@/pages/CalculatorPage';
+import ReportsLayout from '@/pages/reports/ReportsLayout';
+import InventoryReportPage from '@/pages/reports/InventoryReportPage';
+import SalesReportPage from '@/pages/reports/SalesReportPage';
+import PLReportPage from '@/pages/reports/PLReportPage';
 import LoginPage from '@/pages/LoginPage';
 import SettingsPage from '@/pages/admin/SettingsPage';
 import UsersPage from '@/pages/admin/UsersPage';
@@ -59,6 +63,14 @@ export default function App() {
               <Route path="/rates" element={<RatesPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/calculator" element={<CalculatorPage />} />
+
+              {/* Reports section with sub-navigation */}
+              <Route path="/reports" element={<ReportsLayout />}>
+                <Route index element={<Navigate to="/reports/inventory" replace />} />
+                <Route path="inventory" element={<InventoryReportPage />} />
+                <Route path="sales" element={<SalesReportPage />} />
+                <Route path="pl" element={<PLReportPage />} />
+              </Route>
 
               {/* Admin section with sidebar */}
               <Route path="/admin" element={<AdminLayout />}>
