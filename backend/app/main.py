@@ -43,6 +43,10 @@ OPENAPI_TAGS = [
         "description": "Inventory transactions, stock adjustments, and low-stock alerts.",
     },
     {
+        "name": "Sales",
+        "description": "Sales tracking with line items, channels, fees, refunds, and revenue metrics.",
+    },
+    {
         "name": "Dashboard",
         "description": "Aggregated business metrics and chart data for the admin dashboard.",
     },

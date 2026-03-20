@@ -619,22 +619,23 @@ Base URL: `/api/v1`
 
 **Phase 8 Notes:** Two new database tables: `products` (finished product catalog with SKU, UPC, stock tracking, pricing, reorder point) and `inventory_transactions` (stock movement ledger with types: production, sale, adjustment, return, waste). Extended `materials` with spools_in_stock and reorder_point for filament inventory tracking. Extended `jobs` with product_id FK and inventory_added boolean for auto-stock integration. SKU auto-generation follows PRD-{MATERIAL_CODE}-{NNNN} format (e.g., PRD-PLA-0001). Inventory service handles stock adjustments with rolling average unit cost calculation. When a job is created/updated to "completed" status and linked to a product, a production transaction is auto-created and product stock is incremented. Low-stock alerts endpoint returns both products and materials below their reorder points. Frontend Products page follows existing CRUD modal pattern with search, pagination, active/inactive toggle, and low-stock warning indicators. Product detail page shows full transaction history with color-coded transaction types and manual stock adjustment modal. Dashboard enhanced with low-stock alerts panel linking to affected products/materials. Job form enhanced with product dropdown and inventory auto-add hint. Materials page updated with spool stock column and edit fields.
 
-### Phase 9: Sales Tracking
-1. Create `sales_channels` table with per-channel fee configuration
-2. Create `sales` table with sale_number auto-generation, status flow, payment tracking
-3. Create `sale_items` table linking to products/jobs
-4. Sales channel CRUD endpoints
-5. Sales CRUD endpoints with auto-computation (fees, totals, net revenue)
-6. Sale creation auto-deducts inventory
-7. Refund flow with inventory restoration
-8. Sales metrics endpoint (revenue, units, AOV, refund rate, by-channel)
-9. Sales page with filters and pagination
-10. Sale detail page with line items and P&L
-11. New sale form with product/job line items
-12. Sales channels management page
-13. Dashboard sales metrics and charts
-14. Customer detail purchase history
-15. Backend tests (~15 tests)
+### Phase 9: Sales Tracking - COMPLETED
+1. ~~Create `sales_channels` table with per-channel fee configuration~~
+2. ~~Create `sales` table with sale_number auto-generation, status flow, payment tracking~~
+3. ~~Create `sale_items` table linking to products/jobs~~
+4. ~~Sales channel CRUD endpoints~~
+5. ~~Sales CRUD endpoints with auto-computation (fees, totals, net revenue)~~
+6. ~~Sale creation auto-deducts inventory~~
+7. ~~Refund flow with inventory restoration~~
+8. ~~Sales metrics endpoint (revenue, units, AOV, refund rate, by-channel)~~
+9. ~~Sales page with filters and pagination~~
+10. ~~Sale detail page with line items and P&L~~
+11. ~~New sale form with product/job line items~~
+12. ~~Sales channels management page~~
+13. ~~Dashboard sales metrics and charts~~
+14. ~~Backend tests (16 tests)~~
+
+**Phase 9 Notes:** Three new database tables: `sales_channels` (Etsy, Amazon Handmade, Direct Sale, Craft Fair with per-channel platform fee percentage and fixed fee), `sales` (order tracking with auto-generated sale number S-YYYY-NNNN, status flow pending/paid/shipped/delivered/refunded/cancelled, customer, channel, payment method, tracking number, computed subtotal/platform_fees/total/net_revenue), and `sale_items` (line items linking to products/jobs with quantity, unit price, unit cost, line total). Sales service handles: sale number generation, total computation with platform fee deduction from channel config, inventory deduction on sale creation, inventory restoration on refund. Sales channels seeded with Etsy (6.5% + $0.20), Amazon Handmade (15%), Direct Sale (0%), Craft Fair (0%). Sales metrics endpoint provides total_sales, total_revenue, total_cost, total_profit, total_units_sold, avg_order_value, refund_count, refund_rate, and revenue_by_channel breakdown. Frontend: Sales list page with search, status/channel filters, pagination; Sale detail page with line items table, financial summary (subtotal, shipping, tax, platform fees, net revenue), status management, refund action; New sale form with customer autocomplete, channel select, product-linked line items with auto-fill pricing, shipping/tax inputs, live total preview; Sales channels management page with CRUD modal; Dashboard enhanced with sales overview section (order count, revenue, profit, AOV cards) and revenue-by-channel bar chart. 16 backend tests covering channel CRUD, sale CRUD, filtering, refunds, inventory deduction, and metrics.
 
 ### Phase 10: Reports
 1. Inventory reports: stock levels with valuation, turnover rate, material usage, dead stock

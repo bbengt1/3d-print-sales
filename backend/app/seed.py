@@ -7,6 +7,7 @@ from app.core.database import async_session
 from app.core.security import hash_password
 from app.models.material import Material
 from app.models.rate import Rate
+from app.models.sales_channel import SalesChannel
 from app.models.setting import Setting
 from app.models.user import User
 
@@ -67,6 +68,19 @@ async def run_seed():
         if not result.scalar_one_or_none():
             for name, value, unit, notes in RATES_DATA:
                 db.add(Rate(name=name, value=value, unit=unit, notes=notes))
+            await db.commit()
+
+        # Seed sales channels
+        result = await db.execute(select(SalesChannel).limit(1))
+        if not result.scalar_one_or_none():
+            channels = [
+                SalesChannel(name="Etsy", platform_fee_pct=Decimal("6.5"), fixed_fee=Decimal("0.20")),
+                SalesChannel(name="Amazon Handmade", platform_fee_pct=Decimal("15"), fixed_fee=Decimal("0")),
+                SalesChannel(name="Direct Sale", platform_fee_pct=Decimal("0"), fixed_fee=Decimal("0")),
+                SalesChannel(name="Craft Fair", platform_fee_pct=Decimal("0"), fixed_fee=Decimal("0")),
+            ]
+            for ch in channels:
+                db.add(ch)
             await db.commit()
 
         # Seed admin user

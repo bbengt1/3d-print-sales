@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award, AlertTriangle } from 'lucide-react';
+import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award, AlertTriangle, ShoppingCart } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
-import type { DashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert } from '@/types';
+import type { DashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert, SalesMetrics } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
 
@@ -49,6 +49,11 @@ export default function DashboardPage() {
   const { data: alerts } = useQuery<InventoryAlert[]>({
     queryKey: ['inventory', 'alerts'],
     queryFn: () => api.get('/inventory/alerts').then((r) => r.data),
+  });
+
+  const { data: salesMetrics } = useQuery<SalesMetrics>({
+    queryKey: ['sales', 'metrics'],
+    queryFn: () => api.get('/sales/metrics').then((r) => r.data),
   });
 
   if (isLoading) {
@@ -102,6 +107,34 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Sales Metrics */}
+      {salesMetrics && salesMetrics.total_sales > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Sales Overview</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard icon={ShoppingCart} label="Total Orders" value={String(salesMetrics.total_sales)} />
+            <StatCard icon={DollarSign} label="Sales Revenue" value={formatCurrency(salesMetrics.total_revenue)} />
+            <StatCard icon={TrendingUp} label="Sales Profit" value={formatCurrency(salesMetrics.total_profit)} />
+            <StatCard icon={BarChart3} label="Avg Order Value" value={formatCurrency(salesMetrics.avg_order_value)}
+              sub={salesMetrics.refund_count > 0 ? `${salesMetrics.refund_count} refund(s)` : undefined} />
+          </div>
+          {salesMetrics.revenue_by_channel.length > 1 && (
+            <div className="mt-4 bg-card border border-border rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4">Revenue by Channel</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={salesMetrics.revenue_by_channel}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="channel_name" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                  <Bar dataKey="revenue" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 
