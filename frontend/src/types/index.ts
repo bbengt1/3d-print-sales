@@ -270,3 +270,93 @@ export interface SalesMetrics {
     order_count: number;
   }[];
 }
+
+// ── Reports ──────────────────────────────────────────────────────
+
+export interface StockLevelRow {
+  product_id: string;
+  sku: string;
+  name: string;
+  stock_qty: number;
+  unit_cost: number;
+  stock_value: number;
+  reorder_point: number;
+  is_low_stock: boolean;
+}
+
+export interface InventoryReport {
+  stock_levels: StockLevelRow[];
+  total_stock_value: number;
+  total_products: number;
+  low_stock_count: number;
+  material_usage: { material: string; total_consumed_g: number; spool_cost: number }[];
+  turnover: { product: string; sku: string; sold_qty: number; stock_qty: number; turnover_rate: number }[];
+}
+
+export interface SalesReportRow {
+  period: string;
+  order_count: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+}
+
+export interface ProductRanking {
+  product_id: string | null;
+  description: string;
+  units_sold: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+}
+
+export interface ChannelBreakdown {
+  channel_name: string;
+  order_count: number;
+  revenue: number;
+  platform_fees: number;
+  net_revenue: number;
+}
+
+export interface SalesReport {
+  period_data: SalesReportRow[];
+  top_products: ProductRanking[];
+  channel_breakdown: ChannelBreakdown[];
+  total_orders: number;
+  total_revenue: number;
+  total_cost: number;
+  total_profit: number;
+}
+
+export interface PLRow {
+  period: string;
+  production_revenue: number;
+  sales_revenue: number;
+  material_costs: number;
+  labor_costs: number;
+  machine_costs: number;
+  overhead_costs: number;
+  platform_fees: number;
+  shipping_costs: number;
+  gross_profit: number;
+}
+
+export interface PLSummary {
+  production_revenue: number;
+  sales_revenue: number;
+  total_revenue: number;
+  material_costs: number;
+  labor_costs: number;
+  machine_costs: number;
+  overhead_costs: number;
+  platform_fees: number;
+  shipping_costs: number;
+  total_costs: number;
+  gross_profit: number;
+  profit_margin_pct: number;
+}
+
+export interface PLReport {
+  summary: PLSummary;
+  period_data: PLRow[];
+}

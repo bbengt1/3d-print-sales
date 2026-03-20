@@ -47,6 +47,10 @@ OPENAPI_TAGS = [
         "description": "Sales tracking with line items, channels, fees, refunds, and revenue metrics.",
     },
     {
+        "name": "Reports",
+        "description": "Inventory, sales, and P&L reports with CSV export.",
+    },
+    {
         "name": "Dashboard",
         "description": "Aggregated business metrics and chart data for the admin dashboard.",
     },

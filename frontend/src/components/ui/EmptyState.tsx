@@ -1,4 +1,4 @@
-import { Package, Inbox, FileText, Users, Calculator, Settings, Layers, ShoppingCart } from 'lucide-react';
+import { Package, Inbox, FileText, Users, Calculator, Settings, Layers, ShoppingCart, BarChart3 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const icons: Record<string, typeof Package> = {
@@ -8,6 +8,7 @@ const icons: Record<string, typeof Package> = {
   customers: Users,
   products: Package,
   sales: ShoppingCart,
+  reports: BarChart3,
   settings: Settings,
   default: Inbox,
 };

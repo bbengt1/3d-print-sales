@@ -54,7 +54,7 @@ Password: admin123
 │   │   ├── middleware/     # Rate limiting
 │   │   ├── models/        # SQLAlchemy models (11 tables)
 │   │   ├── schemas/       # Pydantic schemas
-│   │   ├── services/      # Cost calculation, inventory, sales engines
+│   │   ├── services/      # Cost calculation, inventory, sales, report engines
 │   │   ├── seed.py        # Database seed data
 │   │   └── main.py        # App entry point
 │   ├── alembic/           # Database migrations
@@ -93,6 +93,7 @@ All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 | **Inventory** | `GET/POST /inventory/transactions`, `GET /inventory/alerts` | `?product_id`, `?type`, pagination |
 | **Sales Channels** | Full CRUD at `/sales/channels` | `?is_active` |
 | **Sales** | Full CRUD at `/sales`, `GET /sales/metrics`, `POST /sales/{id}/refund` | `?status`, `?channel_id`, `?customer_id`, `?date_from`, `?date_to`, `?search`, pagination |
+| **Reports** | `GET /reports/inventory`, `/reports/sales`, `/reports/pl` + CSV variants | `?date_from`, `?date_to`, `?period` (daily/weekly/monthly/yearly) |
 | **Dashboard** | `GET /dashboard/summary`, `/charts/revenue`, `/charts/materials`, `/charts/profit-margins` | `?date_from`, `?date_to` |
 
 ## Database
@@ -154,6 +155,10 @@ Profit      = revenue - costs - platform_fees
 - **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, financial summary, status management, refund
 - **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
 - **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
+- **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export
+  - **Inventory Report** — Stock levels table with valuation, low-stock highlighting, turnover rate chart, material usage pie chart
+  - **Sales Report** — Revenue/profit trend chart, top products ranking, channel breakdown with fees and net revenue
+  - **Profit & Loss** — Combined P&L from production and sales, cost breakdown by category, stacked bar trend chart, period detail table
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Editable business settings with bulk save, grouped by category
 - **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
@@ -163,7 +168,7 @@ Profit      = revenue - costs - platform_fees
 ## Testing
 
 ```bash
-# Run all backend tests (103 tests)
+# Run all backend tests (114 tests)
 cd backend
 pip install -r requirements.txt
 python -m pytest tests/ -v
@@ -179,6 +184,7 @@ python -m pytest tests/ -v
 #   test_api_products.py       - Products CRUD + SKU generation (9 tests)
 #   test_api_inventory.py      - Inventory transactions + alerts + auto-stock (7 tests)
 #   test_api_sales.py          - Sales + channels CRUD, refunds, inventory, metrics (16 tests)
+#   test_api_reports.py        - Inventory, sales, P&L reports + CSV + filtering (11 tests)
 #   test_api_dashboard.py     - Dashboard aggregation + date filtering (6 tests)
 ```
 
@@ -227,4 +233,4 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 - [x] **Phase 7** — Polish: skeleton loaders, empty states, error boundary, responsive tables, form validation, rate limiting, production Docker
 - [x] **Phase 8** — Inventory: product catalog with SKU/UPC, stock tracking, transaction ledger, auto-stock from jobs, low-stock alerts, 87 tests
 - [x] **Phase 9** — Sales tracking: sales channels, orders with line items, platform fee computation, inventory deduction, refund flow, sales metrics, 103 tests
-- [ ] **Phase 10** — Reports: inventory reports, sales reports, P&L, CSV export, charts
+- [x] **Phase 10** — Reports: inventory/sales/P&L reports with date range filtering, period grouping, CSV export, charts, 114 tests
