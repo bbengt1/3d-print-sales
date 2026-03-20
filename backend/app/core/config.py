@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "3D Print Sales API"
     VERSION: str = "1.0.0"
     API_V1_PREFIX: str = "/api/v1"
+    ENVIRONMENT: str = "development"  # development | staging | production
 
     DATABASE_URL: str = "postgresql+asyncpg://printuser:printpass@db:5432/printsales"
 
@@ -19,6 +20,10 @@ class Settings(BaseSettings):
 
     ADMIN_EMAIL: str = "admin@example.com"
     ADMIN_PASSWORD: str = "admin123"
+
+    # Rate limiting
+    RATE_LIMIT_PER_MINUTE: int = 120
+    RATE_LIMIT_BURST: int = 30
 
     model_config = {"env_file": ".env", "case_sensitive": True}
 

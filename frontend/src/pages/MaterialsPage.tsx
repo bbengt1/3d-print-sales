@@ -4,6 +4,8 @@ import { Plus, Edit, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
+import { SkeletonTable } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import type { Material } from '@/types';
 
 const emptyForm = { name: '', brand: '', spool_weight_g: 1000, spool_price: 20, net_usable_g: 950, notes: '' };
@@ -18,16 +20,30 @@ export default function MaterialsPage() {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const openNew = () => { setForm(emptyForm); setEditing('new'); };
+  const openNew = () => { setForm(emptyForm); setFormErrors({}); setEditing('new'); };
   const openEdit = (m: Material) => {
     setForm({ name: m.name, brand: m.brand, spool_weight_g: m.spool_weight_g, spool_price: m.spool_price, net_usable_g: m.net_usable_g, notes: m.notes || '' });
+    setFormErrors({});
     setEditing(m.id);
   };
   const close = () => { setEditing(null); };
 
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'Name is required';
+    if (!form.brand.trim()) errs.brand = 'Brand is required';
+    if (form.spool_weight_g <= 0) errs.spool_weight_g = 'Must be > 0';
+    if (form.spool_price <= 0) errs.spool_price = 'Must be > 0';
+    if (form.net_usable_g <= 0) errs.net_usable_g = 'Must be > 0';
+    if (form.net_usable_g > form.spool_weight_g) errs.net_usable_g = 'Cannot exceed spool weight';
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const save = async () => {
-    if (!form.name || !form.brand) { toast.error('Name and brand are required'); return; }
+    if (!validate()) return;
     setSaving(true);
     try {
       if (editing === 'new') {
@@ -57,6 +73,9 @@ export default function MaterialsPage() {
     } catch { toast.error('Failed to update'); }
   };
 
+  const inputCls = (field: string) =>
+    `w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${formErrors[field] ? 'border-destructive' : 'border-input'}`;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -75,12 +94,32 @@ export default function MaterialsPage() {
               <button onClick={close} className="p-1 hover:bg-accent rounded-md"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="block text-sm font-medium mb-1">Name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-              <div><label className="block text-sm font-medium mb-1">Brand</label><input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-              <div className="grid grid-cols-3 gap-3">
-                <div><label className="block text-sm font-medium mb-1">Spool (g)</label><input type="number" value={form.spool_weight_g} onChange={(e) => setForm({ ...form, spool_weight_g: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-                <div><label className="block text-sm font-medium mb-1">Price ($)</label><input type="number" step="0.01" value={form.spool_price} onChange={(e) => setForm({ ...form, spool_price: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-                <div><label className="block text-sm font-medium mb-1">Usable (g)</label><input type="number" value={form.net_usable_g} onChange={(e) => setForm({ ...form, net_usable_g: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Name *</label>
+                <input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormErrors({ ...formErrors, name: '' }); }} className={inputCls('name')} />
+                {formErrors.name && <p className="text-destructive text-xs mt-1">{formErrors.name}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Brand *</label>
+                <input value={form.brand} onChange={(e) => { setForm({ ...form, brand: e.target.value }); setFormErrors({ ...formErrors, brand: '' }); }} className={inputCls('brand')} />
+                {formErrors.brand && <p className="text-destructive text-xs mt-1">{formErrors.brand}</p>}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Spool (g) *</label>
+                  <input type="number" value={form.spool_weight_g} onChange={(e) => setForm({ ...form, spool_weight_g: Number(e.target.value) })} className={inputCls('spool_weight_g')} />
+                  {formErrors.spool_weight_g && <p className="text-destructive text-xs mt-1">{formErrors.spool_weight_g}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Price ($) *</label>
+                  <input type="number" step="0.01" value={form.spool_price} onChange={(e) => setForm({ ...form, spool_price: Number(e.target.value) })} className={inputCls('spool_price')} />
+                  {formErrors.spool_price && <p className="text-destructive text-xs mt-1">{formErrors.spool_price}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Usable (g) *</label>
+                  <input type="number" value={form.net_usable_g} onChange={(e) => setForm({ ...form, net_usable_g: Number(e.target.value) })} className={inputCls('net_usable_g')} />
+                  {formErrors.net_usable_g && <p className="text-destructive text-xs mt-1">{formErrors.net_usable_g}</p>}
+                </div>
               </div>
               <div><label className="block text-sm font-medium mb-1">Notes</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
               {form.net_usable_g > 0 && (
@@ -96,46 +135,87 @@ export default function MaterialsPage() {
       )}
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-lg p-4 h-48 animate-pulse" />
+        <SkeletonTable rows={5} cols={7} />
+      ) : !materials?.length ? (
+        <EmptyState
+          icon="materials"
+          title="No materials yet"
+          description="Add your first filament material to start tracking costs."
+          action={
+            <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 cursor-pointer">
+              <Plus className="w-4 h-4" /> Add Material
+            </button>
+          }
+        />
       ) : (
-        <div className="overflow-x-auto bg-card border border-border rounded-lg">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Brand</th>
-                <th className="px-4 py-3 font-medium text-right">Spool (g)</th>
-                <th className="px-4 py-3 font-medium text-right">Price</th>
-                <th className="px-4 py-3 font-medium text-right">Usable (g)</th>
-                <th className="px-4 py-3 font-medium text-right">Cost/g</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {materials?.map((m) => (
-                <tr key={m.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                  <td className="px-4 py-3 font-medium">{m.name}</td>
-                  <td className="px-4 py-3">{m.brand}</td>
-                  <td className="px-4 py-3 text-right">{m.spool_weight_g}</td>
-                  <td className="px-4 py-3 text-right">{formatCurrency(m.spool_price)}</td>
-                  <td className="px-4 py-3 text-right">{m.net_usable_g}</td>
-                  <td className="px-4 py-3 text-right">${Number(m.cost_per_g).toFixed(4)}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleActive(m)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${m.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto bg-card border border-border rounded-lg">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium">Brand</th>
+                  <th className="px-4 py-3 font-medium text-right">Spool (g)</th>
+                  <th className="px-4 py-3 font-medium text-right">Price</th>
+                  <th className="px-4 py-3 font-medium text-right">Usable (g)</th>
+                  <th className="px-4 py-3 font-medium text-right">Cost/g</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materials.map((m) => (
+                  <tr key={m.id} className="border-b border-border last:border-0 hover:bg-accent/50">
+                    <td className="px-4 py-3 font-medium">{m.name}</td>
+                    <td className="px-4 py-3">{m.brand}</td>
+                    <td className="px-4 py-3 text-right">{m.spool_weight_g}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(m.spool_price)}</td>
+                    <td className="px-4 py-3 text-right">{m.net_usable_g}</td>
+                    <td className="px-4 py-3 text-right">${Number(m.cost_per_g).toFixed(4)}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => toggleActive(m)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${m.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {m.active ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => openEdit(m)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {materials.map((m) => (
+              <div key={m.id} className="bg-card border border-border rounded-lg p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-semibold">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">{m.brand}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleActive(m)} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer ${m.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
                       {m.active ? 'Active' : 'Inactive'}
                     </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => openEdit(m)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
+                    <button onClick={() => openEdit(m)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer">
                       <Edit className="w-4 h-4" />
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div><p className="text-xs text-muted-foreground">Spool</p><p>{m.spool_weight_g}g</p></div>
+                  <div><p className="text-xs text-muted-foreground">Price</p><p>{formatCurrency(m.spool_price)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Cost/g</p><p>${Number(m.cost_per_g).toFixed(4)}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

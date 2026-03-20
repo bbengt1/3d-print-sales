@@ -526,15 +526,17 @@ Base URL: `/api/v1`
 
 **Phase 6 Notes:** Built AdminLayout component with persistent sidebar navigation (Settings, Users, Data Export) and admin-only access guard (redirects non-admins to dashboard). Mobile-responsive with horizontal tab bar on small screens. Settings page converted from read-only to fully editable grouped form with bulk save via PUT /settings/bulk, dirty state tracking, and Save Changes button. User management page with full CRUD: create users with role assignment, edit name/email/role, deactivate/reactivate users, role badges (admin=purple, user=blue), "(you)" indicator for current user, self-protection (can't deactivate yourself). Data export page with CSV download for all 5 resources (jobs, materials, rates, customers, settings) with proper CSV escaping and timestamped filenames. Admin routes nested under /admin with index redirect to /admin/settings.
 
-### Phase 7: Polish & Production Readiness
-1. Loading states and skeleton loaders
-2. Empty states with illustrations
-3. Error handling and toast notifications
-4. Responsive design pass
-5. Form validation (client + server)
-6. API rate limiting
-7. Environment-based configuration
-8. Production Docker setup
+### Phase 7: Polish & Production Readiness - COMPLETED
+1. ~~Loading states and skeleton loaders~~
+2. ~~Empty states with illustrations~~
+3. ~~Error handling and toast notifications~~
+4. ~~Responsive design pass~~
+5. ~~Form validation (client + server)~~
+6. ~~API rate limiting~~
+7. ~~Environment-based configuration~~
+8. ~~Production Docker setup~~
+
+**Phase 7 Notes:** Created reusable UI components: Skeleton (with SkeletonCard, SkeletonTable, SkeletonStatCards variants), EmptyState (with icon map for jobs, materials, rates, customers), and ErrorBoundary (class component with error display and reload button). ErrorBoundary wraps the entire app at the top level. Materials and Rates pages updated with proper SkeletonTable loading, EmptyState with CTA buttons, and mobile-responsive card layouts (tables on desktop, stacked cards on mobile). All form modals enhanced with inline validation and error messages. Backend rate limiter middleware added using token-bucket algorithm keyed by client IP (configurable via RATE_LIMIT_PER_MINUTE and RATE_LIMIT_BURST env vars, defaults 120/30). Config extended with ENVIRONMENT and rate limit settings. Multi-stage Docker builds: backend has development (with --reload) and production (with --workers 4 and non-root user) targets; frontend has development, build, and production (nginx:alpine with gzip, asset caching, API proxy, SPA fallback) targets. Added docker-compose.prod.yml for production deployment with env-var driven config, restart policies, and nginx on port 80. Updated .env.example with all new variables.
 
 ---
 

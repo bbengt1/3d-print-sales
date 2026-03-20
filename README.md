@@ -10,12 +10,12 @@ Full-stack web application for managing a 3D printing business — job costing, 
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query |
 | **Auth** | JWT (python-jose) + bcrypt |
 | **API Docs** | OpenAPI 3.1 / Swagger UI |
-| **Infrastructure** | Docker Compose |
+| **Infrastructure** | Docker Compose, multi-stage builds, nginx (production) |
 
 ## Quick Start
 
 ```bash
-# Clone and start
+# Clone and start (development)
 git clone <repo-url>
 cd 3d-print-sales
 docker compose up -d
@@ -25,6 +25,15 @@ docker compose up -d
 # Backend:   http://localhost:8000
 # Swagger:   http://localhost:8000/api/v1/docs
 # ReDoc:     http://localhost:8000/api/v1/redoc
+```
+
+### Production Deployment
+
+```bash
+# Production uses nginx on port 80 with API proxy
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Access at http://localhost
 ```
 
 ### Default Admin Login
@@ -42,32 +51,35 @@ Password: admin123
 │   ├── app/
 │   │   ├── api/v1/        # REST endpoints (auth, settings, materials, rates, customers, jobs, dashboard)
 │   │   ├── core/          # Config, database, security
+│   │   ├── middleware/     # Rate limiting
 │   │   ├── models/        # SQLAlchemy models (6 tables)
 │   │   ├── schemas/       # Pydantic schemas
 │   │   ├── services/      # Cost calculation engine
 │   │   ├── seed.py        # Database seed data
 │   │   └── main.py        # App entry point
 │   ├── alembic/           # Database migrations
-│   ├── Dockerfile
+│   ├── Dockerfile         # Multi-stage (development/production)
 │   └── requirements.txt
 ├── frontend/              # React + TypeScript application
 │   ├── src/
 │   │   ├── api/           # Axios API client
-│   │   ├── components/    # Layout, UI components
+│   │   ├── components/    # Layout, UI (Skeleton, EmptyState, ErrorBoundary)
 │   │   ├── pages/         # Route pages (Dashboard, Jobs, Materials, Rates, etc.)
 │   │   ├── store/         # Zustand auth store
 │   │   ├── types/         # TypeScript interfaces
 │   │   └── lib/           # Utilities
-│   ├── Dockerfile
+│   ├── nginx.conf         # Production nginx config
+│   ├── Dockerfile         # Multi-stage (development/build/production)
 │   └── package.json
-├── docker-compose.yml
+├── docker-compose.yml          # Development environment
+├── docker-compose.prod.yml     # Production environment
 ├── .env.example
 └── IMPLEMENTATION_PLAN.md
 ```
 
 ## API Endpoints
 
-All endpoints are under `/api/v1`:
+All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 
 | Resource | Endpoints | Filters |
 |----------|-----------|---------|
@@ -112,17 +124,21 @@ Profit      = revenue - costs - platform_fees
 - **Protected Routes** — Auto-redirect to login, preserves original URL
 - **Dark/Light Theme** — Persisted to localStorage, respects system preference
 - **Active Navigation** — Current route highlighted, admin-only items
-- **User Display** — Authenticated user name shown in header
+- **Error Boundary** — Global error catch with reload action
+- **Empty States** — Contextual illustrations and CTA buttons on empty lists
+- **Skeleton Loaders** — Reusable loading states (table, card, stat card variants)
+- **Responsive Design** — Tables on desktop, stacked cards on mobile
 - **Toast Notifications** — Success/error feedback via sonner
-- **Zod Validation** — Client-side form validation on login
+- **Form Validation** — Inline error messages on all forms
 - **Auth State** — Zustand store with auto-restore from token
+- **API Rate Limiting** — 429 handling with user-friendly error messages
 
 ### Pages
 
 - **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar)
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
-- **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle
-- **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle
+- **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
+- **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Editable business settings with bulk save, grouped by category
@@ -175,8 +191,11 @@ See `.env.example` for all configuration options. Key variables:
 |----------|---------|-------------|
 | `DATABASE_URL` | `postgresql+asyncpg://...` | PostgreSQL connection string |
 | `SECRET_KEY` | `change-me...` | JWT signing key |
+| `ENVIRONMENT` | `development` | `development` / `staging` / `production` |
 | `ADMIN_EMAIL` | `admin@example.com` | Seed admin email |
 | `ADMIN_PASSWORD` | `admin123` | Seed admin password |
+| `RATE_LIMIT_PER_MINUTE` | `120` | API rate limit per IP |
+| `RATE_LIMIT_BURST` | `30` | Rate limit burst capacity |
 
 ## Implementation Status
 
@@ -188,4 +207,4 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
 - [x] **Phase 4** — Protected routes, theme persistence, Zod login, toasts, nav polish
 - [x] **Phase 5** — All pages: dashboard charts, job CRUD with live preview, materials/rates/customers CRUD, calculator
 - [x] **Phase 6** — Admin section: sidebar layout, editable settings, user management, CSV export
-- [ ] **Phase 7** — Polish & production readiness
+- [x] **Phase 7** — Polish: skeleton loaders, empty states, error boundary, responsive tables, form validation, rate limiting, production Docker
