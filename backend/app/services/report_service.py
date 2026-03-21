@@ -155,12 +155,24 @@ async def generate_sales_report(
     for s in completed:
         key = _trunc_period(s.date, period)
         if key not in period_map:
-            period_map[key] = {"order_count": 0, "revenue": 0.0, "cost": 0.0, "profit": 0.0}
+            period_map[key] = {
+                "order_count": 0,
+                "gross_sales": 0.0,
+                "item_cogs": 0.0,
+                "gross_profit": 0.0,
+                "platform_fees": 0.0,
+                "shipping_costs": 0.0,
+                "contribution_margin": 0.0,
+            }
         period_map[key]["order_count"] += 1
-        period_map[key]["revenue"] += float(s.total)
+        period_map[key]["gross_sales"] += float(s.total)
         item_cost = sum(float(i.unit_cost) * i.quantity for i in s.items)
-        period_map[key]["cost"] += item_cost
-        period_map[key]["profit"] += float(s.net_revenue) - item_cost
+        gross_profit = float(s.total) - item_cost
+        period_map[key]["item_cogs"] += item_cost
+        period_map[key]["gross_profit"] += gross_profit
+        period_map[key]["platform_fees"] += float(s.platform_fees)
+        period_map[key]["shipping_costs"] += float(s.shipping_cost)
+        period_map[key]["contribution_margin"] += float(s.net_revenue)
 
     period_data = [
         {"period": k, **v} for k, v in sorted(period_map.items())
@@ -173,15 +185,34 @@ async def generate_sales_report(
             pid = str(item.product_id) if item.product_id else None
             desc = item.description
             if pid not in prod_map:
-                prod_map[pid] = {"product_id": pid, "description": desc, "units_sold": 0, "revenue": 0.0, "cost": 0.0, "profit": 0.0}
+                prod_map[pid] = {
+                    "product_id": pid,
+                    "description": desc,
+                    "units_sold": 0,
+                    "gross_sales": 0.0,
+                    "item_cogs": 0.0,
+                    "gross_profit": 0.0,
+                    "platform_fees": 0.0,
+                    "shipping_costs": 0.0,
+                    "contribution_margin": 0.0,
+                }
             prod_map[pid]["units_sold"] += item.quantity
             line_rev = float(item.line_total)
             line_cost = float(item.unit_cost) * item.quantity
-            prod_map[pid]["revenue"] += line_rev
-            prod_map[pid]["cost"] += line_cost
-            prod_map[pid]["profit"] += line_rev - line_cost
+            sale_item_count = sum(i.quantity for i in s.items) or 1
+            allocation_ratio = item.quantity / sale_item_count
+            allocated_platform_fees = float(s.platform_fees) * allocation_ratio
+            allocated_shipping_cost = float(s.shipping_cost) * allocation_ratio
+            gross_profit = line_rev - line_cost
+            contribution_margin = gross_profit - allocated_platform_fees - allocated_shipping_cost
+            prod_map[pid]["gross_sales"] += line_rev
+            prod_map[pid]["item_cogs"] += line_cost
+            prod_map[pid]["gross_profit"] += gross_profit
+            prod_map[pid]["platform_fees"] += allocated_platform_fees
+            prod_map[pid]["shipping_costs"] += allocated_shipping_cost
+            prod_map[pid]["contribution_margin"] += contribution_margin
 
-    top_products = sorted(prod_map.values(), key=lambda x: x["revenue"], reverse=True)[:20]
+    top_products = sorted(prod_map.values(), key=lambda x: x["gross_sales"], reverse=True)[:20]
 
     # Channel breakdown
     ch_map: dict[str, dict] = {}
@@ -196,25 +227,46 @@ async def generate_sales_report(
     for s in completed:
         ch_name = channel_names.get(s.channel_id, "Direct") if s.channel_id else "Direct"
         if ch_name not in ch_map:
-            ch_map[ch_name] = {"channel_name": ch_name, "order_count": 0, "revenue": 0.0, "platform_fees": 0.0, "net_revenue": 0.0}
+            ch_map[ch_name] = {
+                "channel_name": ch_name,
+                "order_count": 0,
+                "gross_sales": 0.0,
+                "item_cogs": 0.0,
+                "gross_profit": 0.0,
+                "platform_fees": 0.0,
+                "shipping_costs": 0.0,
+                "contribution_margin": 0.0,
+            }
+        item_cogs = sum(float(i.unit_cost) * i.quantity for i in s.items)
+        gross_profit = float(s.total) - item_cogs
         ch_map[ch_name]["order_count"] += 1
-        ch_map[ch_name]["revenue"] += float(s.total)
+        ch_map[ch_name]["gross_sales"] += float(s.total)
+        ch_map[ch_name]["item_cogs"] += item_cogs
+        ch_map[ch_name]["gross_profit"] += gross_profit
         ch_map[ch_name]["platform_fees"] += float(s.platform_fees)
-        ch_map[ch_name]["net_revenue"] += float(s.net_revenue)
+        ch_map[ch_name]["shipping_costs"] += float(s.shipping_cost)
+        ch_map[ch_name]["contribution_margin"] += float(s.net_revenue)
 
-    channel_breakdown = sorted(ch_map.values(), key=lambda x: x["revenue"], reverse=True)
+    channel_breakdown = sorted(ch_map.values(), key=lambda x: x["gross_sales"], reverse=True)
 
-    total_revenue = sum(float(s.total) for s in completed)
-    total_cost = sum(sum(float(i.unit_cost) * i.quantity for i in s.items) for s in completed)
+    gross_sales = sum(float(s.total) for s in completed)
+    item_cogs = sum(sum(float(i.unit_cost) * i.quantity for i in s.items) for s in completed)
+    platform_fees = sum(float(s.platform_fees) for s in completed)
+    shipping_costs = sum(float(s.shipping_cost) for s in completed)
+    contribution_margin = sum(float(s.net_revenue) for s in completed)
 
     return {
         "period_data": period_data,
         "top_products": top_products,
         "channel_breakdown": channel_breakdown,
         "total_orders": len(completed),
-        "total_revenue": round(total_revenue, 2),
-        "total_cost": round(total_cost, 2),
-        "total_profit": round(total_revenue - total_cost, 2),
+        "gross_sales": round(gross_sales, 2),
+        "item_cogs": round(item_cogs, 2),
+        "gross_profit": round(gross_sales - item_cogs, 2),
+        "platform_fees": round(platform_fees, 2),
+        "shipping_costs": round(shipping_costs, 2),
+        "contribution_margin": round(contribution_margin, 2),
+        "net_profit": None,
     }
 
 
@@ -227,8 +279,8 @@ async def generate_pl_report(
     date_to: date | None,
     period: str = "monthly",
 ):
-    """Profit & Loss combining job costs and sales revenue."""
-    # Jobs data
+    """Financial-style P&L driven by realized sales, with production estimates shown separately."""
+    # Jobs data (operational production estimates/cost accumulation)
     job_stmt = select(Job).where(Job.is_deleted == False)
     if date_from:
         job_stmt = job_stmt.where(Job.date >= date_from)
@@ -237,7 +289,7 @@ async def generate_pl_report(
     job_result = await db.execute(job_stmt)
     jobs = job_result.scalars().all()
 
-    # Sales data
+    # Sales data (realized revenue)
     sale_stmt = select(Sale).where(Sale.is_deleted == False)
     if date_from:
         sale_stmt = sale_stmt.where(Sale.date >= date_from)
@@ -247,18 +299,22 @@ async def generate_pl_report(
     sales = sale_result.scalars().all()
     completed_sales = [s for s in sales if s.status not in ("cancelled", "refunded")]
 
-    # Build period data
     period_map: dict[str, dict] = {}
 
     for j in jobs:
         key = _trunc_period(j.date, period)
         if key not in period_map:
             period_map[key] = {
-                "production_revenue": 0.0, "sales_revenue": 0.0,
-                "material_costs": 0.0, "labor_costs": 0.0, "machine_costs": 0.0,
-                "overhead_costs": 0.0, "platform_fees": 0.0, "shipping_costs": 0.0,
+                "sales_revenue": 0.0,
+                "operational_production_estimate": 0.0,
+                "material_costs": 0.0,
+                "labor_costs": 0.0,
+                "machine_costs": 0.0,
+                "overhead_costs": 0.0,
+                "platform_fees": 0.0,
+                "shipping_costs": 0.0,
             }
-        period_map[key]["production_revenue"] += float(j.total_revenue)
+        period_map[key]["operational_production_estimate"] += float(j.total_revenue)
         period_map[key]["material_costs"] += float(j.material_cost)
         period_map[key]["labor_costs"] += float(j.labor_cost) + float(j.design_cost or 0)
         period_map[key]["machine_costs"] += float(j.machine_cost) + float(j.electricity_cost)
@@ -268,9 +324,14 @@ async def generate_pl_report(
         key = _trunc_period(s.date, period)
         if key not in period_map:
             period_map[key] = {
-                "production_revenue": 0.0, "sales_revenue": 0.0,
-                "material_costs": 0.0, "labor_costs": 0.0, "machine_costs": 0.0,
-                "overhead_costs": 0.0, "platform_fees": 0.0, "shipping_costs": 0.0,
+                "sales_revenue": 0.0,
+                "operational_production_estimate": 0.0,
+                "material_costs": 0.0,
+                "labor_costs": 0.0,
+                "machine_costs": 0.0,
+                "overhead_costs": 0.0,
+                "platform_fees": 0.0,
+                "shipping_costs": 0.0,
             }
         period_map[key]["sales_revenue"] += float(s.total)
         period_map[key]["platform_fees"] += float(s.platform_fees)
@@ -278,18 +339,18 @@ async def generate_pl_report(
 
     period_data = []
     for k, v in sorted(period_map.items()):
-        total_rev = v["production_revenue"] + v["sales_revenue"]
         total_cost = v["material_costs"] + v["labor_costs"] + v["machine_costs"] + v["overhead_costs"] + v["platform_fees"] + v["shipping_costs"]
         period_data.append({
             "period": k,
             **v,
-            "gross_profit": round(total_rev - total_cost, 2),
+            "total_costs": round(total_cost, 2),
+            "gross_profit": round(v["sales_revenue"] - total_cost, 2),
+            "notes": "Revenue is sales-based only. Production estimate is shown separately for operational analysis.",
         })
 
-    # Summary totals
-    prod_rev = sum(float(j.total_revenue) for j in jobs)
-    sales_rev = sum(float(s.total) for s in completed_sales)
-    total_revenue = prod_rev + sales_rev
+    operational_production_estimate = sum(float(j.total_revenue) for j in jobs)
+    sales_revenue = sum(float(s.total) for s in completed_sales)
+    total_revenue = sales_revenue
     mat = sum(float(j.material_cost) for j in jobs)
     lab = sum(float(j.labor_cost) + float(j.design_cost or 0) for j in jobs)
     mach = sum(float(j.machine_cost) + float(j.electricity_cost) for j in jobs)
@@ -300,8 +361,8 @@ async def generate_pl_report(
     gross_profit = total_revenue - total_costs
 
     summary = {
-        "production_revenue": round(prod_rev, 2),
-        "sales_revenue": round(sales_rev, 2),
+        "sales_revenue": round(sales_revenue, 2),
+        "operational_production_estimate": round(operational_production_estimate, 2),
         "total_revenue": round(total_revenue, 2),
         "material_costs": round(mat, 2),
         "labor_costs": round(lab, 2),
@@ -312,6 +373,8 @@ async def generate_pl_report(
         "total_costs": round(total_costs, 2),
         "gross_profit": round(gross_profit, 2),
         "profit_margin_pct": round(gross_profit / total_revenue * 100, 1) if total_revenue > 0 else 0,
+        "reporting_basis": "sales_realized_revenue",
+        "production_estimate_note": "Production estimate reflects job-side quoted/expected revenue and is excluded from total_revenue to avoid double counting.",
     }
 
     return {"summary": summary, "period_data": period_data}

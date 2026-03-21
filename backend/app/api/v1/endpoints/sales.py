@@ -31,6 +31,35 @@ from app.services.sales_service import (
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
 
+def _to_sale_response(sale: Sale) -> SaleResponse:
+    item_cogs = sum((item.unit_cost or Decimal(0)) * item.quantity for item in sale.items)
+    gross_profit = sale.total - item_cogs
+    return SaleResponse(
+        id=sale.id,
+        sale_number=sale.sale_number,
+        date=sale.date,
+        customer_id=sale.customer_id,
+        customer_name=sale.customer_name,
+        channel_id=sale.channel_id,
+        status=sale.status,
+        subtotal=sale.subtotal,
+        shipping_charged=sale.shipping_charged,
+        shipping_cost=sale.shipping_cost,
+        platform_fees=sale.platform_fees,
+        tax_collected=sale.tax_collected,
+        total=sale.total,
+        item_cogs=item_cogs,
+        gross_profit=gross_profit,
+        contribution_margin=sale.net_revenue,
+        payment_method=sale.payment_method,
+        tracking_number=sale.tracking_number,
+        notes=sale.notes,
+        items=sale.items,
+        created_at=sale.created_at,
+        updated_at=sale.updated_at,
+    )
+
+
 @router.get(
     "",
     response_model=PaginatedSales,
@@ -85,7 +114,8 @@ async def list_sales(
             channel_id=s.channel_id,
             status=s.status,
             total=s.total,
-            net_revenue=s.net_revenue,
+            gross_profit=s.total - sum((item.unit_cost or Decimal(0)) * item.quantity for item in s.items),
+            contribution_margin=s.net_revenue,
             item_count=len(s.items),
             created_at=s.created_at,
         )
@@ -123,13 +153,31 @@ async def get_metrics(
         sum(float(i.unit_cost) * i.quantity for i in s.items)
         for s in completed
     )
+    total_platform_fees = sum(float(s.platform_fees) for s in completed)
+    total_shipping_costs = sum(float(s.shipping_cost) for s in completed)
+    total_contribution_margin = sum(float(s.net_revenue) for s in completed)
     total_units = sum(sum(i.quantity for i in s.items) for s in completed)
     total_sales = len(completed)
 
     # Revenue by channel
-    channel_rev: dict[uuid.UUID | None, float] = {}
+    channel_rev: dict[uuid.UUID | None, dict[str, float]] = {}
     for s in completed:
-        channel_rev[s.channel_id] = channel_rev.get(s.channel_id, 0) + float(s.total)
+        bucket = channel_rev.setdefault(s.channel_id, {
+            "gross_sales": 0.0,
+            "item_cogs": 0.0,
+            "gross_profit": 0.0,
+            "platform_fees": 0.0,
+            "shipping_costs": 0.0,
+            "contribution_margin": 0.0,
+        })
+        item_cogs = sum(float(i.unit_cost) * i.quantity for i in s.items)
+        gross_profit = float(s.total) - item_cogs
+        bucket["gross_sales"] += float(s.total)
+        bucket["item_cogs"] += item_cogs
+        bucket["gross_profit"] += gross_profit
+        bucket["platform_fees"] += float(s.platform_fees)
+        bucket["shipping_costs"] += float(s.shipping_cost)
+        bucket["contribution_margin"] += float(s.net_revenue)
 
     # Fetch channel names
     channel_names: dict[uuid.UUID, str] = {}
@@ -146,17 +194,21 @@ async def get_metrics(
         {
             "channel_id": str(cid) if cid else None,
             "channel_name": channel_names.get(cid, "Direct") if cid else "Direct",
-            "revenue": rev,
+            **values,
             "order_count": sum(1 for s in completed if s.channel_id == cid),
         }
-        for cid, rev in channel_rev.items()
+        for cid, values in channel_rev.items()
     ]
 
     return SalesMetrics(
         total_sales=total_sales,
-        total_revenue=total_revenue,
-        total_cost=total_cost,
-        total_profit=total_revenue - total_cost,
+        gross_sales=total_revenue,
+        item_cogs=total_cost,
+        gross_profit=total_revenue - total_cost,
+        platform_fees=total_platform_fees,
+        shipping_costs=total_shipping_costs,
+        contribution_margin=total_contribution_margin,
+        net_profit=None,
         total_units_sold=total_units,
         avg_order_value=total_revenue / total_sales if total_sales > 0 else 0,
         refund_count=len(refunded),
@@ -180,7 +232,7 @@ async def get_sale(sale_id: uuid.UUID, db: DB):
     sale = result.scalar_one_or_none()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
-    return sale
+    return _to_sale_response(sale)
 
 
 @router.post(
@@ -247,7 +299,7 @@ async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
     result = await db.execute(
         select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
     )
-    return result.scalar_one()
+    return _to_sale_response(result.scalar_one())
 
 
 @router.put(
@@ -297,7 +349,7 @@ async def update_sale(sale_id: uuid.UUID, body: SaleUpdate, user: CurrentUser, d
     result = await db.execute(
         select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
     )
-    return result.scalar_one()
+    return _to_sale_response(result.scalar_one())
 
 
 @router.delete(
@@ -342,4 +394,4 @@ async def refund_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
     result = await db.execute(
         select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
     )
-    return result.scalar_one()
+    return _to_sale_response(result.scalar_one())

@@ -5,7 +5,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
-import type { SalesChannel, Product, PaginatedProducts, Customer } from '@/types';
+import type { SalesChannel, PaginatedProducts, Customer } from '@/types';
 
 interface LineItem {
   product_id: string;

@@ -126,12 +126,15 @@ export default function SaleDetailPage() {
               <div className="flex justify-between"><span className="text-muted-foreground">Shipping charged</span><span>{formatCurrency(sale.shipping_charged)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Tax collected</span><span>{formatCurrency(sale.tax_collected)}</span></div>
               <div className="flex justify-between font-semibold border-t border-border pt-2"><span>Total</span><span>{formatCurrency(sale.total)}</span></div>
+              <div className="flex justify-between text-muted-foreground"><span>Item COGS</span><span>-{formatCurrency(sale.item_cogs)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Gross Profit</span><span>{formatCurrency(sale.gross_profit)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Platform fees</span><span>-{formatCurrency(sale.platform_fees)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Shipping cost</span><span>-{formatCurrency(sale.shipping_cost)}</span></div>
-              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.net_revenue) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                <span>Net Revenue</span>
-                <span>{formatCurrency(sale.net_revenue)}</span>
+              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.contribution_margin) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span>Contribution Margin</span>
+                <span>{formatCurrency(sale.contribution_margin)}</span>
               </div>
+              <p className="text-xs text-muted-foreground pt-2 border-t border-border">Net profit is not shown yet because overhead allocation has not been implemented.</p>
             </div>
           </div>
 

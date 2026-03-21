@@ -1,12 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award, AlertTriangle, ShoppingCart } from 'lucide-react';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import type { DashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert, SalesMetrics } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
+const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return formatCurrency(Number(normalized ?? 0));
+};
+const formatTooltipPercent = (value: string | number | readonly (string | number)[] | undefined) => {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return `${Number(normalized ?? 0).toFixed(1)}%`;
+};
 
 function StatCard({ icon: Icon, label, value, sub }: {
   icon: React.ElementType; label: string; value: string; sub?: string;
@@ -114,12 +122,14 @@ export default function DashboardPage() {
       {salesMetrics && salesMetrics.total_sales > 0 && (
         <div>
           <h2 className="text-xl font-semibold mb-4">Sales Overview</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <StatCard icon={ShoppingCart} label="Total Orders" value={String(salesMetrics.total_sales)} />
-            <StatCard icon={DollarSign} label="Sales Revenue" value={formatCurrency(salesMetrics.total_revenue)} />
-            <StatCard icon={TrendingUp} label="Sales Profit" value={formatCurrency(salesMetrics.total_profit)} />
-            <StatCard icon={BarChart3} label="Avg Order Value" value={formatCurrency(salesMetrics.avg_order_value)}
-              sub={salesMetrics.refund_count > 0 ? `${salesMetrics.refund_count} refund(s)` : undefined} />
+            <StatCard icon={DollarSign} label="Gross Sales" value={formatCurrency(salesMetrics.gross_sales)} />
+            <StatCard icon={Layers} label="Item COGS" value={formatCurrency(salesMetrics.item_cogs)} />
+            <StatCard icon={TrendingUp} label="Gross Profit" value={formatCurrency(salesMetrics.gross_profit)} />
+            <StatCard icon={DollarSign} label="Platform Fees + Shipping" value={formatCurrency(salesMetrics.platform_fees + salesMetrics.shipping_costs)} />
+            <StatCard icon={BarChart3} label="Contribution Margin" value={formatCurrency(salesMetrics.contribution_margin)}
+              sub={salesMetrics.refund_count > 0 ? `${salesMetrics.refund_count} refund(s)` : 'Net profit pending overhead allocation'} />
           </div>
           {salesMetrics.revenue_by_channel.length > 1 && (
             <div className="mt-4 bg-card border border-border rounded-lg p-6">
@@ -129,8 +139,8 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis dataKey="channel_name" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
-                  <Bar dataKey="revenue" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                  <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                  <Bar dataKey="gross_sales" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -148,7 +158,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                 <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                 <Line type="monotone" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -163,7 +173,7 @@ export default function DashboardPage() {
           {materialData && materialData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={materialData} dataKey="count" nameKey="material" cx="50%" cy="50%" outerRadius={100} label={({ material, count }) => `${material} (${count})`}>
+                <Pie data={materialData} dataKey="count" nameKey="material" cx="50%" cy="50%" outerRadius={100} label={(props) => `${String(props.name ?? '')} (${String(props.value ?? 0)})`}>
                   {materialData.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
@@ -185,7 +195,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                 <XAxis dataKey="product" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                 <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                <Tooltip formatter={formatTooltipPercent} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                 <Bar dataKey="margin" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

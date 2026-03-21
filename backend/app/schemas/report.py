@@ -36,26 +36,35 @@ class InventoryReportResponse(BaseModel):
 class SalesReportRow(BaseModel):
     period: str         # e.g. "2026-03" or "2026-03-20"
     order_count: int
-    revenue: float
-    cost: float
-    profit: float
+    gross_sales: float
+    item_cogs: float
+    gross_profit: float
+    platform_fees: float
+    shipping_costs: float
+    contribution_margin: float
 
 
 class ProductRanking(BaseModel):
     product_id: str | None
     description: str
     units_sold: int
-    revenue: float
-    cost: float
-    profit: float
+    gross_sales: float
+    item_cogs: float
+    gross_profit: float
+    platform_fees: float
+    shipping_costs: float
+    contribution_margin: float
 
 
 class ChannelBreakdown(BaseModel):
     channel_name: str
     order_count: int
-    revenue: float
+    gross_sales: float
+    item_cogs: float
+    gross_profit: float
     platform_fees: float
-    net_revenue: float
+    shipping_costs: float
+    contribution_margin: float
 
 
 class SalesReportResponse(BaseModel):
@@ -63,9 +72,13 @@ class SalesReportResponse(BaseModel):
     top_products: list[ProductRanking]
     channel_breakdown: list[ChannelBreakdown]
     total_orders: int
-    total_revenue: float
-    total_cost: float
-    total_profit: float
+    gross_sales: float
+    item_cogs: float
+    gross_profit: float
+    platform_fees: float
+    shipping_costs: float
+    contribution_margin: float
+    net_profit: float | None = None
 
 
 # ── Profit & Loss Report ─────────────────────────────────────────
@@ -73,20 +86,22 @@ class SalesReportResponse(BaseModel):
 
 class PLRow(BaseModel):
     period: str
-    production_revenue: float       # from jobs
-    sales_revenue: float            # from sales
+    sales_revenue: float
+    operational_production_estimate: float
     material_costs: float
     labor_costs: float
     machine_costs: float
     overhead_costs: float
     platform_fees: float
     shipping_costs: float
+    total_costs: float
     gross_profit: float
+    notes: str
 
 
 class PLSummary(BaseModel):
-    production_revenue: float
     sales_revenue: float
+    operational_production_estimate: float
     total_revenue: float
     material_costs: float
     labor_costs: float
@@ -97,6 +112,8 @@ class PLSummary(BaseModel):
     total_costs: float
     gross_profit: float
     profit_margin_pct: float
+    reporting_basis: str
+    production_estimate_note: str
 
 
 class PLReportResponse(BaseModel):

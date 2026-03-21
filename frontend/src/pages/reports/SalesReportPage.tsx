@@ -7,6 +7,11 @@ import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import type { SalesReport } from '@/types';
 
+const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return formatCurrency(Number(normalized ?? 0));
+};
+
 export default function SalesReportPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -45,23 +50,33 @@ export default function SalesReportPage() {
       ) : !data ? null : (
         <div className="space-y-8">
           {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-card border border-border rounded-lg p-6 text-center">
               <p className="text-sm text-muted-foreground">Total Orders</p>
               <p className="text-3xl font-bold mt-1">{data.total_orders}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Revenue</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(data.total_revenue)}</p>
+              <p className="text-sm text-muted-foreground">Gross Sales</p>
+              <p className="text-3xl font-bold mt-1">{formatCurrency(data.gross_sales)}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">COGS</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(data.total_cost)}</p>
+              <p className="text-sm text-muted-foreground">Item COGS</p>
+              <p className="text-3xl font-bold mt-1">{formatCurrency(data.item_cogs)}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Profit</p>
-              <p className={`text-3xl font-bold mt-1 ${data.total_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(data.total_profit)}
+              <p className="text-sm text-muted-foreground">Gross Profit</p>
+              <p className={`text-3xl font-bold mt-1 ${data.gross_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {formatCurrency(data.gross_profit)}
+              </p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-6 text-center">
+              <p className="text-sm text-muted-foreground">Platform Fees + Shipping</p>
+              <p className="text-3xl font-bold mt-1">{formatCurrency(data.platform_fees + data.shipping_costs)}</p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-6 text-center">
+              <p className="text-sm text-muted-foreground">Contribution Margin</p>
+              <p className={`text-3xl font-bold mt-1 ${data.contribution_margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {formatCurrency(data.contribution_margin)}
               </p>
             </div>
           </div>
@@ -75,10 +90,11 @@ export default function SalesReportPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                  <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                   <Legend />
-                  <Line type="monotone" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="profit" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="gross_sales" name="Gross Sales" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="gross_profit" name="Gross Profit" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="contribution_margin" name="Contribution Margin" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -95,8 +111,8 @@ export default function SalesReportPage() {
                       <tr className="border-b border-border text-left text-muted-foreground">
                         <th className="pb-2 font-medium">Product</th>
                         <th className="pb-2 font-medium text-right">Units</th>
-                        <th className="pb-2 font-medium text-right">Revenue</th>
-                        <th className="pb-2 font-medium text-right">Profit</th>
+                        <th className="pb-2 font-medium text-right">Gross Sales</th>
+                        <th className="pb-2 font-medium text-right">Contribution</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -104,9 +120,9 @@ export default function SalesReportPage() {
                         <tr key={i} className="border-b border-border last:border-0">
                           <td className="py-2">{p.description}</td>
                           <td className="py-2 text-right">{p.units_sold}</td>
-                          <td className="py-2 text-right">{formatCurrency(p.revenue)}</td>
-                          <td className={`py-2 text-right ${p.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                            {formatCurrency(p.profit)}
+                          <td className="py-2 text-right">{formatCurrency(p.gross_sales)}</td>
+                          <td className={`py-2 text-right ${p.contribution_margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {formatCurrency(p.contribution_margin)}
                           </td>
                         </tr>
                       ))}
@@ -125,10 +141,10 @@ export default function SalesReportPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="channel_name" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                     <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                    <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                     <Legend />
-                    <Bar dataKey="revenue" name="Revenue" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="net_revenue" name="Net Revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="gross_sales" name="Gross Sales" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="contribution_margin" name="Contribution Margin" fill="#22c55e" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="mt-4 overflow-x-auto">
@@ -137,9 +153,11 @@ export default function SalesReportPage() {
                       <tr className="border-b border-border text-left text-muted-foreground">
                         <th className="pb-2 font-medium">Channel</th>
                         <th className="pb-2 font-medium text-right">Orders</th>
-                        <th className="pb-2 font-medium text-right">Revenue</th>
+                        <th className="pb-2 font-medium text-right">Gross Sales</th>
+                        <th className="pb-2 font-medium text-right">Gross Profit</th>
                         <th className="pb-2 font-medium text-right">Fees</th>
-                        <th className="pb-2 font-medium text-right">Net</th>
+                        <th className="pb-2 font-medium text-right">Shipping</th>
+                        <th className="pb-2 font-medium text-right">Contribution</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -147,9 +165,11 @@ export default function SalesReportPage() {
                         <tr key={i} className="border-b border-border last:border-0">
                           <td className="py-2">{ch.channel_name}</td>
                           <td className="py-2 text-right">{ch.order_count}</td>
-                          <td className="py-2 text-right">{formatCurrency(ch.revenue)}</td>
+                          <td className="py-2 text-right">{formatCurrency(ch.gross_sales)}</td>
+                          <td className="py-2 text-right">{formatCurrency(ch.gross_profit)}</td>
                           <td className="py-2 text-right text-muted-foreground">{formatCurrency(ch.platform_fees)}</td>
-                          <td className="py-2 text-right">{formatCurrency(ch.net_revenue)}</td>
+                          <td className="py-2 text-right text-muted-foreground">{formatCurrency(ch.shipping_costs)}</td>
+                          <td className="py-2 text-right">{formatCurrency(ch.contribution_margin)}</td>
                         </tr>
                       ))}
                     </tbody>

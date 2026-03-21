@@ -134,7 +134,7 @@ export default function SalesPage() {
                   <th className="px-4 py-3 font-medium">Channel</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium text-right">Total</th>
-                  <th className="px-4 py-3 font-medium text-right">Net Revenue</th>
+                  <th className="px-4 py-3 font-medium text-right">Contribution Margin</th>
                   <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -154,8 +154,8 @@ export default function SalesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">{formatCurrency(s.total)}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className={Number(s.net_revenue) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                        {formatCurrency(s.net_revenue)}
+                      <span className={Number(s.contribution_margin) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                        {formatCurrency(s.contribution_margin)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -188,9 +188,9 @@ export default function SalesPage() {
                     <p>{formatCurrency(s.total)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Net</p>
-                    <p className={Number(s.net_revenue) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      {formatCurrency(s.net_revenue)}
+                    <p className="text-xs text-muted-foreground">Contribution</p>
+                    <p className={Number(s.contribution_margin) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {formatCurrency(s.contribution_margin)}
                     </p>
                   </div>
                   <div>

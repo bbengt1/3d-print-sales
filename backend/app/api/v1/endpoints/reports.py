@@ -93,7 +93,7 @@ async def sales_csv(
     data = await generate_sales_report(db, date_from, date_to, period)
     csv_content = export_to_csv(
         data["period_data"],
-        ["period", "order_count", "revenue", "cost", "profit"],
+        ["period", "order_count", "gross_sales", "item_cogs", "gross_profit", "platform_fees", "shipping_costs", "contribution_margin"],
     )
     return StreamingResponse(
         iter([csv_content]),
@@ -134,9 +134,9 @@ async def pl_csv(
     data = await generate_pl_report(db, date_from, date_to, period)
     csv_content = export_to_csv(
         data["period_data"],
-        ["period", "production_revenue", "sales_revenue", "material_costs",
+        ["period", "sales_revenue", "operational_production_estimate", "material_costs",
          "labor_costs", "machine_costs", "overhead_costs", "platform_fees",
-         "shipping_costs", "gross_profit"],
+         "shipping_costs", "total_costs", "gross_profit", "notes"],
     )
     return StreamingResponse(
         iter([csv_content]),

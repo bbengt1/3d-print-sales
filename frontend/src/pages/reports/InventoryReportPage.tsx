@@ -8,6 +8,10 @@ import { SkeletonTable } from '@/components/ui/Skeleton';
 import type { InventoryReport } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#e0e7ff'];
+const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return formatCurrency(Number(normalized ?? 0));
+};
 
 export default function InventoryReportPage() {
   const [dateFrom, setDateFrom] = useState('');
@@ -126,13 +130,13 @@ export default function InventoryReportPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={100}
-                      label={({ material, spool_cost }) => `${material} (${formatCurrency(spool_cost)})`}
+                      label={(props) => `${String(props.name ?? '')} (${formatCurrency(Number(props.value ?? 0))})`}
                     >
                       {data.material_usage.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                    <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

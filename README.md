@@ -6,7 +6,7 @@ Full-stack web application for managing a 3D printing business — job costing, 
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | Python 3.12, FastAPI, SQLAlchemy 2 (async), PostgreSQL 16 |
+| **Backend** | Python 3.13, FastAPI, SQLAlchemy 2 (async), PostgreSQL 16 |
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query |
 | **Auth** | JWT (python-jose) + bcrypt |
 | **API Docs** | OpenAPI 3.1 / Swagger UI |
@@ -109,7 +109,7 @@ Eleven tables (6 seeded from the original spreadsheet + 2 for inventory + 3 for 
 - **products** — Product catalog with auto-generated SKU, optional UPC, stock tracking, reorder points
 - **inventory_transactions** — Stock movement ledger (production, sale, adjustment, return, waste)
 - **sales_channels** — Sales platforms (Etsy, Amazon, Direct) with platform fee % and fixed fee per order
-- **sales** — Order tracking with auto-generated sale number (S-YYYY-NNNN), status flow, computed totals and net revenue
+- **sales** — Order tracking with auto-generated sale number (S-YYYY-NNNN), status flow, computed totals and contribution margin
 - **sale_items** — Line items per sale linking to products/jobs with quantity, pricing, and cost
 
 ## Cost Calculation Engine
@@ -126,7 +126,9 @@ Buffer      = subtotal * failure_rate%
 Overhead    = (subtotal + buffer) * overhead%
 Total Cost  = subtotal + buffer + overhead
 Price       = cost_per_piece / (1 - margin%)
-Profit      = revenue - costs - platform_fees
+Gross Profit        = gross sales - item COGS
+Contribution Margin = gross profit - platform fees - shipping cost
+Net Profit          = not yet exposed for sales reporting until overhead allocation exists
 ```
 
 ## Frontend Features
@@ -145,20 +147,20 @@ Profit      = revenue - costs - platform_fees
 
 ### Pages
 
-- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, revenue, profit, AOV) + revenue by channel chart
+- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, item COGS, gross profit, contribution margin) + revenue by channel chart
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
 - **Products** — Product catalog with CRUD modal, SKU/UPC, stock tracking, reorder alerts, search, pagination
 - **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
-- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, financial summary, status management, refund
+- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, gross profit + contribution margin breakdown, status management, refund
 - **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
 - **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
 - **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export
   - **Inventory Report** — Stock levels table with valuation, low-stock highlighting, turnover rate chart, material usage pie chart
-  - **Sales Report** — Revenue/profit trend chart, top products ranking, channel breakdown with fees and net revenue
-  - **Profit & Loss** — Combined P&L from production and sales, cost breakdown by category, stacked bar trend chart, period detail table
+  - **Sales Report** — Gross sales/gross profit trend chart, top products ranking, channel breakdown with fees and contribution margin
+  - **Profit & Loss** — Sales-realized revenue P&L with production estimates shown separately for operational context, cost breakdown by category, stacked bar trend chart, period detail table
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Editable business settings with bulk save, grouped by category
 - **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
@@ -167,11 +169,18 @@ Profit      = revenue - costs - platform_fees
 
 ## Testing
 
+### Backend test environment
+
+- Use **Python 3.13** for local backend development and test execution.
+- A repo-level `.python-version` file is included to make the expected interpreter explicit.
+- Backend tests run with `TESTING=true`, which disables request rate limiting middleware so the suite does not fail with unrelated `429 Too Many Requests` responses.
+
 ```bash
-# Run all backend tests (114 tests)
-cd backend
-pip install -r requirements.txt
-python -m pytest tests/ -v
+# Run all backend tests
+python3.13 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+python -m pytest backend/tests/ -v
 
 # Test categories:
 #   test_cost_calculator.py   - Cost calculation engine (6 tests)
@@ -189,6 +198,18 @@ python -m pytest tests/ -v
 ```
 
 ## Development
+
+### Frontend build validation
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+Notes:
+- TypeScript path aliasing for `@/*` is configured in both `vite.config.ts` and `tsconfig.app.json`.
+- `npm run build` is the expected baseline validation step for frontend changes.
 
 ```bash
 # Rebuild after dependency changes
@@ -219,6 +240,18 @@ See `.env.example` for all configuration options. Key variables:
 | `ADMIN_PASSWORD` | `admin123` | Seed admin password |
 | `RATE_LIMIT_PER_MINUTE` | `120` | API rate limit per IP |
 | `RATE_LIMIT_BURST` | `30` | Rate limit burst capacity |
+
+## Finance Metric Naming
+
+See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical glossary, naming matrix, formulas, and operational-vs-financial metric definitions used by the app.
+
+## P&L Reporting Basis
+
+The Profit & Loss report now treats:
+- **sales** as realized revenue
+- **jobs/production** as operational production estimates and cost accumulation
+
+To avoid double counting, job-side `total_revenue` is shown only as an **operational production estimate** and is excluded from `total_revenue` in the P&L summary.
 
 ## Implementation Status
 
