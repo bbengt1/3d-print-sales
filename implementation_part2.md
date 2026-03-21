@@ -44,10 +44,10 @@
   - Added admin-only journal entry create/list/detail APIs
   - Added backend tests covering balanced create flow and unbalanced-entry rejection
   - Still missing: posted-entry immutability/reversal workflow
-- [ ] Issue #19 — Seed manufacturing-friendly starter chart of accounts
+- [x] Issue #19 — Seed manufacturing-friendly starter chart of accounts
   - Added starter manufacturing-friendly chart of accounts and wired it into backend seed flow
   - Added backend tests covering seed stability/idempotent behavior
-  - Still missing: fuller account documentation/grouping notes if desired
+  - Added `docs/starter_chart_of_accounts.md` documenting the intended use of each seeded account group and account
 - [ ] Issue #20 — Add period close/lock controls and posting safeguards
   - Added initial period status field and non-open period posting guard in the accounting service
   - Added backend tests covering closed-period rejection

@@ -33,6 +33,17 @@ async def test_seed_chart_of_accounts(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
+async def test_seed_chart_of_accounts_is_idempotent(db_session: AsyncSession):
+    await seed_chart_of_accounts(db_session)
+    first_count = len((await db_session.execute(select(Account))).scalars().all())
+
+    await seed_chart_of_accounts(db_session)
+    second_count = len((await db_session.execute(select(Account))).scalars().all())
+
+    assert first_count == second_count
+
+
+@pytest.mark.asyncio
 async def test_ensure_accounting_period(db_session: AsyncSession):
     period = await ensure_accounting_period(
         db_session,
