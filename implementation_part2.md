@@ -30,13 +30,28 @@
   - Added plain-English definitions, current formulas/sources, and key cautions for exposed metrics
   - Updated README to point at the glossary as the canonical finance terminology reference
 
-### In Progress
-- [ ] Issue #16 — Accounting foundation and chart of accounts
-  - Added initial accounting-domain models: accounts, accounting periods, journal entries, journal lines
-  - Added starter chart of accounts seeding and balanced journal validation service
-  - Added backend foundation tests for seeding, period control, and balanced/unbalanced journal entries
-  - Added admin-only accounting APIs for accounts, periods, and journal entries
-  - Added API tests covering account listing, period listing, journal creation, and unbalanced-entry rejection
+### Phase 12 In Progress
+- [ ] Issue #16 — Accounting foundation and chart of accounts (epic)
+  - Tracking umbrella only; implementation should be recorded against child issues #17–#20
+- [ ] Issue #17 — Create chart of accounts and accounting periods data model
+  - Added initial `accounts` and `accounting_periods` models/schemas
+  - Added admin-only listing APIs for accounts and periods
+  - Added backend tests covering seeding and accounting period creation/idempotency
+  - Still missing: migration/revision story and fuller account/period management behavior
+- [ ] Issue #18 — Implement journal entry posting engine with balanced journal lines
+  - Added initial `journal_entries` and `journal_lines` models/schemas
+  - Added posting service with balanced-entry validation, account existence checks, and open-period guard
+  - Added admin-only journal entry create/list/detail APIs
+  - Added backend tests covering balanced create flow and unbalanced-entry rejection
+  - Still missing: posted-entry immutability/reversal workflow
+- [ ] Issue #19 — Seed manufacturing-friendly starter chart of accounts
+  - Added starter manufacturing-friendly chart of accounts and wired it into backend seed flow
+  - Added backend tests covering seed stability/idempotent behavior
+  - Still missing: fuller account documentation/grouping notes if desired
+- [ ] Issue #20 — Add period close/lock controls and posting safeguards
+  - Added initial period status field and non-open period posting guard in the accounting service
+  - Added backend tests covering closed-period rejection
+  - Still missing: explicit close/reopen management workflow and stronger lock semantics
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
