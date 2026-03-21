@@ -243,7 +243,7 @@ See `.env.example` for all configuration options. Key variables:
 
 ## Finance Metric Naming
 
-See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical naming matrix for finance-related metrics and the rationale behind recent terminology cleanup.
+See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical glossary, naming matrix, formulas, and operational-vs-financial metric definitions used by the app.
 
 ## P&L Reporting Basis
 

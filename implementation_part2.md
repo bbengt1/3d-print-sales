@@ -91,6 +91,11 @@
   - Updated P&L summary, period rows, CSV export, and frontend report page to reflect the new basis
   - Added reporting-basis documentation and note explaining why production estimates are excluded from financial revenue
   - Added/updated tests verifying realized sales revenue is no longer combined with production-side expected revenue
+- [x] Issue #15 — Add finance glossary and metric definition documentation
+  - Expanded `docs/finance_metric_naming.md` into a broader finance glossary
+  - Documented revenue terms, cost terms, profit layers, jobs/calculator terms, inventory terms, tax terms, dashboard terms, and P&L reporting basis
+  - Added plain-English definitions, current formulas/sources, and key cautions for exposed metrics
+  - Updated README to point at the glossary as the canonical finance terminology reference
 
 ## Executive Summary
 
