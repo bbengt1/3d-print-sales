@@ -199,6 +199,18 @@ python -m pytest backend/tests/ -v
 
 ## Development
 
+### Frontend build validation
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+Notes:
+- TypeScript path aliasing for `@/*` is configured in both `vite.config.ts` and `tsconfig.app.json`.
+- `npm run build` is the expected baseline validation step for frontend changes.
+
 ```bash
 # Rebuild after dependency changes
 docker compose build

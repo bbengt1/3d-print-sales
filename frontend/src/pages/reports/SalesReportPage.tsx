@@ -7,6 +7,11 @@ import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import type { SalesReport } from '@/types';
 
+const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return formatCurrency(Number(normalized ?? 0));
+};
+
 export default function SalesReportPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -85,7 +90,7 @@ export default function SalesReportPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                  <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                   <Legend />
                   <Line type="monotone" dataKey="gross_sales" name="Gross Sales" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="gross_profit" name="Gross Profit" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
@@ -136,7 +141,7 @@ export default function SalesReportPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="channel_name" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                     <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                    <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                     <Legend />
                     <Bar dataKey="gross_sales" name="Gross Sales" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="contribution_margin" name="Contribution Margin" fill="#22c55e" radius={[4, 4, 0, 0]} />

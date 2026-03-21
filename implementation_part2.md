@@ -48,8 +48,20 @@
   - Added `backend/pytest.ini` to make asyncio loop scope explicit
   - Updated README backend testing instructions and environment notes
 
+### Maintenance Completed
+- [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
+  - Added repo-level `.python-version` pinned to Python 3.13
+  - Added `TESTING` config flag and disabled request rate limiting middleware during tests
+  - Updated backend test bootstrap to set `TESTING=true`
+  - Added `backend/pytest.ini` to make asyncio loop scope explicit
+  - Updated README backend testing instructions and environment notes
+- [x] Issue #45 — Fix frontend TypeScript configuration and path-alias build failures
+  - Added TypeScript `baseUrl`/`paths` mapping for `@/*` in `frontend/tsconfig.app.json`
+  - Resolved frontend build-blocking TypeScript issues after alias resolution (tooltip formatter typing, pie label typing, unused imports)
+  - Verified `npm run build` now succeeds in a clean local frontend environment
+  - Updated README with frontend build validation guidance
+
 ### Next Up
-- [ ] Issue #45 — Fix frontend TypeScript configuration and path-alias build failures
 - [ ] Issue #14 — Refactor P&L reporting to avoid double-counting and separate operational vs financial reporting
 
 ## Executive Summary

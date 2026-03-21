@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
-import type { Material, Job, CalculateResponse, PaginatedProducts, Product } from '@/types';
+import type { Material, Job, CalculateResponse, PaginatedProducts } from '@/types';
 
 interface FieldProps {
   label: string;
