@@ -207,3 +207,50 @@ async def test_create_unbalanced_journal_entry_returns_400(client, auth_headers,
     resp = await client.post("/api/v1/accounting/journal-entries", headers=auth_headers, json=payload)
     assert resp.status_code == 400
     assert "unbalanced" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_reverse_journal_entry_and_reject_double_reverse(client, auth_headers, db_session: AsyncSession):
+    await seed_chart_of_accounts(db_session)
+    period = await ensure_accounting_period(
+        db_session,
+        period_key="2026-03",
+        name="March 2026",
+        start_date=date(2026, 3, 1),
+        end_date=date(2026, 3, 31),
+    )
+    accounts = (await client.get("/api/v1/accounting/accounts", headers=auth_headers)).json()
+    cash = next(a for a in accounts if a["code"] == "1000")
+    sales = next(a for a in accounts if a["code"] == "4000")
+
+    create_payload = {
+        "entry_date": "2026-03-21",
+        "accounting_period_id": str(period.id),
+        "source_type": "sale",
+        "source_id": "S-2026-0002",
+        "lines": [
+            {"account_id": cash["id"], "entry_type": "debit", "amount": "25.00"},
+            {"account_id": sales["id"], "entry_type": "credit", "amount": "25.00"},
+        ],
+    }
+    create_resp = await client.post("/api/v1/accounting/journal-entries", headers=auth_headers, json=create_payload)
+    assert create_resp.status_code == 201
+    entry = create_resp.json()
+
+    reverse_resp = await client.post(
+        f"/api/v1/accounting/journal-entries/{entry['id']}/reverse",
+        headers=auth_headers,
+        json={"reversal_date": "2026-03-22", "memo": "Reverse bad entry"},
+    )
+    assert reverse_resp.status_code == 201
+    reversal = reverse_resp.json()
+    assert reversal["is_reversal"] is True
+    assert reversal["reversal_of_id"] == entry["id"]
+
+    second_reverse = await client.post(
+        f"/api/v1/accounting/journal-entries/{entry['id']}/reverse",
+        headers=auth_headers,
+        json={"reversal_date": "2026-03-23"},
+    )
+    assert second_reverse.status_code == 400
+    assert "already been reversed" in second_reverse.json()["detail"].lower()

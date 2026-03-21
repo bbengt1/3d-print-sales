@@ -38,12 +38,12 @@
   - Added admin-only account/period APIs for create, update, and list foundations
   - Added backend tests covering seeding, period creation/idempotency, duplicate account code rejection, duplicate period key rejection, account parent assignment, and period status updates
   - Added Alembic revision scaffolding and an initial accounting foundation migration under `backend/alembic/versions/`
-- [ ] Issue #18 — Implement journal entry posting engine with balanced journal lines
+- [x] Issue #18 — Implement journal entry posting engine with balanced journal lines
   - Added initial `journal_entries` and `journal_lines` models/schemas
   - Added posting service with balanced-entry validation, account existence checks, and open-period guard
   - Added admin-only journal entry create/list/detail APIs
-  - Added backend tests covering balanced create flow and unbalanced-entry rejection
-  - Still missing: posted-entry immutability/reversal workflow
+  - Added journal reversal workflow so posted entries are corrected through append/reversal behavior rather than mutation
+  - Added backend tests covering balanced create flow, unbalanced-entry rejection, reversal creation, and double-reversal rejection
 - [x] Issue #19 — Seed manufacturing-friendly starter chart of accounts
   - Added starter manufacturing-friendly chart of accounts and wired it into backend seed flow
   - Added backend tests covering seed stability/idempotent behavior

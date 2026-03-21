@@ -11,7 +11,7 @@ from app.models.account import Account
 from app.models.accounting_period import AccountingPeriod
 from app.models.journal_entry import JournalEntry
 from app.models.journal_line import JournalLine
-from app.schemas.accounting import JournalEntryCreate
+from app.schemas.accounting import JournalEntryCreate, JournalEntryReverse
 
 STARTER_CHART_OF_ACCOUNTS = [
     ("1000", "Cash", "asset", "debit"),
@@ -44,6 +44,11 @@ STARTER_CHART_OF_ACCOUNTS = [
 
 class AccountingValidationError(ValueError):
     pass
+
+
+def _validate_open_period(period: AccountingPeriod | None) -> None:
+    if period and period.status != "open":
+        raise AccountingValidationError("Cannot post journal entry to a non-open accounting period.")
 
 
 async def seed_chart_of_accounts(db: AsyncSession) -> None:
@@ -117,8 +122,7 @@ async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) ->
         period = period_result.scalar_one_or_none()
         if not period:
             raise AccountingValidationError("Accounting period not found.")
-        if period.status != "open":
-            raise AccountingValidationError("Cannot post journal entry to a non-open accounting period.")
+        _validate_open_period(period)
 
     count_result = await db.execute(select(JournalEntry))
     next_number = len(count_result.scalars().all()) + 1
@@ -154,3 +158,77 @@ async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) ->
         .where(JournalEntry.id == entry.id)
     )
     return result.scalar_one()
+
+
+async def reverse_journal_entry(
+    db: AsyncSession,
+    *,
+    entry_id,
+    payload: JournalEntryReverse,
+) -> JournalEntry:
+    result = await db.execute(
+        select(JournalEntry)
+        .options(selectinload(JournalEntry.lines))
+        .where(JournalEntry.id == entry_id)
+    )
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise AccountingValidationError("Journal entry not found.")
+    if entry.status != "posted":
+        raise AccountingValidationError("Only posted journal entries can be reversed.")
+    if entry.is_reversal:
+        raise AccountingValidationError("Reversal entries cannot be reversed again.")
+
+    existing_reversal = await db.execute(
+        select(JournalEntry).where(JournalEntry.reversal_of_id == entry.id)
+    )
+    if existing_reversal.scalar_one_or_none():
+        raise AccountingValidationError("Journal entry has already been reversed.")
+
+    reversal_period = None
+    if entry.accounting_period_id:
+        period_result = await db.execute(
+            select(AccountingPeriod).where(AccountingPeriod.id == entry.accounting_period_id)
+        )
+        original_period = period_result.scalar_one_or_none()
+        if original_period and original_period.start_date <= payload.reversal_date <= original_period.end_date:
+            reversal_period = original_period
+            _validate_open_period(reversal_period)
+
+    count_result = await db.execute(select(JournalEntry))
+    next_number = len(count_result.scalars().all()) + 1
+    reversal_entry = JournalEntry(
+        entry_number=f"JE-{payload.reversal_date.year}-{next_number:04d}",
+        entry_date=payload.reversal_date,
+        accounting_period_id=reversal_period.id if reversal_period else None,
+        status="posted",
+        source_type=entry.source_type,
+        source_id=entry.source_id,
+        memo=payload.memo or f"Reversal of {entry.entry_number}",
+        posted_at=datetime.now(timezone.utc),
+        is_reversal=True,
+        reversal_of_id=entry.id,
+    )
+    db.add(reversal_entry)
+    await db.flush()
+
+    for index, line in enumerate(entry.lines, start=1):
+        opposite = "credit" if line.entry_type == "debit" else "debit"
+        db.add(
+            JournalLine(
+                journal_entry_id=reversal_entry.id,
+                account_id=line.account_id,
+                line_number=index,
+                entry_type=opposite,
+                amount=line.amount,
+                description=line.description,
+            )
+        )
+
+    await db.commit()
+    refreshed = await db.execute(
+        select(JournalEntry)
+        .options(selectinload(JournalEntry.lines))
+        .where(JournalEntry.id == reversal_entry.id)
+    )
+    return refreshed.scalar_one()

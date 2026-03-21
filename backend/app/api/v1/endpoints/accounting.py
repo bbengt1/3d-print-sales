@@ -20,8 +20,9 @@ from app.schemas.accounting import (
     AccountingPeriodUpdate,
     JournalEntryCreate,
     JournalEntryResponse,
+    JournalEntryReverse,
 )
-from app.services.accounting_service import AccountingValidationError, create_journal_entry
+from app.services.accounting_service import AccountingValidationError, create_journal_entry, reverse_journal_entry
 
 router = APIRouter(prefix="/accounting", tags=["Accounting"])
 
@@ -166,6 +167,28 @@ async def create_entry(body: JournalEntryCreate, admin: CurrentAdmin, db: DB):
         entry = await create_journal_entry(db, body)
     except AccountingValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    result = await db.execute(
+        select(JournalEntry)
+        .options(selectinload(JournalEntry.lines))
+        .where(JournalEntry.id == entry.id)
+    )
+    return result.scalar_one()
+
+
+@router.post(
+    "/journal-entries/{entry_id}/reverse",
+    response_model=JournalEntryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Reverse a posted journal entry (admin only)",
+)
+async def reverse_entry(entry_id: uuid.UUID, body: JournalEntryReverse, admin: CurrentAdmin, db: DB):
+    try:
+        entry = await reverse_journal_entry(db, entry_id=entry_id, payload=body)
+    except AccountingValidationError as exc:
+        detail = str(exc)
+        code = 404 if detail == "Journal entry not found." else 400
+        raise HTTPException(status_code=code, detail=detail) from exc
 
     result = await db.execute(
         select(JournalEntry)

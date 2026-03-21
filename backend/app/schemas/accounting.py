@@ -93,6 +93,11 @@ class JournalEntryCreate(BaseModel):
     lines: list[JournalLineCreate]
 
 
+class JournalEntryReverse(BaseModel):
+    reversal_date: datetime.date
+    memo: str | None = None
+
+
 class JournalLineResponse(BaseModel):
     id: uuid.UUID
     account_id: uuid.UUID
@@ -113,4 +118,5 @@ class JournalEntryResponse(BaseModel):
     memo: str | None = None
     posted_at: datetime.datetime | None = None
     is_reversal: bool
+    reversal_of_id: uuid.UUID | None = None
     lines: list[JournalLineResponse] = []

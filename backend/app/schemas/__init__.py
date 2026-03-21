@@ -7,6 +7,7 @@ from app.schemas.accounting import (
     AccountingPeriodUpdate,
     JournalEntryCreate,
     JournalEntryResponse,
+    JournalEntryReverse,
     JournalLineCreate,
     JournalLineResponse,
 )
@@ -55,6 +56,7 @@ __all__ = [
     "DashboardSummary",
     "JournalEntryCreate",
     "JournalEntryResponse",
+    "JournalEntryReverse",
     "JournalLineCreate",
     "JournalLineResponse",
     "JobCreate",
