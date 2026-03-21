@@ -247,13 +247,17 @@ See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the can
 
 ## Accounting Foundation Status
 
-Phase 12 groundwork now includes initial accounting-domain tables and services for:
+Phase 12 groundwork now includes initial accounting-domain tables, services, and APIs for:
 - `accounts`
 - `accounting_periods`
 - `journal_entries`
 - `journal_lines`
 
-The repo also includes a starter chart of accounts seed and basic balanced-journal validation in the accounting service layer.
+Current accounting foundation capabilities:
+- starter chart of accounts seed
+- accounting period helper/validation
+- balanced-journal validation in the accounting service layer
+- admin-only APIs to list accounts, list periods, create journal entries, list journal entries, and fetch journal entry detail
 
 ## P&L Reporting Basis
 

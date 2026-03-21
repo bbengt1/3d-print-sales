@@ -32,9 +32,11 @@
 
 ### In Progress
 - [ ] Issue #16 — Accounting foundation and chart of accounts
-  - Adding initial accounting-domain models: accounts, accounting periods, journal entries, journal lines
-  - Adding starter chart of accounts seeding and balanced journal validation service
-  - Adding backend foundation tests for seeding, period control, and balanced/unbalanced journal entries
+  - Added initial accounting-domain models: accounts, accounting periods, journal entries, journal lines
+  - Added starter chart of accounts seeding and balanced journal validation service
+  - Added backend foundation tests for seeding, period control, and balanced/unbalanced journal entries
+  - Added admin-only accounting APIs for accounts, periods, and journal entries
+  - Added API tests covering account listing, period listing, journal creation, and unbalanced-entry rejection
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
