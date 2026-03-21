@@ -2,30 +2,10 @@
 
 ## Progress Log
 
-### Completed
+### Phase 11 Completed
 - [x] Issue #12 — Audit and rename ambiguous financial fields across backend and frontend
   - Added finance naming matrix doc: `docs/finance_metric_naming.md`
-  - Renamed sales-facing/reporting terms to more accurate labels:
-    - `net_revenue` -> `contribution_margin` in sale APIs/UI
-    - sales/report summary `total_revenue` -> `gross_sales`
-    - sales/report summary `total_cost` -> `item_cogs`
-    - sales/report summary `total_profit` -> `gross_profit`
-    - report row `revenue` -> `gross_sales`
-    - report row `cost` -> `item_cogs`
-    - report row `profit` -> `gross_profit`
-  - Updated README to reflect the new terminology
-
-### Completed
-- [x] Issue #12 — Audit and rename ambiguous financial fields across backend and frontend
-  - Added finance naming matrix doc: `docs/finance_metric_naming.md`
-  - Renamed sales-facing/reporting terms to more accurate labels:
-    - `net_revenue` -> `contribution_margin` in sale APIs/UI
-    - sales/report summary `total_revenue` -> `gross_sales`
-    - sales/report summary `total_cost` -> `item_cogs`
-    - sales/report summary `total_profit` -> `gross_profit`
-    - report row `revenue` -> `gross_sales`
-    - report row `cost` -> `item_cogs`
-    - report row `profit` -> `gross_profit`
+  - Renamed sales/reporting terminology across backend, frontend, tests, and docs
   - Updated README to reflect the new terminology
 - [x] Issue #13 — Correct sales profitability metrics and expose layered profit views
   - Added explicit sales profit layers across API/reporting/UI:
@@ -38,15 +18,17 @@
   - Added sale-level `item_cogs` and `gross_profit` to detail responses
   - Expanded sales metrics and report summaries/channel breakdowns to include fee and shipping impact
   - Documented that `net_profit` is intentionally not exposed yet until overhead allocation exists
-  - Updated README and finance naming docs with formulas and current limitations
-
-### Maintenance Completed
-- [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
-  - Added repo-level `.python-version` pinned to Python 3.13
-  - Added `TESTING` config flag and disabled request rate limiting middleware during tests
-  - Updated backend test bootstrap to set `TESTING=true`
-  - Added `backend/pytest.ini` to make asyncio loop scope explicit
-  - Updated README backend testing instructions and environment notes
+- [x] Issue #14 — Refactor P&L reporting to avoid double-counting and separate operational vs financial reporting
+  - Refactored P&L so `total_revenue` is based on realized sales revenue only
+  - Moved job-side `total_revenue` into `operational_production_estimate` for operational context
+  - Updated P&L summary, period rows, CSV export, and frontend report page to reflect the new basis
+  - Added reporting-basis documentation explaining why production estimates are excluded from financial revenue
+  - Added/updated tests verifying realized sales revenue is no longer combined with production-side expected revenue
+- [x] Issue #15 — Add finance glossary and metric definition documentation
+  - Expanded `docs/finance_metric_naming.md` into a broader finance glossary
+  - Documented revenue terms, cost terms, profit layers, jobs/calculator terms, inventory terms, tax terms, dashboard terms, and P&L reporting basis
+  - Added plain-English definitions, current formulas/sources, and key cautions for exposed metrics
+  - Updated README to point at the glossary as the canonical finance terminology reference
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
@@ -60,42 +42,6 @@
   - Resolved frontend build-blocking TypeScript issues after alias resolution (tooltip formatter typing, pie label typing, unused imports)
   - Verified `npm run build` now succeeds in a clean local frontend environment
   - Updated README with frontend build validation guidance
-
-### Completed
-- [x] Issue #12 — Audit and rename ambiguous financial fields across backend and frontend
-  - Added finance naming matrix doc: `docs/finance_metric_naming.md`
-  - Renamed sales-facing/reporting terms to more accurate labels:
-    - `net_revenue` -> `contribution_margin` in sale APIs/UI
-    - sales/report summary `total_revenue` -> `gross_sales`
-    - sales/report summary `total_cost` -> `item_cogs`
-    - sales/report summary `total_profit` -> `gross_profit`
-    - report row `revenue` -> `gross_sales`
-    - report row `cost` -> `item_cogs`
-    - report row `profit` -> `gross_profit`
-  - Updated README to reflect the new terminology
-- [x] Issue #13 — Correct sales profitability metrics and expose layered profit views
-  - Added explicit sales profit layers across API/reporting/UI:
-    - `gross_sales`
-    - `item_cogs`
-    - `gross_profit`
-    - `platform_fees`
-    - `shipping_costs`
-    - `contribution_margin`
-  - Added sale-level `item_cogs` and `gross_profit` to detail responses
-  - Expanded sales metrics and report summaries/channel breakdowns to include fee and shipping impact
-  - Documented that `net_profit` is intentionally not exposed yet until overhead allocation exists
-  - Updated README and finance naming docs with formulas and current limitations
-- [x] Issue #14 — Refactor P&L reporting to avoid double-counting and separate operational vs financial reporting
-  - Refactored P&L so `total_revenue` is based on realized sales revenue only
-  - Moved job-side `total_revenue` into `operational_production_estimate` for operational context
-  - Updated P&L summary, period rows, CSV export, and frontend report page to reflect the new basis
-  - Added reporting-basis documentation and note explaining why production estimates are excluded from financial revenue
-  - Added/updated tests verifying realized sales revenue is no longer combined with production-side expected revenue
-- [x] Issue #15 — Add finance glossary and metric definition documentation
-  - Expanded `docs/finance_metric_naming.md` into a broader finance glossary
-  - Documented revenue terms, cost terms, profit layers, jobs/calculator terms, inventory terms, tax terms, dashboard terms, and P&L reporting basis
-  - Added plain-English definitions, current formulas/sources, and key cautions for exposed metrics
-  - Updated README to point at the glossary as the canonical finance terminology reference
 
 ## Executive Summary
 
