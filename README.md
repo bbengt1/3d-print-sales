@@ -160,7 +160,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export
   - **Inventory Report** — Stock levels table with valuation, low-stock highlighting, turnover rate chart, material usage pie chart
   - **Sales Report** — Gross sales/gross profit trend chart, top products ranking, channel breakdown with fees and contribution margin
-  - **Profit & Loss** — Combined P&L from production and sales, cost breakdown by category, stacked bar trend chart, period detail table
+  - **Profit & Loss** — Sales-realized revenue P&L with production estimates shown separately for operational context, cost breakdown by category, stacked bar trend chart, period detail table
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Editable business settings with bulk save, grouped by category
 - **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
@@ -244,6 +244,14 @@ See `.env.example` for all configuration options. Key variables:
 ## Finance Metric Naming
 
 See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical naming matrix for finance-related metrics and the rationale behind recent terminology cleanup.
+
+## P&L Reporting Basis
+
+The Profit & Loss report now treats:
+- **sales** as realized revenue
+- **jobs/production** as operational production estimates and cost accumulation
+
+To avoid double counting, job-side `total_revenue` is shown only as an **operational production estimate** and is excluded from `total_revenue` in the P&L summary.
 
 ## Implementation Status
 

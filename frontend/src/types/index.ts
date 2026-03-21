@@ -355,20 +355,22 @@ export interface SalesReport {
 
 export interface PLRow {
   period: string;
-  production_revenue: number;
   sales_revenue: number;
+  operational_production_estimate: number;
   material_costs: number;
   labor_costs: number;
   machine_costs: number;
   overhead_costs: number;
   platform_fees: number;
   shipping_costs: number;
+  total_costs: number;
   gross_profit: number;
+  notes: string;
 }
 
 export interface PLSummary {
-  production_revenue: number;
   sales_revenue: number;
+  operational_production_estimate: number;
   total_revenue: number;
   material_costs: number;
   labor_costs: number;
@@ -379,6 +381,8 @@ export interface PLSummary {
   total_costs: number;
   gross_profit: number;
   profit_margin_pct: number;
+  reporting_basis: string;
+  production_estimate_note: string;
 }
 
 export interface PLReport {

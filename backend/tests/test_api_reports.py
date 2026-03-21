@@ -196,16 +196,17 @@ async def test_pl_report(client: AsyncClient, seed_report_data):
     assert data["summary"]["total_revenue"] > 0
     assert data["summary"]["total_costs"] > 0
     assert data["summary"]["gross_profit"] != 0
+    assert data["summary"]["reporting_basis"] == "sales_realized_revenue"
     assert len(data["period_data"]) >= 1
 
 
 @pytest.mark.asyncio
-async def test_pl_report_has_both_sources(client: AsyncClient, seed_report_data):
+async def test_pl_report_separates_operational_estimate_from_realized_sales(client: AsyncClient, seed_report_data):
     resp = await client.get("/api/v1/reports/pl")
     data = resp.json()
-    # Should have both production revenue (from jobs) and sales revenue (from sales)
-    assert data["summary"]["production_revenue"] > 0
+    assert data["summary"]["operational_production_estimate"] > 0
     assert data["summary"]["sales_revenue"] > 0
+    assert data["summary"]["total_revenue"] == data["summary"]["sales_revenue"]
 
 
 @pytest.mark.asyncio
@@ -213,7 +214,7 @@ async def test_pl_report_csv(client: AsyncClient, seed_report_data):
     resp = await client.get("/api/v1/reports/pl/csv")
     assert resp.status_code == 200
     assert "text/csv" in resp.headers["content-type"]
-    assert "production_revenue" in resp.text
+    assert "operational_production_estimate" in resp.text
     assert "gross_profit" in resp.text
 
 

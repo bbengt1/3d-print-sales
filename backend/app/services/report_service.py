@@ -279,8 +279,8 @@ async def generate_pl_report(
     date_to: date | None,
     period: str = "monthly",
 ):
-    """Profit & Loss combining job costs and sales revenue."""
-    # Jobs data
+    """Financial-style P&L driven by realized sales, with production estimates shown separately."""
+    # Jobs data (operational production estimates/cost accumulation)
     job_stmt = select(Job).where(Job.is_deleted == False)
     if date_from:
         job_stmt = job_stmt.where(Job.date >= date_from)
@@ -289,7 +289,7 @@ async def generate_pl_report(
     job_result = await db.execute(job_stmt)
     jobs = job_result.scalars().all()
 
-    # Sales data
+    # Sales data (realized revenue)
     sale_stmt = select(Sale).where(Sale.is_deleted == False)
     if date_from:
         sale_stmt = sale_stmt.where(Sale.date >= date_from)
@@ -299,18 +299,22 @@ async def generate_pl_report(
     sales = sale_result.scalars().all()
     completed_sales = [s for s in sales if s.status not in ("cancelled", "refunded")]
 
-    # Build period data
     period_map: dict[str, dict] = {}
 
     for j in jobs:
         key = _trunc_period(j.date, period)
         if key not in period_map:
             period_map[key] = {
-                "production_revenue": 0.0, "sales_revenue": 0.0,
-                "material_costs": 0.0, "labor_costs": 0.0, "machine_costs": 0.0,
-                "overhead_costs": 0.0, "platform_fees": 0.0, "shipping_costs": 0.0,
+                "sales_revenue": 0.0,
+                "operational_production_estimate": 0.0,
+                "material_costs": 0.0,
+                "labor_costs": 0.0,
+                "machine_costs": 0.0,
+                "overhead_costs": 0.0,
+                "platform_fees": 0.0,
+                "shipping_costs": 0.0,
             }
-        period_map[key]["production_revenue"] += float(j.total_revenue)
+        period_map[key]["operational_production_estimate"] += float(j.total_revenue)
         period_map[key]["material_costs"] += float(j.material_cost)
         period_map[key]["labor_costs"] += float(j.labor_cost) + float(j.design_cost or 0)
         period_map[key]["machine_costs"] += float(j.machine_cost) + float(j.electricity_cost)
@@ -320,9 +324,14 @@ async def generate_pl_report(
         key = _trunc_period(s.date, period)
         if key not in period_map:
             period_map[key] = {
-                "production_revenue": 0.0, "sales_revenue": 0.0,
-                "material_costs": 0.0, "labor_costs": 0.0, "machine_costs": 0.0,
-                "overhead_costs": 0.0, "platform_fees": 0.0, "shipping_costs": 0.0,
+                "sales_revenue": 0.0,
+                "operational_production_estimate": 0.0,
+                "material_costs": 0.0,
+                "labor_costs": 0.0,
+                "machine_costs": 0.0,
+                "overhead_costs": 0.0,
+                "platform_fees": 0.0,
+                "shipping_costs": 0.0,
             }
         period_map[key]["sales_revenue"] += float(s.total)
         period_map[key]["platform_fees"] += float(s.platform_fees)
@@ -330,18 +339,18 @@ async def generate_pl_report(
 
     period_data = []
     for k, v in sorted(period_map.items()):
-        total_rev = v["production_revenue"] + v["sales_revenue"]
         total_cost = v["material_costs"] + v["labor_costs"] + v["machine_costs"] + v["overhead_costs"] + v["platform_fees"] + v["shipping_costs"]
         period_data.append({
             "period": k,
             **v,
-            "gross_profit": round(total_rev - total_cost, 2),
+            "total_costs": round(total_cost, 2),
+            "gross_profit": round(v["sales_revenue"] - total_cost, 2),
+            "notes": "Revenue is sales-based only. Production estimate is shown separately for operational analysis.",
         })
 
-    # Summary totals
-    prod_rev = sum(float(j.total_revenue) for j in jobs)
-    sales_rev = sum(float(s.total) for s in completed_sales)
-    total_revenue = prod_rev + sales_rev
+    operational_production_estimate = sum(float(j.total_revenue) for j in jobs)
+    sales_revenue = sum(float(s.total) for s in completed_sales)
+    total_revenue = sales_revenue
     mat = sum(float(j.material_cost) for j in jobs)
     lab = sum(float(j.labor_cost) + float(j.design_cost or 0) for j in jobs)
     mach = sum(float(j.machine_cost) + float(j.electricity_cost) for j in jobs)
@@ -352,8 +361,8 @@ async def generate_pl_report(
     gross_profit = total_revenue - total_costs
 
     summary = {
-        "production_revenue": round(prod_rev, 2),
-        "sales_revenue": round(sales_rev, 2),
+        "sales_revenue": round(sales_revenue, 2),
+        "operational_production_estimate": round(operational_production_estimate, 2),
         "total_revenue": round(total_revenue, 2),
         "material_costs": round(mat, 2),
         "labor_costs": round(lab, 2),
@@ -364,6 +373,8 @@ async def generate_pl_report(
         "total_costs": round(total_costs, 2),
         "gross_profit": round(gross_profit, 2),
         "profit_margin_pct": round(gross_profit / total_revenue * 100, 1) if total_revenue > 0 else 0,
+        "reporting_basis": "sales_realized_revenue",
+        "production_estimate_note": "Production estimate reflects job-side quoted/expected revenue and is excluded from total_revenue to avoid double counting.",
     }
 
     return {"summary": summary, "period_data": period_data}

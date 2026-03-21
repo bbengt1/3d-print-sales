@@ -86,20 +86,22 @@ class SalesReportResponse(BaseModel):
 
 class PLRow(BaseModel):
     period: str
-    production_revenue: float       # from jobs
-    sales_revenue: float            # from sales
+    sales_revenue: float
+    operational_production_estimate: float
     material_costs: float
     labor_costs: float
     machine_costs: float
     overhead_costs: float
     platform_fees: float
     shipping_costs: float
+    total_costs: float
     gross_profit: float
+    notes: str
 
 
 class PLSummary(BaseModel):
-    production_revenue: float
     sales_revenue: float
+    operational_production_estimate: float
     total_revenue: float
     material_costs: float
     labor_costs: float
@@ -110,6 +112,8 @@ class PLSummary(BaseModel):
     total_costs: float
     gross_profit: float
     profit_margin_pct: float
+    reporting_basis: str
+    production_estimate_note: str
 
 
 class PLReportResponse(BaseModel):

@@ -54,10 +54,10 @@ export default function PLReportPage() {
           {/* Summary cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Total Revenue</p>
+              <p className="text-sm text-muted-foreground">Realized Sales Revenue</p>
               <p className="text-2xl font-bold mt-1">{formatCurrency(s.total_revenue)}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Production: {formatCurrency(s.production_revenue)} | Sales: {formatCurrency(s.sales_revenue)}
+                Sales basis only: {formatCurrency(s.sales_revenue)}
               </p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6 text-center">
@@ -76,6 +76,12 @@ export default function PLReportPage() {
                 {formatPercent(s.profit_margin_pct)}
               </p>
             </div>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-900 dark:text-amber-100">
+            <p className="font-medium">Reporting basis: sales-realized revenue</p>
+            <p className="mt-1">{s.production_estimate_note}</p>
+            <p className="mt-1">Operational production estimate shown separately: {formatCurrency(s.operational_production_estimate)}</p>
           </div>
 
           {/* Cost breakdown */}
@@ -112,8 +118,8 @@ export default function PLReportPage() {
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
                   <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                   <Legend />
-                  <Bar dataKey="production_revenue" name="Production Rev" stackId="rev" fill="#6366f1" />
-                  <Bar dataKey="sales_revenue" name="Sales Rev" stackId="rev" fill="#8b5cf6" />
+                  <Bar dataKey="sales_revenue" name="Sales Revenue" stackId="rev" fill="#8b5cf6" />
+                  <Bar dataKey="operational_production_estimate" name="Operational Production Estimate" fill="#6366f1" />
                   <Bar dataKey="material_costs" name="Materials" stackId="cost" fill="#f87171" />
                   <Bar dataKey="labor_costs" name="Labor" stackId="cost" fill="#fb923c" />
                   <Bar dataKey="machine_costs" name="Machine" stackId="cost" fill="#fbbf24" />
@@ -131,8 +137,8 @@ export default function PLReportPage() {
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="px-3 py-2 font-medium">Period</th>
-                      <th className="px-3 py-2 font-medium text-right">Prod Rev</th>
                       <th className="px-3 py-2 font-medium text-right">Sales Rev</th>
+                      <th className="px-3 py-2 font-medium text-right">Prod Estimate</th>
                       <th className="px-3 py-2 font-medium text-right">Materials</th>
                       <th className="px-3 py-2 font-medium text-right">Labor</th>
                       <th className="px-3 py-2 font-medium text-right">Machine</th>
@@ -145,8 +151,8 @@ export default function PLReportPage() {
                     {data.period_data.map((row) => (
                       <tr key={row.period} className="border-b border-border last:border-0 hover:bg-accent/50">
                         <td className="px-3 py-2 font-medium">{row.period}</td>
-                        <td className="px-3 py-2 text-right">{formatCurrency(row.production_revenue)}</td>
                         <td className="px-3 py-2 text-right">{formatCurrency(row.sales_revenue)}</td>
+                        <td className="px-3 py-2 text-right text-muted-foreground">{formatCurrency(row.operational_production_estimate)}</td>
                         <td className="px-3 py-2 text-right">{formatCurrency(row.material_costs)}</td>
                         <td className="px-3 py-2 text-right">{formatCurrency(row.labor_costs)}</td>
                         <td className="px-3 py-2 text-right">{formatCurrency(row.machine_costs)}</td>
