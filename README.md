@@ -109,7 +109,7 @@ Eleven tables (6 seeded from the original spreadsheet + 2 for inventory + 3 for 
 - **products** — Product catalog with auto-generated SKU, optional UPC, stock tracking, reorder points
 - **inventory_transactions** — Stock movement ledger (production, sale, adjustment, return, waste)
 - **sales_channels** — Sales platforms (Etsy, Amazon, Direct) with platform fee % and fixed fee per order
-- **sales** — Order tracking with auto-generated sale number (S-YYYY-NNNN), status flow, computed totals and net revenue
+- **sales** — Order tracking with auto-generated sale number (S-YYYY-NNNN), status flow, computed totals and contribution margin
 - **sale_items** — Line items per sale linking to products/jobs with quantity, pricing, and cost
 
 ## Cost Calculation Engine
@@ -126,7 +126,7 @@ Buffer      = subtotal * failure_rate%
 Overhead    = (subtotal + buffer) * overhead%
 Total Cost  = subtotal + buffer + overhead
 Price       = cost_per_piece / (1 - margin%)
-Profit      = revenue - costs - platform_fees
+Contribution Margin = sale total - platform fees - shipping cost - item costs
 ```
 
 ## Frontend Features
@@ -145,19 +145,19 @@ Profit      = revenue - costs - platform_fees
 
 ### Pages
 
-- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, revenue, profit, AOV) + revenue by channel chart
+- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, gross profit, AOV) + revenue by channel chart
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
 - **Products** — Product catalog with CRUD modal, SKU/UPC, stock tracking, reorder alerts, search, pagination
 - **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
-- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, financial summary, status management, refund
+- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, financial summary, contribution margin, status management, refund
 - **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
 - **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
 - **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export
   - **Inventory Report** — Stock levels table with valuation, low-stock highlighting, turnover rate chart, material usage pie chart
-  - **Sales Report** — Revenue/profit trend chart, top products ranking, channel breakdown with fees and net revenue
+  - **Sales Report** — Gross sales/gross profit trend chart, top products ranking, channel breakdown with fees and contribution margin
   - **Profit & Loss** — Combined P&L from production and sales, cost breakdown by category, stacked bar trend chart, period detail table
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
 - **Admin Settings** — Editable business settings with bulk save, grouped by category
@@ -219,6 +219,10 @@ See `.env.example` for all configuration options. Key variables:
 | `ADMIN_PASSWORD` | `admin123` | Seed admin password |
 | `RATE_LIMIT_PER_MINUTE` | `120` | API rate limit per IP |
 | `RATE_LIMIT_BURST` | `30` | Rate limit burst capacity |
+
+## Finance Metric Naming
+
+See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical naming matrix for finance-related metrics and the rationale behind recent terminology cleanup.
 
 ## Implementation Status
 

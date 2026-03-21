@@ -128,9 +128,9 @@ export default function SaleDetailPage() {
               <div className="flex justify-between font-semibold border-t border-border pt-2"><span>Total</span><span>{formatCurrency(sale.total)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Platform fees</span><span>-{formatCurrency(sale.platform_fees)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Shipping cost</span><span>-{formatCurrency(sale.shipping_cost)}</span></div>
-              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.net_revenue) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                <span>Net Revenue</span>
-                <span>{formatCurrency(sale.net_revenue)}</span>
+              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.contribution_margin) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span>Contribution Margin</span>
+                <span>{formatCurrency(sale.contribution_margin)}</span>
               </div>
             </div>
           </div>

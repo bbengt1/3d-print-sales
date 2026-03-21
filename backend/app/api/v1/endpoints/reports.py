@@ -93,7 +93,7 @@ async def sales_csv(
     data = await generate_sales_report(db, date_from, date_to, period)
     csv_content = export_to_csv(
         data["period_data"],
-        ["period", "order_count", "revenue", "cost", "profit"],
+        ["period", "order_count", "gross_sales", "item_cogs", "gross_profit"],
     )
     return StreamingResponse(
         iter([csv_content]),

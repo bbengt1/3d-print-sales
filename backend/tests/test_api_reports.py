@@ -148,7 +148,8 @@ async def test_sales_report(client: AsyncClient, seed_report_data):
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_orders"] >= 1
-    assert data["total_revenue"] > 0
+    assert data["gross_sales"] > 0
+    assert data["gross_profit"] >= 0
     assert len(data["period_data"]) >= 1
     assert len(data["top_products"]) >= 1
     assert len(data["channel_breakdown"]) >= 1
@@ -168,7 +169,7 @@ async def test_sales_report_csv(client: AsyncClient, seed_report_data):
     resp = await client.get("/api/v1/reports/sales/csv")
     assert resp.status_code == 200
     assert "text/csv" in resp.headers["content-type"]
-    assert "period" in resp.text
+    assert "gross_sales" in resp.text
 
 
 @pytest.mark.asyncio

@@ -155,12 +155,12 @@ async def generate_sales_report(
     for s in completed:
         key = _trunc_period(s.date, period)
         if key not in period_map:
-            period_map[key] = {"order_count": 0, "revenue": 0.0, "cost": 0.0, "profit": 0.0}
+            period_map[key] = {"order_count": 0, "gross_sales": 0.0, "item_cogs": 0.0, "gross_profit": 0.0}
         period_map[key]["order_count"] += 1
-        period_map[key]["revenue"] += float(s.total)
+        period_map[key]["gross_sales"] += float(s.total)
         item_cost = sum(float(i.unit_cost) * i.quantity for i in s.items)
-        period_map[key]["cost"] += item_cost
-        period_map[key]["profit"] += float(s.net_revenue) - item_cost
+        period_map[key]["item_cogs"] += item_cost
+        period_map[key]["gross_profit"] += float(s.total) - item_cost
 
     period_data = [
         {"period": k, **v} for k, v in sorted(period_map.items())
@@ -173,15 +173,15 @@ async def generate_sales_report(
             pid = str(item.product_id) if item.product_id else None
             desc = item.description
             if pid not in prod_map:
-                prod_map[pid] = {"product_id": pid, "description": desc, "units_sold": 0, "revenue": 0.0, "cost": 0.0, "profit": 0.0}
+                prod_map[pid] = {"product_id": pid, "description": desc, "units_sold": 0, "gross_sales": 0.0, "item_cogs": 0.0, "gross_profit": 0.0}
             prod_map[pid]["units_sold"] += item.quantity
             line_rev = float(item.line_total)
             line_cost = float(item.unit_cost) * item.quantity
-            prod_map[pid]["revenue"] += line_rev
-            prod_map[pid]["cost"] += line_cost
-            prod_map[pid]["profit"] += line_rev - line_cost
+            prod_map[pid]["gross_sales"] += line_rev
+            prod_map[pid]["item_cogs"] += line_cost
+            prod_map[pid]["gross_profit"] += line_rev - line_cost
 
-    top_products = sorted(prod_map.values(), key=lambda x: x["revenue"], reverse=True)[:20]
+    top_products = sorted(prod_map.values(), key=lambda x: x["gross_sales"], reverse=True)[:20]
 
     # Channel breakdown
     ch_map: dict[str, dict] = {}
@@ -196,25 +196,25 @@ async def generate_sales_report(
     for s in completed:
         ch_name = channel_names.get(s.channel_id, "Direct") if s.channel_id else "Direct"
         if ch_name not in ch_map:
-            ch_map[ch_name] = {"channel_name": ch_name, "order_count": 0, "revenue": 0.0, "platform_fees": 0.0, "net_revenue": 0.0}
+            ch_map[ch_name] = {"channel_name": ch_name, "order_count": 0, "gross_sales": 0.0, "platform_fees": 0.0, "contribution_margin": 0.0}
         ch_map[ch_name]["order_count"] += 1
-        ch_map[ch_name]["revenue"] += float(s.total)
+        ch_map[ch_name]["gross_sales"] += float(s.total)
         ch_map[ch_name]["platform_fees"] += float(s.platform_fees)
-        ch_map[ch_name]["net_revenue"] += float(s.net_revenue)
+        ch_map[ch_name]["contribution_margin"] += float(s.net_revenue)
 
-    channel_breakdown = sorted(ch_map.values(), key=lambda x: x["revenue"], reverse=True)
+    channel_breakdown = sorted(ch_map.values(), key=lambda x: x["gross_sales"], reverse=True)
 
-    total_revenue = sum(float(s.total) for s in completed)
-    total_cost = sum(sum(float(i.unit_cost) * i.quantity for i in s.items) for s in completed)
+    gross_sales = sum(float(s.total) for s in completed)
+    item_cogs = sum(sum(float(i.unit_cost) * i.quantity for i in s.items) for s in completed)
 
     return {
         "period_data": period_data,
         "top_products": top_products,
         "channel_breakdown": channel_breakdown,
         "total_orders": len(completed),
-        "total_revenue": round(total_revenue, 2),
-        "total_cost": round(total_cost, 2),
-        "total_profit": round(total_revenue - total_cost, 2),
+        "gross_sales": round(gross_sales, 2),
+        "item_cogs": round(item_cogs, 2),
+        "gross_profit": round(gross_sales - item_cogs, 2),
     }
 
 

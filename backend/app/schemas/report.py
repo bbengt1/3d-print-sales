@@ -36,26 +36,26 @@ class InventoryReportResponse(BaseModel):
 class SalesReportRow(BaseModel):
     period: str         # e.g. "2026-03" or "2026-03-20"
     order_count: int
-    revenue: float
-    cost: float
-    profit: float
+    gross_sales: float
+    item_cogs: float
+    gross_profit: float
 
 
 class ProductRanking(BaseModel):
     product_id: str | None
     description: str
     units_sold: int
-    revenue: float
-    cost: float
-    profit: float
+    gross_sales: float
+    item_cogs: float
+    gross_profit: float
 
 
 class ChannelBreakdown(BaseModel):
     channel_name: str
     order_count: int
-    revenue: float
+    gross_sales: float
     platform_fees: float
-    net_revenue: float
+    contribution_margin: float
 
 
 class SalesReportResponse(BaseModel):
@@ -63,9 +63,9 @@ class SalesReportResponse(BaseModel):
     top_products: list[ProductRanking]
     channel_breakdown: list[ChannelBreakdown]
     total_orders: int
-    total_revenue: float
-    total_cost: float
-    total_profit: float
+    gross_sales: float
+    item_cogs: float
+    gross_profit: float
 
 
 # ── Profit & Loss Report ─────────────────────────────────────────

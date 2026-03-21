@@ -116,8 +116,8 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold mb-4">Sales Overview</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard icon={ShoppingCart} label="Total Orders" value={String(salesMetrics.total_sales)} />
-            <StatCard icon={DollarSign} label="Sales Revenue" value={formatCurrency(salesMetrics.total_revenue)} />
-            <StatCard icon={TrendingUp} label="Sales Profit" value={formatCurrency(salesMetrics.total_profit)} />
+            <StatCard icon={DollarSign} label="Gross Sales" value={formatCurrency(salesMetrics.gross_sales)} />
+            <StatCard icon={TrendingUp} label="Gross Profit" value={formatCurrency(salesMetrics.gross_profit)} />
             <StatCard icon={BarChart3} label="Avg Order Value" value={formatCurrency(salesMetrics.avg_order_value)}
               sub={salesMetrics.refund_count > 0 ? `${salesMetrics.refund_count} refund(s)` : undefined} />
           </div>

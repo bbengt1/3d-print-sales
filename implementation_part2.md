@@ -1,5 +1,24 @@
 # 3D Print Sales — Implementation Part 2
 
+## Progress Log
+
+### Completed
+- [x] Issue #12 — Audit and rename ambiguous financial fields across backend and frontend
+  - Added finance naming matrix doc: `docs/finance_metric_naming.md`
+  - Renamed sales-facing/reporting terms to more accurate labels:
+    - `net_revenue` -> `contribution_margin` in sale APIs/UI
+    - sales/report summary `total_revenue` -> `gross_sales`
+    - sales/report summary `total_cost` -> `item_cogs`
+    - sales/report summary `total_profit` -> `gross_profit`
+    - report row `revenue` -> `gross_sales`
+    - report row `cost` -> `item_cogs`
+    - report row `profit` -> `gross_profit`
+  - Updated README to reflect the new terminology
+
+### Next Up
+- [ ] Issue #13 — Correct sales profitability metrics and expose layered profit views
+- [ ] Issue #14 — Refactor P&L reporting to avoid double-counting and separate operational vs financial reporting
+
 ## Executive Summary
 
 The current application is **well structured, modern, and genuinely useful operationally**. It already does several things very well:

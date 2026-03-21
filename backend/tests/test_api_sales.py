@@ -116,6 +116,7 @@ async def test_create_sale(client: AsyncClient, auth_headers: dict, seed_channel
     assert len(data["items"]) == 1
     assert float(data["subtotal"]) == 17.98
     assert float(data["platform_fees"]) > 0  # Etsy fees applied
+    assert "contribution_margin" in data
 
 
 @pytest.mark.asyncio
@@ -222,4 +223,5 @@ async def test_sale_metrics(client: AsyncClient, auth_headers: dict):
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_sales"] >= 1
-    assert data["total_revenue"] > 0
+    assert data["gross_sales"] > 0
+    assert data["gross_profit"] >= 0

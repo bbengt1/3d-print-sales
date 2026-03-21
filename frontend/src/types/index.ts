@@ -225,7 +225,7 @@ export interface Sale {
   platform_fees: number;
   tax_collected: number;
   total: number;
-  net_revenue: number;
+  contribution_margin: number;
   payment_method: string | null;
   tracking_number: string | null;
   notes: string | null;
@@ -242,7 +242,7 @@ export interface SaleListItem {
   channel_id: string | null;
   status: string;
   total: number;
-  net_revenue: number;
+  contribution_margin: number;
   item_count: number;
   created_at: string | null;
 }
@@ -256,9 +256,9 @@ export interface PaginatedSales {
 
 export interface SalesMetrics {
   total_sales: number;
-  total_revenue: number;
-  total_cost: number;
-  total_profit: number;
+  gross_sales: number;
+  item_cogs: number;
+  gross_profit: number;
   total_units_sold: number;
   avg_order_value: number;
   refund_count: number;
@@ -296,26 +296,26 @@ export interface InventoryReport {
 export interface SalesReportRow {
   period: string;
   order_count: number;
-  revenue: number;
-  cost: number;
-  profit: number;
+  gross_sales: number;
+  item_cogs: number;
+  gross_profit: number;
 }
 
 export interface ProductRanking {
   product_id: string | null;
   description: string;
   units_sold: number;
-  revenue: number;
-  cost: number;
-  profit: number;
+  gross_sales: number;
+  item_cogs: number;
+  gross_profit: number;
 }
 
 export interface ChannelBreakdown {
   channel_name: string;
   order_count: number;
-  revenue: number;
+  gross_sales: number;
   platform_fees: number;
-  net_revenue: number;
+  contribution_margin: number;
 }
 
 export interface SalesReport {
@@ -323,9 +323,9 @@ export interface SalesReport {
   top_products: ProductRanking[];
   channel_breakdown: ChannelBreakdown[];
   total_orders: number;
-  total_revenue: number;
-  total_cost: number;
-  total_profit: number;
+  gross_sales: number;
+  item_cogs: number;
+  gross_profit: number;
 }
 
 export interface PLRow {

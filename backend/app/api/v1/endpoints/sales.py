@@ -31,6 +31,31 @@ from app.services.sales_service import (
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
 
+def _to_sale_response(sale: Sale) -> SaleResponse:
+    return SaleResponse(
+        id=sale.id,
+        sale_number=sale.sale_number,
+        date=sale.date,
+        customer_id=sale.customer_id,
+        customer_name=sale.customer_name,
+        channel_id=sale.channel_id,
+        status=sale.status,
+        subtotal=sale.subtotal,
+        shipping_charged=sale.shipping_charged,
+        shipping_cost=sale.shipping_cost,
+        platform_fees=sale.platform_fees,
+        tax_collected=sale.tax_collected,
+        total=sale.total,
+        contribution_margin=sale.net_revenue,
+        payment_method=sale.payment_method,
+        tracking_number=sale.tracking_number,
+        notes=sale.notes,
+        items=sale.items,
+        created_at=sale.created_at,
+        updated_at=sale.updated_at,
+    )
+
+
 @router.get(
     "",
     response_model=PaginatedSales,
@@ -85,7 +110,7 @@ async def list_sales(
             channel_id=s.channel_id,
             status=s.status,
             total=s.total,
-            net_revenue=s.net_revenue,
+            contribution_margin=s.net_revenue,
             item_count=len(s.items),
             created_at=s.created_at,
         )
@@ -154,9 +179,9 @@ async def get_metrics(
 
     return SalesMetrics(
         total_sales=total_sales,
-        total_revenue=total_revenue,
-        total_cost=total_cost,
-        total_profit=total_revenue - total_cost,
+        gross_sales=total_revenue,
+        item_cogs=total_cost,
+        gross_profit=total_revenue - total_cost,
         total_units_sold=total_units,
         avg_order_value=total_revenue / total_sales if total_sales > 0 else 0,
         refund_count=len(refunded),
@@ -180,7 +205,7 @@ async def get_sale(sale_id: uuid.UUID, db: DB):
     sale = result.scalar_one_or_none()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
-    return sale
+    return _to_sale_response(sale)
 
 
 @router.post(
@@ -247,7 +272,7 @@ async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
     result = await db.execute(
         select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
     )
-    return result.scalar_one()
+    return _to_sale_response(result.scalar_one())
 
 
 @router.put(
@@ -297,7 +322,7 @@ async def update_sale(sale_id: uuid.UUID, body: SaleUpdate, user: CurrentUser, d
     result = await db.execute(
         select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
     )
-    return result.scalar_one()
+    return _to_sale_response(result.scalar_one())
 
 
 @router.delete(
@@ -342,4 +367,4 @@ async def refund_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
     result = await db.execute(
         select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
     )
-    return result.scalar_one()
+    return _to_sale_response(result.scalar_one())
