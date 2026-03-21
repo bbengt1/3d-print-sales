@@ -225,6 +225,8 @@ export interface Sale {
   platform_fees: number;
   tax_collected: number;
   total: number;
+  item_cogs: number;
+  gross_profit: number;
   contribution_margin: number;
   payment_method: string | null;
   tracking_number: string | null;
@@ -242,6 +244,7 @@ export interface SaleListItem {
   channel_id: string | null;
   status: string;
   total: number;
+  gross_profit: number;
   contribution_margin: number;
   item_count: number;
   created_at: string | null;
@@ -259,6 +262,10 @@ export interface SalesMetrics {
   gross_sales: number;
   item_cogs: number;
   gross_profit: number;
+  platform_fees: number;
+  shipping_costs: number;
+  contribution_margin: number;
+  net_profit: number | null;
   total_units_sold: number;
   avg_order_value: number;
   refund_count: number;
@@ -266,7 +273,12 @@ export interface SalesMetrics {
   revenue_by_channel: {
     channel_id: string | null;
     channel_name: string;
-    revenue: number;
+    gross_sales: number;
+    item_cogs: number;
+    gross_profit: number;
+    platform_fees: number;
+    shipping_costs: number;
+    contribution_margin: number;
     order_count: number;
   }[];
 }
@@ -299,6 +311,9 @@ export interface SalesReportRow {
   gross_sales: number;
   item_cogs: number;
   gross_profit: number;
+  platform_fees: number;
+  shipping_costs: number;
+  contribution_margin: number;
 }
 
 export interface ProductRanking {
@@ -308,13 +323,19 @@ export interface ProductRanking {
   gross_sales: number;
   item_cogs: number;
   gross_profit: number;
+  platform_fees: number;
+  shipping_costs: number;
+  contribution_margin: number;
 }
 
 export interface ChannelBreakdown {
   channel_name: string;
   order_count: number;
   gross_sales: number;
+  item_cogs: number;
+  gross_profit: number;
   platform_fees: number;
+  shipping_costs: number;
   contribution_margin: number;
 }
 
@@ -326,6 +347,10 @@ export interface SalesReport {
   gross_sales: number;
   item_cogs: number;
   gross_profit: number;
+  platform_fees: number;
+  shipping_costs: number;
+  contribution_margin: number;
+  net_profit: number | null;
 }
 
 export interface PLRow {

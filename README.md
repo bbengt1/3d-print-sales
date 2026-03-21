@@ -126,7 +126,9 @@ Buffer      = subtotal * failure_rate%
 Overhead    = (subtotal + buffer) * overhead%
 Total Cost  = subtotal + buffer + overhead
 Price       = cost_per_piece / (1 - margin%)
-Contribution Margin = sale total - platform fees - shipping cost - item costs
+Gross Profit        = gross sales - item COGS
+Contribution Margin = gross profit - platform fees - shipping cost
+Net Profit          = not yet exposed for sales reporting until overhead allocation exists
 ```
 
 ## Frontend Features
@@ -145,14 +147,14 @@ Contribution Margin = sale total - platform fees - shipping cost - item costs
 
 ### Pages
 
-- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, gross profit, AOV) + revenue by channel chart
+- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, item COGS, gross profit, contribution margin) + revenue by channel chart
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
 - **Products** — Product catalog with CRUD modal, SKU/UPC, stock tracking, reorder alerts, search, pagination
 - **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
-- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, financial summary, contribution margin, status management, refund
+- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, gross profit + contribution margin breakdown, status management, refund
 - **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
 - **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
 - **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export

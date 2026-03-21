@@ -15,8 +15,32 @@
     - report row `profit` -> `gross_profit`
   - Updated README to reflect the new terminology
 
+### Completed
+- [x] Issue #12 — Audit and rename ambiguous financial fields across backend and frontend
+  - Added finance naming matrix doc: `docs/finance_metric_naming.md`
+  - Renamed sales-facing/reporting terms to more accurate labels:
+    - `net_revenue` -> `contribution_margin` in sale APIs/UI
+    - sales/report summary `total_revenue` -> `gross_sales`
+    - sales/report summary `total_cost` -> `item_cogs`
+    - sales/report summary `total_profit` -> `gross_profit`
+    - report row `revenue` -> `gross_sales`
+    - report row `cost` -> `item_cogs`
+    - report row `profit` -> `gross_profit`
+  - Updated README to reflect the new terminology
+- [x] Issue #13 — Correct sales profitability metrics and expose layered profit views
+  - Added explicit sales profit layers across API/reporting/UI:
+    - `gross_sales`
+    - `item_cogs`
+    - `gross_profit`
+    - `platform_fees`
+    - `shipping_costs`
+    - `contribution_margin`
+  - Added sale-level `item_cogs` and `gross_profit` to detail responses
+  - Expanded sales metrics and report summaries/channel breakdowns to include fee and shipping impact
+  - Documented that `net_profit` is intentionally not exposed yet until overhead allocation exists
+  - Updated README and finance naming docs with formulas and current limitations
+
 ### Next Up
-- [ ] Issue #13 — Correct sales profitability metrics and expose layered profit views
 - [ ] Issue #14 — Refactor P&L reporting to avoid double-counting and separate operational vs financial reporting
 
 ## Executive Summary

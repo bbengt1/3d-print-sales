@@ -84,6 +84,8 @@ class SaleResponse(BaseModel):
     platform_fees: Decimal
     tax_collected: Decimal
     total: Decimal
+    item_cogs: Decimal
+    gross_profit: Decimal
     contribution_margin: Decimal
     payment_method: str | None = None
     tracking_number: str | None = None
@@ -102,6 +104,7 @@ class SaleListResponse(BaseModel):
     channel_id: uuid.UUID | None = None
     status: str
     total: Decimal
+    gross_profit: Decimal
     contribution_margin: Decimal
     item_count: int = 0
     created_at: datetime.datetime | None = None
@@ -119,6 +122,10 @@ class SalesMetrics(BaseModel):
     gross_sales: float
     item_cogs: float
     gross_profit: float
+    platform_fees: float
+    shipping_costs: float
+    contribution_margin: float
+    net_profit: float | None = None
     total_units_sold: int
     avg_order_value: float
     refund_count: int

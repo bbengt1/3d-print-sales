@@ -114,12 +114,14 @@ export default function DashboardPage() {
       {salesMetrics && salesMetrics.total_sales > 0 && (
         <div>
           <h2 className="text-xl font-semibold mb-4">Sales Overview</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <StatCard icon={ShoppingCart} label="Total Orders" value={String(salesMetrics.total_sales)} />
             <StatCard icon={DollarSign} label="Gross Sales" value={formatCurrency(salesMetrics.gross_sales)} />
+            <StatCard icon={Layers} label="Item COGS" value={formatCurrency(salesMetrics.item_cogs)} />
             <StatCard icon={TrendingUp} label="Gross Profit" value={formatCurrency(salesMetrics.gross_profit)} />
-            <StatCard icon={BarChart3} label="Avg Order Value" value={formatCurrency(salesMetrics.avg_order_value)}
-              sub={salesMetrics.refund_count > 0 ? `${salesMetrics.refund_count} refund(s)` : undefined} />
+            <StatCard icon={DollarSign} label="Platform Fees + Shipping" value={formatCurrency(salesMetrics.platform_fees + salesMetrics.shipping_costs)} />
+            <StatCard icon={BarChart3} label="Contribution Margin" value={formatCurrency(salesMetrics.contribution_margin)}
+              sub={salesMetrics.refund_count > 0 ? `${salesMetrics.refund_count} refund(s)` : 'Net profit pending overhead allocation'} />
           </div>
           {salesMetrics.revenue_by_channel.length > 1 && (
             <div className="mt-4 bg-card border border-border rounded-lg p-6">
@@ -130,7 +132,7 @@ export default function DashboardPage() {
                   <XAxis dataKey="channel_name" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
-                  <Bar dataKey="revenue" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="gross_sales" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

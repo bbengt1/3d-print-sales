@@ -30,12 +30,33 @@ These values are still operationally useful and remain unchanged in issue #12:
 
 These names may still be revisited in later phases when operational metrics are more cleanly separated from accounting/reporting metrics.
 
+## Profit Layer Formulas
+
+### Gross Sales
+Realized sale total for completed sales/orders included in the view.
+
+### Item COGS
+Sum of item-level cost basis for sold items.
+
+### Gross Profit
+`gross_sales - item_cogs`
+
+### Contribution Margin
+`gross_profit - platform_fees - shipping_costs`
+
+Equivalent sale-level formula:
+`total - item_cogs - platform_fees - shipping_cost`
+
+### Net Profit
+Not yet exposed for sales reporting because overhead allocation has not been implemented.
+
 ## Important Cautions
 
 1. `contribution_margin` is still an operational metric, not a booked accounting statement amount.
-2. `gross_profit` in sales reporting currently means **gross sales - item COGS**.
-3. Platform fees and shipping cost are not yet folded into every profit metric; issue #13 addresses formula-level corrections.
-4. P&L semantics are still under review; issue #14 covers statement-level cleanup.
+2. `gross_profit` in sales reporting means **gross sales - item COGS**.
+3. `contribution_margin` means **gross profit - platform fees - shipping costs**.
+4. Net profit is intentionally `null`/omitted in the sales layer until overhead allocation exists.
+5. P&L semantics are still under review; issue #14 covers statement-level cleanup.
 
 ## Related Issues
 

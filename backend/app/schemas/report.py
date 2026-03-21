@@ -39,6 +39,9 @@ class SalesReportRow(BaseModel):
     gross_sales: float
     item_cogs: float
     gross_profit: float
+    platform_fees: float
+    shipping_costs: float
+    contribution_margin: float
 
 
 class ProductRanking(BaseModel):
@@ -48,13 +51,19 @@ class ProductRanking(BaseModel):
     gross_sales: float
     item_cogs: float
     gross_profit: float
+    platform_fees: float
+    shipping_costs: float
+    contribution_margin: float
 
 
 class ChannelBreakdown(BaseModel):
     channel_name: str
     order_count: int
     gross_sales: float
+    item_cogs: float
+    gross_profit: float
     platform_fees: float
+    shipping_costs: float
     contribution_margin: float
 
 
@@ -66,6 +75,10 @@ class SalesReportResponse(BaseModel):
     gross_sales: float
     item_cogs: float
     gross_profit: float
+    platform_fees: float
+    shipping_costs: float
+    contribution_margin: float
+    net_profit: float | None = None
 
 
 # ── Profit & Loss Report ─────────────────────────────────────────

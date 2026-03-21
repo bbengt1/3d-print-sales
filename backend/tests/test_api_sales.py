@@ -42,7 +42,7 @@ async def seed_product(db_session: AsyncSession, seed_material: Material) -> Pro
     return p
 
 
-def _sale_payload(channel_id=None, product_id=None):
+def _sale_payload(channel_id=None, product_id=None, shipping_cost=0, shipping_charged=0):
     item = {
         "description": "Phone Stand",
         "quantity": 2,
@@ -55,6 +55,8 @@ def _sale_payload(channel_id=None, product_id=None):
         "date": "2026-03-20",
         "customer_name": "John Doe",
         "status": "paid",
+        "shipping_cost": shipping_cost,
+        "shipping_charged": shipping_charged,
         "items": [item],
     }
     if channel_id:
@@ -116,6 +118,8 @@ async def test_create_sale(client: AsyncClient, auth_headers: dict, seed_channel
     assert len(data["items"]) == 1
     assert float(data["subtotal"]) == 17.98
     assert float(data["platform_fees"]) > 0  # Etsy fees applied
+    assert "item_cogs" in data
+    assert "gross_profit" in data
     assert "contribution_margin" in data
 
 
@@ -225,3 +229,20 @@ async def test_sale_metrics(client: AsyncClient, auth_headers: dict):
     assert data["total_sales"] >= 1
     assert data["gross_sales"] > 0
     assert data["gross_profit"] >= 0
+    assert "platform_fees" in data
+    assert "shipping_costs" in data
+    assert "contribution_margin" in data
+    assert data["net_profit"] is None
+
+
+@pytest.mark.asyncio
+async def test_sale_profit_layers_with_fees_and_shipping(client: AsyncClient, auth_headers: dict, seed_channel: SalesChannel):
+    payload = _sale_payload(channel_id=seed_channel.id, shipping_cost=4.50, shipping_charged=5.00)
+    resp = await client.post("/api/v1/sales", headers=auth_headers, json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+
+    assert round(float(data["gross_profit"]), 2) == 18.98
+    assert round(float(data["platform_fees"]), 2) == 1.37
+    assert round(float(data["shipping_cost"]), 2) == 4.50
+    assert round(float(data["contribution_margin"]), 2) == 13.11
