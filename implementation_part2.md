@@ -30,6 +30,12 @@
   - Added plain-English definitions, current formulas/sources, and key cautions for exposed metrics
   - Updated README to point at the glossary as the canonical finance terminology reference
 
+### In Progress
+- [ ] Issue #16 — Accounting foundation and chart of accounts
+  - Adding initial accounting-domain models: accounts, accounting periods, journal entries, journal lines
+  - Adding starter chart of accounts seeding and balanced journal validation service
+  - Adding backend foundation tests for seeding, period control, and balanced/unbalanced journal entries
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13

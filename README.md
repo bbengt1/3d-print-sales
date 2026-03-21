@@ -245,6 +245,16 @@ See `.env.example` for all configuration options. Key variables:
 
 See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical glossary, naming matrix, formulas, and operational-vs-financial metric definitions used by the app.
 
+## Accounting Foundation Status
+
+Phase 12 groundwork now includes initial accounting-domain tables and services for:
+- `accounts`
+- `accounting_periods`
+- `journal_entries`
+- `journal_lines`
+
+The repo also includes a starter chart of accounts seed and basic balanced-journal validation in the accounting service layer.
+
 ## P&L Reporting Basis
 
 The Profit & Loss report now treats:

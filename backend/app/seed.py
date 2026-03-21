@@ -5,11 +5,13 @@ from sqlalchemy import select
 from app.core.config import settings as app_settings
 from app.core.database import async_session
 from app.core.security import hash_password
+from app.models.account import Account
 from app.models.material import Material
 from app.models.rate import Rate
 from app.models.sales_channel import SalesChannel
 from app.models.setting import Setting
 from app.models.user import User
+from app.services.accounting_service import seed_chart_of_accounts
 
 SETTINGS_DATA = [
     ("currency", "USD", "Currency code"),
@@ -82,6 +84,11 @@ async def run_seed():
             for ch in channels:
                 db.add(ch)
             await db.commit()
+
+        # Seed chart of accounts
+        result = await db.execute(select(Account).limit(1))
+        if not result.scalar_one_or_none():
+            await seed_chart_of_accounts(db)
 
         # Seed admin user
         result = await db.execute(
