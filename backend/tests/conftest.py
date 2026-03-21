@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-import asyncio
+import os
 import uuid
 from decimal import Decimal
+
+os.environ["TESTING"] = "true"
+os.environ.setdefault("ENVIRONMENT", "test")
 
 import pytest
 import pytest_asyncio
@@ -23,13 +26,6 @@ TEST_DB_URL = "sqlite+aiosqlite:///./test.db"
 
 engine = create_async_engine(TEST_DB_URL, echo=False)
 TestSession = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest_asyncio.fixture(autouse=True)

@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_PREFIX: str = "/api/v1"
     ENVIRONMENT: str = "development"  # development | staging | production
+    TESTING: bool = False
 
     DATABASE_URL: str = "postgresql+asyncpg://printuser:printpass@db:5432/printsales"
 

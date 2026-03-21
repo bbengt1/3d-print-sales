@@ -92,11 +92,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(
-    RateLimitMiddleware,
-    requests_per_minute=settings.RATE_LIMIT_PER_MINUTE,
-    burst=settings.RATE_LIMIT_BURST,
-)
+if not settings.TESTING:
+    app.add_middleware(
+        RateLimitMiddleware,
+        requests_per_minute=settings.RATE_LIMIT_PER_MINUTE,
+        burst=settings.RATE_LIMIT_BURST,
+    )
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 

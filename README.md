@@ -6,7 +6,7 @@ Full-stack web application for managing a 3D printing business — job costing, 
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | Python 3.12, FastAPI, SQLAlchemy 2 (async), PostgreSQL 16 |
+| **Backend** | Python 3.13, FastAPI, SQLAlchemy 2 (async), PostgreSQL 16 |
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query |
 | **Auth** | JWT (python-jose) + bcrypt |
 | **API Docs** | OpenAPI 3.1 / Swagger UI |
@@ -169,11 +169,18 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 
 ## Testing
 
+### Backend test environment
+
+- Use **Python 3.13** for local backend development and test execution.
+- A repo-level `.python-version` file is included to make the expected interpreter explicit.
+- Backend tests run with `TESTING=true`, which disables request rate limiting middleware so the suite does not fail with unrelated `429 Too Many Requests` responses.
+
 ```bash
-# Run all backend tests (114 tests)
-cd backend
-pip install -r requirements.txt
-python -m pytest tests/ -v
+# Run all backend tests
+python3.13 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+python -m pytest backend/tests/ -v
 
 # Test categories:
 #   test_cost_calculator.py   - Cost calculation engine (6 tests)
