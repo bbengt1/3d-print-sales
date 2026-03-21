@@ -257,7 +257,8 @@ Current accounting foundation capabilities:
 - starter chart of accounts seed
 - accounting period helper/validation
 - balanced-journal validation in the accounting service layer
-- admin-only APIs to list accounts, list periods, create journal entries, list journal entries, and fetch journal entry detail
+- admin-only APIs to create/update/list accounts and periods, plus create/list/detail journal entries
+- initial Alembic revision scaffolding for the accounting foundation tables
 
 ## P&L Reporting Basis
 

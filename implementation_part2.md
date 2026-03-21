@@ -33,11 +33,11 @@
 ### Phase 12 In Progress
 - [ ] Issue #16 — Accounting foundation and chart of accounts (epic)
   - Tracking umbrella only; implementation should be recorded against child issues #17–#20
-- [ ] Issue #17 — Create chart of accounts and accounting periods data model
+- [x] Issue #17 — Create chart of accounts and accounting periods data model
   - Added initial `accounts` and `accounting_periods` models/schemas
   - Added admin-only account/period APIs for create, update, and list foundations
   - Added backend tests covering seeding, period creation/idempotency, duplicate account code rejection, duplicate period key rejection, account parent assignment, and period status updates
-  - Still missing: migration/revision story before this ticket should be considered fully done
+  - Added Alembic revision scaffolding and an initial accounting foundation migration under `backend/alembic/versions/`
 - [ ] Issue #18 — Implement journal entry posting engine with balanced journal lines
   - Added initial `journal_entries` and `journal_lines` models/schemas
   - Added posting service with balanced-entry validation, account existence checks, and open-period guard
