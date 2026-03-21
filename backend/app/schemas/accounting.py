@@ -7,6 +7,29 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 
+class AccountBase(BaseModel):
+    code: str = Field(..., min_length=1, max_length=20)
+    name: str = Field(..., min_length=1, max_length=120)
+    account_type: str = Field(..., pattern="^(asset|liability|equity|revenue|cogs|expense)$")
+    normal_balance: str = Field(..., pattern="^(debit|credit)$")
+    parent_id: uuid.UUID | None = None
+    description: str | None = None
+    is_active: bool = True
+
+
+class AccountCreate(AccountBase):
+    pass
+
+
+class AccountUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=120)
+    account_type: str | None = Field(None, pattern="^(asset|liability|equity|revenue|cogs|expense)$")
+    normal_balance: str | None = Field(None, pattern="^(debit|credit)$")
+    parent_id: uuid.UUID | None = None
+    description: str | None = None
+    is_active: bool | None = None
+
+
 class AccountResponse(BaseModel):
     id: uuid.UUID
     code: str
@@ -19,6 +42,27 @@ class AccountResponse(BaseModel):
     is_system: bool
     created_at: datetime.datetime | None = None
     updated_at: datetime.datetime | None = None
+
+
+class AccountingPeriodBase(BaseModel):
+    period_key: str = Field(..., min_length=1, max_length=20)
+    name: str = Field(..., min_length=1, max_length=100)
+    start_date: datetime.date
+    end_date: datetime.date
+    status: str = Field("open", pattern="^(open|closed|locked)$")
+    is_adjustment_period: bool = False
+
+
+class AccountingPeriodCreate(AccountingPeriodBase):
+    pass
+
+
+class AccountingPeriodUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=100)
+    start_date: datetime.date | None = None
+    end_date: datetime.date | None = None
+    status: str | None = Field(None, pattern="^(open|closed|locked)$")
+    is_adjustment_period: bool | None = None
 
 
 class AccountingPeriodResponse(BaseModel):
