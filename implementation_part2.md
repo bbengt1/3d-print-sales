@@ -103,6 +103,12 @@
     - lot/receipt costing needs to exist before inventory depletion and valuation flows are reliable
     - production/sales postings depend on inventory value inputs
     - scrap/waste flows should build on the valuation/posting foundation rather than invent it in parallel
+- [x] Issue #22 — Add raw material purchase receipts, lot costing, and landed cost tracking
+  - Added `material_receipts` model, schema, service logic, API endpoints, and Alembic revision scaffolding
+  - Added landed-cost and total-cost calculations per receipt/lot plus remaining quantity tracking
+  - Updated material-level current cost basis from recorded receipt data using weighted-average logic
+  - Added backend tests covering landed cost allocation, material valuation update behavior, and receipt persistence/API flows
+  - Added `docs/material_receipts_valuation.md` documenting the selected valuation approach and current limitations
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

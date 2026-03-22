@@ -245,6 +245,11 @@ See `.env.example` for all configuration options. Key variables:
 
 See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical glossary, naming matrix, formulas, and operational-vs-financial metric definitions used by the app.
 
+## Inventory Valuation Groundwork
+
+Phase 13 raw-material valuation groundwork now includes material receipt / lot tracking and landed cost documentation:
+- [docs/material_receipts_valuation.md](./docs/material_receipts_valuation.md)
+
 ## Accounting Foundation Status
 
 Phase 12 groundwork now includes initial accounting-domain tables, services, and APIs for:
