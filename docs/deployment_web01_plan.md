@@ -185,6 +185,10 @@ Primary issue:
 Deliverables:
 - operations runbook in repo
 
+Status:
+- runbook added in [docs/deployment_web01_runbook.md](./deployment_web01_runbook.md)
+- includes deploy, update, rollback, backup, restore, logs, health checks, and troubleshooting commands specific to `web01.bengtson.local`
+
 ---
 
 ## Open Questions To Resolve During Execution
