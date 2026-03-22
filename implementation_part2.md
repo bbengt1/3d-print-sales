@@ -30,9 +30,11 @@
   - Added plain-English definitions, current formulas/sources, and key cautions for exposed metrics
   - Updated README to point at the glossary as the canonical finance terminology reference
 
-### Phase 12 In Progress
-- [ ] Issue #16 — Accounting foundation and chart of accounts (epic)
-  - Tracking umbrella only; implementation should be recorded against child issues #17–#20
+### Phase 12 Completed
+- [x] Issue #16 — Accounting foundation and chart of accounts (epic)
+  - Child issues #17, #18, #19, and #20 are complete and closed
+  - Added accounting-domain models for accounts, accounting periods, journal entries, and journal lines
+  - Added starter chart of accounts seeding, period controls, journal posting/reversal flows, admin APIs, Alembic revision scaffolding, and supporting tests/documentation
 - [x] Issue #17 — Create chart of accounts and accounting periods data model
   - Added initial `accounts` and `accounting_periods` models/schemas
   - Added admin-only account/period APIs for create, update, and list foundations
