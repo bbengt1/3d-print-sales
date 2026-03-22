@@ -72,6 +72,12 @@
   - Documented required production secret values, generation guidance, permissions, and launch pattern
   - Documented backup-sensitive data locations and initial backup/retention guidance
   - Added `docs/deployment_web01_env_and_storage.md`
+- [x] Issue #52 — Configure ingress for web01.bengtson.local (reverse proxy, hostname routing, and TLS strategy)
+  - Defined the initial ingress strategy using the frontend nginx container as the first HTTP entry point on port 80
+  - Set `web01.bengtson.local` as the canonical LAN hostname for first deployment
+  - Documented hostname resolution assumptions, firewall implications, canonical access URLs, and smoke-test paths
+  - Documented TLS as intentionally deferred for the first LAN-oriented rollout
+  - Added `docs/deployment_web01_ingress.md` and updated `frontend/nginx.conf`
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

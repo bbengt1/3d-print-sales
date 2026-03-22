@@ -69,5 +69,5 @@ FRONTEND_HTTP_PORT=80 \
 ## Notes
 
 - This configuration is production-oriented and does not use the development bind mounts from `docker-compose.yml`.
-- Reverse proxy/TLS decisions may further evolve under issue #52.
-- The current frontend container can serve as the first ingress point on port 80 until a dedicated reverse proxy is introduced.
+- The initial ingress decision is documented in `docs/deployment_web01_ingress.md`.
+- The current frontend container serves as the first ingress point on port 80 until a dedicated reverse proxy is introduced later, if needed.

@@ -130,6 +130,11 @@ Deliverables:
 - access URL
 - TLS/hostname notes
 
+Status:
+- initial ingress strategy documented in [docs/deployment_web01_ingress.md](./deployment_web01_ingress.md)
+- current decision: frontend nginx container acts as initial ingress on `http://web01.bengtson.local/`
+- TLS intentionally deferred for the first LAN-oriented deployment
+
 ---
 
 ## Phase E — First Deployment
