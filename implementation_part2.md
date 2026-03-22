@@ -67,6 +67,11 @@
   - Added `.env.production.example` for production env/secrets templating
   - Added `docs/deployment_web01_compose.md` with launch/update guidance
   - Updated deployment planning docs and README
+- [x] Issue #51 — Configure environment, secrets, and persistent storage for production deployment
+  - Documented server-side env-file workflow for `/srv/3d-print-sales/env/web01.env`
+  - Documented required production secret values, generation guidance, permissions, and launch pattern
+  - Documented backup-sensitive data locations and initial backup/retention guidance
+  - Added `docs/deployment_web01_env_and_storage.md`
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

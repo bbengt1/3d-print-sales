@@ -267,6 +267,7 @@ Deployment planning for hosting this app on `web01.bengtson.local` via Docker is
 - [docs/deployment_web01_plan.md](./docs/deployment_web01_plan.md)
 - [docs/deployment_web01_audit.md](./docs/deployment_web01_audit.md)
 - [docs/deployment_web01_compose.md](./docs/deployment_web01_compose.md)
+- [docs/deployment_web01_env_and_storage.md](./docs/deployment_web01_env_and_storage.md)
 - GitHub issues #48–#54
 
 ## P&L Reporting Basis

@@ -104,6 +104,11 @@ Deliverables:
 - persistent volume/storage plan
 - secret-handling procedure
 
+Status:
+- production env template exists in `.env.production.example`
+- server-side env/storage workflow documented in [docs/deployment_web01_env_and_storage.md](./deployment_web01_env_and_storage.md)
+- current production data persistence uses the named Docker volume `3d_print_sales_postgres_data`
+
 ---
 
 ## Phase D — Ingress and Reachability
