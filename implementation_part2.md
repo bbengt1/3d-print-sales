@@ -92,6 +92,18 @@
   - Documented deploy, update, restart, rollback, backup, restore, logs, health checks, env changes, firewall checks, and troubleshooting commands specific to `web01.bengtson.local`
   - Linked the runbook from README and deployment planning docs
 
+### Phase 13 Planned / Starting
+- [ ] Issue #21 — Inventory accounting for raw materials, WIP, finished goods, and COGS (epic)
+  - Child issues #22, #23, and #24 will be tracked directly for implementation work
+  - Recommended execution order:
+    1. #22 — raw material purchase receipts / lot costing / landed cost tracking
+    2. #23 — production and sales inventory accounting postings with COGS recognition
+    3. #24 — scrap, waste, and failed-print costing workflows
+  - Rationale:
+    - lot/receipt costing needs to exist before inventory depletion and valuation flows are reliable
+    - production/sales postings depend on inventory value inputs
+    - scrap/waste flows should build on the valuation/posting foundation rather than invent it in parallel
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13
