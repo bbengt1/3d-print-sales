@@ -50,6 +50,10 @@ Deliverables:
 - blocker list (if any)
 - recommended deployment directory structure
 
+Status:
+- initial audit completed and documented in [docs/deployment_web01_audit.md](./deployment_web01_audit.md)
+- current main blocker: Docker / Docker Compose not yet installed on the host
+
 ---
 
 ## Phase B — Production Container Definition
