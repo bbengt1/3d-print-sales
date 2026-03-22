@@ -16,6 +16,7 @@ from app.services.accounting_service import (
     ensure_accounting_period,
     reverse_journal_entry,
     seed_chart_of_accounts,
+    set_accounting_period_status,
 )
 from app.schemas.accounting import JournalEntryCreate, JournalEntryReverse, JournalLineCreate
 
@@ -238,4 +239,36 @@ async def test_cannot_reverse_entry_twice(db_session: AsyncSession):
             db_session,
             entry_id=entry.id,
             payload=JournalEntryReverse(reversal_date=date(2026, 3, 23)),
+        )
+
+
+@pytest.mark.asyncio
+async def test_locked_period_cannot_be_reopened_and_blocks_posting(db_session: AsyncSession):
+    await seed_chart_of_accounts(db_session)
+    period = await ensure_accounting_period(
+        db_session,
+        period_key="2026-04",
+        name="April 2026",
+        start_date=date(2026, 4, 1),
+        end_date=date(2026, 4, 30),
+    )
+    period = await set_accounting_period_status(db_session, period_id=period.id, status="locked")
+    assert period.status == "locked"
+
+    with pytest.raises(AccountingValidationError, match="cannot be reopened"):
+        await set_accounting_period_status(db_session, period_id=period.id, status="open")
+
+    cash = (await db_session.execute(select(Account).where(Account.code == "1000"))).scalar_one()
+    sales = (await db_session.execute(select(Account).where(Account.code == "4000"))).scalar_one()
+    with pytest.raises(AccountingValidationError, match="non-open accounting period"):
+        await create_journal_entry(
+            db_session,
+            JournalEntryCreate(
+                entry_date=date(2026, 4, 10),
+                accounting_period_id=period.id,
+                lines=[
+                    JournalLineCreate(account_id=cash.id, entry_type="debit", amount=Decimal("25.00")),
+                    JournalLineCreate(account_id=sales.id, entry_type="credit", amount=Decimal("25.00")),
+                ],
+            ),
         )

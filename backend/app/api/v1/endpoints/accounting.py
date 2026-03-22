@@ -17,12 +17,13 @@ from app.schemas.accounting import (
     AccountUpdate,
     AccountingPeriodCreate,
     AccountingPeriodResponse,
+    AccountingPeriodStatusUpdate,
     AccountingPeriodUpdate,
     JournalEntryCreate,
     JournalEntryResponse,
     JournalEntryReverse,
 )
-from app.services.accounting_service import AccountingValidationError, create_journal_entry, reverse_journal_entry
+from app.services.accounting_service import AccountingValidationError, create_journal_entry, reverse_journal_entry, set_accounting_period_status
 
 router = APIRouter(prefix="/accounting", tags=["Accounting"])
 
@@ -142,6 +143,8 @@ async def update_period(period_id: uuid.UUID, body: AccountingPeriodUpdate, admi
     period = (await db.execute(select(AccountingPeriod).where(AccountingPeriod.id == period_id))).scalar_one_or_none()
     if not period:
         raise HTTPException(status_code=404, detail="Accounting period not found")
+    if period.status == "locked":
+        raise HTTPException(status_code=400, detail="Locked accounting periods cannot be edited")
 
     updates = body.model_dump(exclude_unset=True)
     start_date = updates.get("start_date", period.start_date)
@@ -153,6 +156,21 @@ async def update_period(period_id: uuid.UUID, body: AccountingPeriodUpdate, admi
 
     await db.commit()
     await db.refresh(period)
+    return period
+
+
+@router.post(
+    "/periods/{period_id}/status",
+    response_model=AccountingPeriodResponse,
+    summary="Change accounting period status (admin only)",
+)
+async def change_period_status(period_id: uuid.UUID, body: AccountingPeriodStatusUpdate, admin: CurrentAdmin, db: DB):
+    try:
+        period = await set_accounting_period_status(db, period_id=period_id, status=body.status)
+    except AccountingValidationError as exc:
+        detail = str(exc)
+        code = 404 if detail == "Accounting period not found." else 400
+        raise HTTPException(status_code=code, detail=detail) from exc
     return period
 
 

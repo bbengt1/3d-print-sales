@@ -254,3 +254,45 @@ async def test_reverse_journal_entry_and_reject_double_reverse(client, auth_head
     )
     assert second_reverse.status_code == 400
     assert "already been reversed" in second_reverse.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_lock_period_blocks_edit_and_reopen(client, auth_headers):
+    create_resp = await client.post(
+        "/api/v1/accounting/periods",
+        headers=auth_headers,
+        json={
+            "period_key": "2026-05",
+            "name": "May 2026",
+            "start_date": "2026-05-01",
+            "end_date": "2026-05-31",
+            "status": "open",
+            "is_adjustment_period": False,
+        },
+    )
+    assert create_resp.status_code == 201
+    period = create_resp.json()
+
+    lock_resp = await client.post(
+        f"/api/v1/accounting/periods/{period['id']}/status",
+        headers=auth_headers,
+        json={"status": "locked"},
+    )
+    assert lock_resp.status_code == 200
+    assert lock_resp.json()["status"] == "locked"
+
+    edit_resp = await client.put(
+        f"/api/v1/accounting/periods/{period['id']}",
+        headers=auth_headers,
+        json={"name": "May 2026 Edited"},
+    )
+    assert edit_resp.status_code == 400
+    assert "locked accounting periods cannot be edited" in edit_resp.json()["detail"].lower()
+
+    reopen_resp = await client.post(
+        f"/api/v1/accounting/periods/{period['id']}/status",
+        headers=auth_headers,
+        json={"status": "open"},
+    )
+    assert reopen_resp.status_code == 400
+    assert "cannot be reopened" in reopen_resp.json()["detail"].lower()

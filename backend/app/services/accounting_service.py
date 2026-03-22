@@ -51,6 +51,11 @@ def _validate_open_period(period: AccountingPeriod | None) -> None:
         raise AccountingValidationError("Cannot post journal entry to a non-open accounting period.")
 
 
+def _validate_period_editable(period: AccountingPeriod) -> None:
+    if period.status == "locked":
+        raise AccountingValidationError("Locked accounting periods cannot be edited.")
+
+
 async def seed_chart_of_accounts(db: AsyncSession) -> None:
     result = await db.execute(select(Account).limit(1))
     if result.scalar_one_or_none():
@@ -158,6 +163,28 @@ async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) ->
         .where(JournalEntry.id == entry.id)
     )
     return result.scalar_one()
+
+
+async def set_accounting_period_status(
+    db: AsyncSession,
+    *,
+    period_id,
+    status: str,
+) -> AccountingPeriod:
+    result = await db.execute(
+        select(AccountingPeriod).where(AccountingPeriod.id == period_id)
+    )
+    period = result.scalar_one_or_none()
+    if not period:
+        raise AccountingValidationError("Accounting period not found.")
+
+    if period.status == "locked" and status != "locked":
+        raise AccountingValidationError("Locked accounting periods cannot be reopened or modified.")
+
+    period.status = status
+    await db.commit()
+    await db.refresh(period)
+    return period
 
 
 async def reverse_journal_entry(

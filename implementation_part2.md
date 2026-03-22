@@ -48,10 +48,11 @@
   - Added starter manufacturing-friendly chart of accounts and wired it into backend seed flow
   - Added backend tests covering seed stability/idempotent behavior
   - Added `docs/starter_chart_of_accounts.md` documenting the intended use of each seeded account group and account
-- [ ] Issue #20 — Add period close/lock controls and posting safeguards
-  - Added initial period status field and non-open period posting guard in the accounting service
-  - Added backend tests covering closed-period rejection
-  - Still missing: explicit close/reopen management workflow and stronger lock semantics
+- [x] Issue #20 — Add period close/lock controls and posting safeguards
+  - Added period status field plus explicit admin status-change workflow via API
+  - Added non-open period posting guard in the accounting service
+  - Added locked-period safeguards preventing edits and reopen attempts
+  - Added backend tests covering closed/locked-period rejection, status changes, and locked-period protection behavior
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

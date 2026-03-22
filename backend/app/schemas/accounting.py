@@ -65,6 +65,10 @@ class AccountingPeriodUpdate(BaseModel):
     is_adjustment_period: bool | None = None
 
 
+class AccountingPeriodStatusUpdate(BaseModel):
+    status: str = Field(..., pattern="^(open|closed|locked)$")
+
+
 class AccountingPeriodResponse(BaseModel):
     id: uuid.UUID
     period_key: str
