@@ -56,7 +56,11 @@
   - Added locked-period safeguards preventing edits and reopen attempts
   - Added backend tests covering closed/locked-period rejection, status changes, and locked-period protection behavior
 
-### Deployment Progress
+### Deployment Completed
+- [x] Issue #48 — Deploy 3D Print Sales to web01.bengtson.local with Docker (epic)
+  - Child issues #49, #50, #51, #52, #53, and #54 are complete and closed
+  - Deployment planning, host audit, production compose config, secrets/storage workflow, ingress strategy, first deployment execution, and operations runbook are all now documented in-repo
+  - 3D Print Sales is live on `http://web01.bengtson.local/`
 - [x] Issue #49 — Audit web01.bengtson.local and prepare Docker host prerequisites
   - Audited `root@web01.bengtson.local` and documented OS/resources/network/security baseline
   - Identified Docker/Compose absence as the primary deployment blocker
