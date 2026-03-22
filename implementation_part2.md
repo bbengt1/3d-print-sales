@@ -115,17 +115,11 @@
   - Added backend tests covering scrap reduction, failed-print override cost, and validation behavior
   - Added `docs/scrap_and_waste_workflows.md` documenting the workflow and current accounting limitations
 
-### Phase 14 Planned / Starting
-- [ ] Issue #25 — Expenses, vendors, and accounts payable (epic)
-  - Child issues #26, #27, and #28 will be tracked directly for implementation work
-  - Recommended execution order:
-    1. #26 — create vendors and expense category management
-    2. #27 — implement bills and expenses with due dates, payment tracking, and account mapping
-    3. #28 — add recurring expenses and expense reporting by category and vendor
-  - Rationale:
-    - vendors/categories are foundational reference data
-    - bills/expenses depend on vendor/category/account structures
-    - recurring expenses and reporting should build on the core bill/expense model rather than precede it
+### Phase 14 Completed
+- [x] Issue #25 — Expenses, vendors, and accounts payable (epic)
+  - Child issues #26, #27, and #28 are complete and closed
+  - Added vendor and expense-category master data, bills/payment tracking, recurring expense templates, and grouped expense reporting foundations
+  - Added Phase 14 Alembic revision scaffolding, backend tests, and supporting documentation for the expense/AP layer
 - [x] Issue #26 — Create vendors and expense category management
   - Added `vendors` and `expense_categories` models plus Alembic revision scaffolding
   - Added admin APIs for vendor create/update/list and expense category create/update/list
