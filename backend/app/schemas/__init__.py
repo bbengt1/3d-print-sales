@@ -12,6 +12,28 @@ from app.schemas.accounting import (
     JournalLineCreate,
     JournalLineResponse,
 )
+from app.schemas.bills import (
+    BillCreate,
+    BillPaymentCreate,
+    BillPaymentResponse,
+    BillResponse,
+    BillUpdate,
+)
+from app.schemas.recurring_expenses import (
+    ExpenseSummaryRow,
+    RecurringExpenseCreate,
+    RecurringExpenseGenerate,
+    RecurringExpenseResponse,
+    RecurringExpenseUpdate,
+)
+from app.schemas.expenses import (
+    ExpenseCategoryCreate,
+    ExpenseCategoryResponse,
+    ExpenseCategoryUpdate,
+    VendorCreate,
+    VendorResponse,
+    VendorUpdate,
+)
 from app.schemas.auth import (
     LoginRequest,
     PasswordChange,
@@ -49,6 +71,12 @@ __all__ = [
     "AccountingPeriodResponse",
     "AccountingPeriodStatusUpdate",
     "AccountingPeriodUpdate",
+    "BillCreate",
+    "BillPaymentCreate",
+    "BillPaymentResponse",
+    "BillResponse",
+    "BillUpdate",
+    "ExpenseSummaryRow",
     "BulkSettingUpdate",
     "CalculateRequest",
     "CalculateResponse",

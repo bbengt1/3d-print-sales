@@ -245,6 +245,13 @@ See `.env.example` for all configuration options. Key variables:
 
 See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical glossary, naming matrix, formulas, and operational-vs-financial metric definitions used by the app.
 
+## Expense / AP Groundwork
+
+Phase 14 expense/AP groundwork now includes:
+- [docs/vendors_and_expense_categories.md](./docs/vendors_and_expense_categories.md)
+- [docs/bills_and_expenses.md](./docs/bills_and_expenses.md)
+- [docs/recurring_expenses_and_reporting.md](./docs/recurring_expenses_and_reporting.md)
+
 ## Inventory Valuation Groundwork
 
 Phase 13 inventory accounting groundwork now includes:

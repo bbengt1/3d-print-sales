@@ -115,6 +115,30 @@
   - Added backend tests covering scrap reduction, failed-print override cost, and validation behavior
   - Added `docs/scrap_and_waste_workflows.md` documenting the workflow and current accounting limitations
 
+### Phase 14 Completed
+- [x] Issue #25 — Expenses, vendors, and accounts payable (epic)
+  - Child issues #26, #27, and #28 are complete and closed
+  - Added vendor and expense-category master data, bills/payment tracking, recurring expense templates, and grouped expense reporting foundations
+  - Added Phase 14 Alembic revision scaffolding, backend tests, and supporting documentation for the expense/AP layer
+- [x] Issue #26 — Create vendors and expense category management
+  - Added `vendors` and `expense_categories` models plus Alembic revision scaffolding
+  - Added admin APIs for vendor create/update/list and expense category create/update/list
+  - Added account-mapping validation so expense categories must map to expense or COGS accounts
+  - Added backend tests covering admin access, create/update flows, duplicate/name mapping constraints, and non-admin rejection
+  - Added `docs/vendors_and_expense_categories.md` documenting the Phase 14 master-data foundation
+- [x] Issue #27 — Implement bills and expenses with due dates, payment tracking, and account mapping
+  - Added `bills` and `bill_payments` models plus Alembic revision scaffolding
+  - Added admin APIs for bill create/update/list and payment recording
+  - Added status handling for open / partially_paid / paid / void states based on actual payments
+  - Added validation for account mapping, overpayment rejection, and void-bill payment blocking
+  - Added `docs/bills_and_expenses.md` documenting the workflow foundation and current limitations
+- [x] Issue #28 — Add recurring expenses and expense reporting by category and vendor
+  - Added `recurring_expenses` model plus Alembic revision scaffolding
+  - Added admin APIs for recurring expense create/update/list and bill generation from due templates
+  - Added grouped expense summary endpoints by category and by vendor
+  - Added backend tests covering recurring generation flow, due-date enforcement, and reporting endpoints
+  - Added `docs/recurring_expenses_and_reporting.md` documenting recurring templates and summary reporting
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13
