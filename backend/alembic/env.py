@@ -1,9 +1,13 @@
 import asyncio
+import os
+import sys
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.database import Base
 # Import all models so metadata is populated
@@ -18,6 +22,10 @@ from app.models.inventory_transaction import InventoryTransaction  # noqa
 from app.models.sales_channel import SalesChannel  # noqa
 from app.models.sale import Sale  # noqa
 from app.models.sale_item import SaleItem  # noqa
+from app.models.account import Account  # noqa
+from app.models.accounting_period import AccountingPeriod  # noqa
+from app.models.journal_entry import JournalEntry  # noqa
+from app.models.journal_line import JournalLine  # noqa
 
 config = context.config
 if config.config_file_name is not None:

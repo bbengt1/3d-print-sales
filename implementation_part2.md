@@ -30,6 +30,32 @@
   - Added plain-English definitions, current formulas/sources, and key cautions for exposed metrics
   - Updated README to point at the glossary as the canonical finance terminology reference
 
+### Phase 12 Completed
+- [x] Issue #16 — Accounting foundation and chart of accounts (epic)
+  - Child issues #17, #18, #19, and #20 are complete and closed
+  - Added accounting-domain models for accounts, accounting periods, journal entries, and journal lines
+  - Added starter chart of accounts seeding, period controls, journal posting/reversal flows, admin APIs, Alembic revision scaffolding, and supporting tests/documentation
+- [x] Issue #17 — Create chart of accounts and accounting periods data model
+  - Added initial `accounts` and `accounting_periods` models/schemas
+  - Added admin-only account/period APIs for create, update, and list foundations
+  - Added backend tests covering seeding, period creation/idempotency, duplicate account code rejection, duplicate period key rejection, account parent assignment, and period status updates
+  - Added Alembic revision scaffolding and an initial accounting foundation migration under `backend/alembic/versions/`
+- [x] Issue #18 — Implement journal entry posting engine with balanced journal lines
+  - Added initial `journal_entries` and `journal_lines` models/schemas
+  - Added posting service with balanced-entry validation, account existence checks, and open-period guard
+  - Added admin-only journal entry create/list/detail APIs
+  - Added journal reversal workflow so posted entries are corrected through append/reversal behavior rather than mutation
+  - Added backend tests covering balanced create flow, unbalanced-entry rejection, reversal creation, and double-reversal rejection
+- [x] Issue #19 — Seed manufacturing-friendly starter chart of accounts
+  - Added starter manufacturing-friendly chart of accounts and wired it into backend seed flow
+  - Added backend tests covering seed stability/idempotent behavior
+  - Added `docs/starter_chart_of_accounts.md` documenting the intended use of each seeded account group and account
+- [x] Issue #20 — Add period close/lock controls and posting safeguards
+  - Added period status field plus explicit admin status-change workflow via API
+  - Added non-open period posting guard in the accounting service
+  - Added locked-period safeguards preventing edits and reopen attempts
+  - Added backend tests covering closed/locked-period rejection, status changes, and locked-period protection behavior
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13

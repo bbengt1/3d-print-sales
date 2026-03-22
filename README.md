@@ -245,6 +245,22 @@ See `.env.example` for all configuration options. Key variables:
 
 See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the canonical glossary, naming matrix, formulas, and operational-vs-financial metric definitions used by the app.
 
+## Accounting Foundation Status
+
+Phase 12 groundwork now includes initial accounting-domain tables, services, and APIs for:
+- `accounts`
+- `accounting_periods`
+- `journal_entries`
+- `journal_lines`
+
+Current accounting foundation capabilities:
+- starter chart of accounts seed
+- accounting period helper/validation
+- balanced-journal validation in the accounting service layer
+- admin-only APIs to create/update/list accounts and periods, plus create/list/detail journal entries
+- initial Alembic revision scaffolding for the accounting foundation tables
+- starter chart-of-accounts usage documentation in [docs/starter_chart_of_accounts.md](./docs/starter_chart_of_accounts.md)
+
 ## P&L Reporting Basis
 
 The Profit & Loss report now treats:
