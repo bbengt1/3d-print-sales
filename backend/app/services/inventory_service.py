@@ -7,8 +7,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.inventory_transaction import InventoryTransaction
+from app.models.job import Job
 from app.models.material import Material
 from app.models.product import Product
+from app.services.inventory_accounting_service import post_finished_goods_from_job
 
 
 async def generate_sku(db: AsyncSession, material_id: uuid.UUID) -> str:
@@ -59,6 +61,43 @@ async def add_inventory_from_job(
             product.unit_cost = (old_total_cost + new_total_cost) / new_qty
         product.stock_qty = new_qty
 
+    job = (await db.execute(select(Job).where(Job.id == job_id))).scalar_one_or_none()
+    if job:
+        await post_finished_goods_from_job(db, job)
+
+    return txn
+
+
+async def record_scrap_inventory(
+    db: AsyncSession,
+    *,
+    product: Product,
+    quantity: int,
+    event_type: str,
+    reason: str,
+    notes: str | None = None,
+    unit_cost: Decimal | None = None,
+    user_id: uuid.UUID | None = None,
+) -> InventoryTransaction:
+    if quantity <= 0:
+        raise ValueError("Scrap quantity must be greater than zero.")
+    if event_type not in {"scrap", "failed_print", "writeoff", "rework"}:
+        raise ValueError("Unsupported scrap event type.")
+
+    resolved_cost = unit_cost if unit_cost is not None else product.unit_cost
+    txn = InventoryTransaction(
+        product_id=product.id,
+        type=event_type,
+        quantity=-quantity,
+        unit_cost=resolved_cost,
+        notes=f"{reason}" + (f" | {notes}" if notes else ""),
+        created_by=user_id,
+    )
+    db.add(txn)
+    product.stock_qty = max(0, product.stock_qty - quantity)
+    await db.commit()
+    await db.refresh(txn)
+    await db.refresh(product)
     return txn
 
 

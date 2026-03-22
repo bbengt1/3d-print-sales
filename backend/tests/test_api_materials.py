@@ -96,6 +96,39 @@ async def test_update_material(client, seed_material, auth_headers):
 
 
 @pytest.mark.asyncio
+async def test_create_and_list_material_receipts(client, seed_material, auth_headers):
+    create_resp = await client.post(
+        f"/api/v1/materials/{seed_material.id}/receipts",
+        json={
+            "vendor_name": "MatterHackers",
+            "purchase_date": "2026-03-22",
+            "receipt_number": "PO-1001",
+            "quantity_purchased_g": "1000",
+            "unit_cost_per_g": "0.020000",
+            "landed_cost_total": "5.00",
+            "valuation_method": "lot",
+            "notes": "Initial stocked spool",
+        },
+        headers=auth_headers,
+    )
+    assert create_resp.status_code == 201
+    created = create_resp.json()
+    assert float(created["landed_cost_per_g"]) == pytest.approx(0.005, rel=1e-5)
+    assert float(created["total_cost"]) == pytest.approx(25.0, rel=1e-5)
+    assert float(created["quantity_remaining_g"]) == pytest.approx(1000.0, rel=1e-5)
+
+    list_resp = await client.get(f"/api/v1/materials/{seed_material.id}/receipts")
+    assert list_resp.status_code == 200
+    receipts = list_resp.json()
+    assert len(receipts) == 1
+    assert receipts[0]["vendor_name"] == "MatterHackers"
+
+    material_resp = await client.get(f"/api/v1/materials/{seed_material.id}")
+    assert material_resp.status_code == 200
+    assert float(material_resp.json()["cost_per_g"]) == pytest.approx(0.025, rel=1e-5)
+
+
+@pytest.mark.asyncio
 async def test_delete_material(client, seed_material, auth_headers):
     resp = await client.delete(
         f"/api/v1/materials/{seed_material.id}", headers=auth_headers

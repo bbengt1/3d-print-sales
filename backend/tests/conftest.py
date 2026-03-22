@@ -18,6 +18,7 @@ from app.core.security import hash_password
 from app.main import app
 from app.models.customer import Customer
 from app.models.material import Material
+from app.models.material_receipt import MaterialReceipt
 from app.models.rate import Rate
 from app.models.setting import Setting
 from app.models.user import User

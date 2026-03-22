@@ -92,6 +92,29 @@
   - Documented deploy, update, restart, rollback, backup, restore, logs, health checks, env changes, firewall checks, and troubleshooting commands specific to `web01.bengtson.local`
   - Linked the runbook from README and deployment planning docs
 
+### Phase 13 Completed
+- [x] Issue #21 — Inventory accounting for raw materials, WIP, finished goods, and COGS (epic)
+  - Child issues #22, #23, and #24 are complete and closed
+  - Added material receipt / lot costing, landed cost tracking, inventory accounting postings, COGS recognition, and scrap/waste workflow foundations
+  - Added Alembic revision scaffolding, backend tests, and Phase 13 inventory-accounting documentation
+- [x] Issue #22 — Add raw material purchase receipts, lot costing, and landed cost tracking
+  - Added `material_receipts` model, schema, service logic, API endpoints, and Alembic revision scaffolding
+  - Added landed-cost and total-cost calculations per receipt/lot plus remaining quantity tracking
+  - Updated material-level current cost basis from recorded receipt data using weighted-average logic
+  - Added backend tests covering landed cost allocation, material valuation update behavior, and receipt persistence/API flows
+  - Added `docs/material_receipts_valuation.md` documenting the selected valuation approach and current limitations
+- [x] Issue #23 — Implement production and sales inventory accounting postings with COGS recognition
+  - Added inventory accounting posting service for production completion and sale-time COGS recognition
+  - Added finished-goods posting flow (Finished Goods Inventory debit / WIP credit) and sale COGS flow (Material COGS debit / Finished Goods credit)
+  - Added FIFO receipt quantity depletion for material usage on completed jobs
+  - Added backend tests covering production posting, receipt depletion, and sale COGS journal creation
+  - Added `docs/inventory_accounting_postings.md` documenting current posting behavior and limitations
+- [x] Issue #24 — Add scrap, waste, and failed-print costing workflows
+  - Added dedicated inventory event handling for `scrap`, `failed_print`, `writeoff`, and `rework`
+  - Added service logic to reduce stock, capture reason/notes, and store the event at product cost or override cost
+  - Added backend tests covering scrap reduction, failed-print override cost, and validation behavior
+  - Added `docs/scrap_and_waste_workflows.md` documenting the workflow and current accounting limitations
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13

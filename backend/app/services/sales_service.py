@@ -11,6 +11,7 @@ from app.models.sale_item import SaleItem
 from app.models.sales_channel import SalesChannel
 from app.models.product import Product
 from app.models.inventory_transaction import InventoryTransaction
+from app.services.inventory_accounting_service import post_cogs_for_sale
 
 
 async def generate_sale_number(db: AsyncSession) -> str:
@@ -80,6 +81,10 @@ async def deduct_inventory_for_sale(
         )
         db.add(txn)
         product.stock_qty = max(0, product.stock_qty - item.quantity)
+
+    sale = (await db.execute(select(Sale).where(Sale.id == sale_id))).scalar_one_or_none()
+    if sale:
+        await post_cogs_for_sale(db, sale, items)
 
 
 async def restore_inventory_for_refund(

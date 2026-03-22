@@ -8,7 +8,10 @@ from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
 from app.models.material import Material
+from app.models.material_receipt import MaterialReceipt
 from app.schemas.material import MaterialCreate, MaterialResponse, MaterialUpdate
+from app.schemas.material_receipt import MaterialReceiptCreate, MaterialReceiptResponse
+from app.services.material_receipt_service import create_material_receipt
 
 router = APIRouter(prefix="/materials", tags=["Materials"])
 
@@ -84,6 +87,37 @@ async def update_material(material_id: uuid.UUID, body: MaterialUpdate, user: Cu
     await db.commit()
     await db.refresh(mat)
     return mat
+
+
+@router.get(
+    "/{material_id}/receipts",
+    response_model=list[MaterialReceiptResponse],
+    summary="List material receipts/lots",
+)
+async def list_material_receipts(material_id: uuid.UUID, db: DB):
+    material = (await db.execute(select(Material).where(Material.id == material_id))).scalar_one_or_none()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    result = await db.execute(
+        select(MaterialReceipt)
+        .where(MaterialReceipt.material_id == material_id)
+        .order_by(MaterialReceipt.purchase_date.desc(), MaterialReceipt.created_at.desc())
+    )
+    return result.scalars().all()
+
+
+@router.post(
+    "/{material_id}/receipts",
+    response_model=MaterialReceiptResponse,
+    status_code=201,
+    summary="Create material receipt/lot",
+)
+async def create_receipt(material_id: uuid.UUID, body: MaterialReceiptCreate, user: CurrentUser, db: DB):
+    material = (await db.execute(select(Material).where(Material.id == material_id))).scalar_one_or_none()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    receipt = await create_material_receipt(db, material=material, payload=body)
+    return receipt
 
 
 @router.delete(

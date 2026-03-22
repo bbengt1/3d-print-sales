@@ -26,6 +26,7 @@ from app.models.account import Account  # noqa
 from app.models.accounting_period import AccountingPeriod  # noqa
 from app.models.journal_entry import JournalEntry  # noqa
 from app.models.journal_line import JournalLine  # noqa
+from app.models.material_receipt import MaterialReceipt  # noqa
 
 config = context.config
 if config.config_file_name is not None:
