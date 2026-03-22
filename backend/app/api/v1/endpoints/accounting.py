@@ -10,6 +10,8 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import DB, CurrentAdmin
 from app.models.account import Account
 from app.models.accounting_period import AccountingPeriod
+from app.models.bill import Bill
+from app.models.bill_payment import BillPayment
 from app.models.expense_category import ExpenseCategory
 from app.models.journal_entry import JournalEntry
 from app.models.vendor import Vendor
@@ -24,6 +26,13 @@ from app.schemas.accounting import (
     JournalEntryCreate,
     JournalEntryResponse,
     JournalEntryReverse,
+)
+from app.schemas.bills import (
+    BillCreate,
+    BillPaymentCreate,
+    BillPaymentResponse,
+    BillResponse,
+    BillUpdate,
 )
 from app.schemas.expenses import (
     ExpenseCategoryCreate,
@@ -48,6 +57,16 @@ def _validate_expense_account(account: Account | None) -> None:
         raise HTTPException(status_code=404, detail="Mapped account not found")
     if account.account_type not in {"expense", "cogs"}:
         raise HTTPException(status_code=400, detail="Expense categories must map to an expense or cogs account")
+
+
+def _compute_bill_status(amount: float, amount_paid: float, existing_status: str | None = None) -> str:
+    if existing_status == "void":
+        return "void"
+    if amount_paid <= 0:
+        return "open"
+    if amount_paid >= amount:
+        return "paid"
+    return "partially_paid"
 
 
 @router.post(
@@ -94,6 +113,104 @@ async def update_vendor(vendor_id: uuid.UUID, body: VendorUpdate, admin: Current
     await db.commit()
     await db.refresh(vendor)
     return vendor
+
+
+@router.post(
+    "/bills",
+    response_model=BillResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create bill/expense (admin only)",
+)
+async def create_bill(body: BillCreate, admin: CurrentAdmin, db: DB):
+    account = (await db.execute(select(Account).where(Account.id == body.account_id))).scalar_one_or_none()
+    _validate_expense_account(account)
+    if body.vendor_id:
+        vendor = (await db.execute(select(Vendor).where(Vendor.id == body.vendor_id))).scalar_one_or_none()
+        if not vendor:
+            raise HTTPException(status_code=404, detail="Vendor not found")
+    if body.expense_category_id:
+        category = (await db.execute(select(ExpenseCategory).where(ExpenseCategory.id == body.expense_category_id))).scalar_one_or_none()
+        if not category:
+            raise HTTPException(status_code=404, detail="Expense category not found")
+
+    bill = Bill(**body.model_dump(), status="open")
+    db.add(bill)
+    await db.commit()
+    result = await db.execute(select(Bill).options(selectinload(Bill.payments)).where(Bill.id == bill.id))
+    return result.scalar_one()
+
+
+@router.get(
+    "/bills",
+    response_model=list[BillResponse],
+    summary="List bills/expenses (admin only)",
+)
+async def list_bills(admin: CurrentAdmin, db: DB, status_filter: str | None = Query(None, alias="status")):
+    stmt = select(Bill).options(selectinload(Bill.payments)).order_by(Bill.issue_date.desc(), Bill.created_at.desc())
+    if status_filter:
+        stmt = stmt.where(Bill.status == status_filter)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.put(
+    "/bills/{bill_id}",
+    response_model=BillResponse,
+    summary="Update bill/expense (admin only)",
+)
+async def update_bill(bill_id: uuid.UUID, body: BillUpdate, admin: CurrentAdmin, db: DB):
+    bill = (await db.execute(select(Bill).options(selectinload(Bill.payments)).where(Bill.id == bill_id))).scalar_one_or_none()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+
+    updates = body.model_dump(exclude_unset=True)
+    if "account_id" in updates:
+        account = (await db.execute(select(Account).where(Account.id == updates["account_id"]))).scalar_one_or_none()
+        _validate_expense_account(account)
+    if "vendor_id" in updates and updates["vendor_id"]:
+        vendor = (await db.execute(select(Vendor).where(Vendor.id == updates["vendor_id"]))).scalar_one_or_none()
+        if not vendor:
+            raise HTTPException(status_code=404, detail="Vendor not found")
+    if "expense_category_id" in updates and updates["expense_category_id"]:
+        category = (await db.execute(select(ExpenseCategory).where(ExpenseCategory.id == updates["expense_category_id"]))).scalar_one_or_none()
+        if not category:
+            raise HTTPException(status_code=404, detail="Expense category not found")
+
+    for field, value in updates.items():
+        setattr(bill, field, value)
+
+    if bill.status != "void":
+        bill.status = _compute_bill_status(float(bill.amount), float(bill.amount_paid), bill.status)
+
+    await db.commit()
+    result = await db.execute(select(Bill).options(selectinload(Bill.payments)).where(Bill.id == bill.id))
+    return result.scalar_one()
+
+
+@router.post(
+    "/bills/{bill_id}/payments",
+    response_model=BillPaymentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Record bill payment (admin only)",
+)
+async def create_bill_payment(bill_id: uuid.UUID, body: BillPaymentCreate, admin: CurrentAdmin, db: DB):
+    bill = (await db.execute(select(Bill).options(selectinload(Bill.payments)).where(Bill.id == bill_id))).scalar_one_or_none()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    if bill.status == "void":
+        raise HTTPException(status_code=400, detail="Cannot pay a void bill")
+    if float(bill.amount_paid + body.amount) > float(bill.amount):
+        raise HTTPException(status_code=400, detail="Payment exceeds remaining balance")
+
+    payment = BillPayment(bill_id=bill.id, **body.model_dump())
+    db.add(payment)
+    bill.amount_paid = bill.amount_paid + body.amount
+    bill.status = _compute_bill_status(float(bill.amount), float(bill.amount_paid), bill.status)
+    if body.payment_method:
+        bill.payment_method = body.payment_method
+    await db.commit()
+    await db.refresh(payment)
+    return payment
 
 
 @router.post(

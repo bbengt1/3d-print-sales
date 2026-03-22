@@ -132,6 +132,12 @@
   - Added account-mapping validation so expense categories must map to expense or COGS accounts
   - Added backend tests covering admin access, create/update flows, duplicate/name mapping constraints, and non-admin rejection
   - Added `docs/vendors_and_expense_categories.md` documenting the Phase 14 master-data foundation
+- [x] Issue #27 — Implement bills and expenses with due dates, payment tracking, and account mapping
+  - Added `bills` and `bill_payments` models plus Alembic revision scaffolding
+  - Added admin APIs for bill create/update/list and payment recording
+  - Added status handling for open / partially_paid / paid / void states based on actual payments
+  - Added validation for account mapping, overpayment rejection, and void-bill payment blocking
+  - Added `docs/bills_and_expenses.md` documenting the workflow foundation and current limitations
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

@@ -29,6 +29,8 @@ from app.models.journal_line import JournalLine  # noqa
 from app.models.material_receipt import MaterialReceipt  # noqa
 from app.models.vendor import Vendor  # noqa
 from app.models.expense_category import ExpenseCategory  # noqa
+from app.models.bill import Bill  # noqa
+from app.models.bill_payment import BillPayment  # noqa
 
 config = context.config
 if config.config_file_name is not None:
