@@ -115,6 +115,18 @@
   - Added backend tests covering scrap reduction, failed-print override cost, and validation behavior
   - Added `docs/scrap_and_waste_workflows.md` documenting the workflow and current accounting limitations
 
+### Phase 14 Planned / Starting
+- [ ] Issue #25 — Expenses, vendors, and accounts payable (epic)
+  - Child issues #26, #27, and #28 will be tracked directly for implementation work
+  - Recommended execution order:
+    1. #26 — create vendors and expense category management
+    2. #27 — implement bills and expenses with due dates, payment tracking, and account mapping
+    3. #28 — add recurring expenses and expense reporting by category and vendor
+  - Rationale:
+    - vendors/categories are foundational reference data
+    - bills/expenses depend on vendor/category/account structures
+    - recurring expenses and reporting should build on the core bill/expense model rather than precede it
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13
