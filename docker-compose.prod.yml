@@ -1,36 +1,48 @@
+name: 3d-print-sales-prod
+
 services:
   db:
     image: postgres:16-alpine
+    container_name: 3d-print-sales-db
     environment:
       POSTGRES_USER: ${DB_USER:-printuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-replace-with-strong-db-password}
       POSTGRES_DB: ${DB_NAME:-printsales}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-printuser} -d ${DB_NAME:-printsales}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     restart: unless-stopped
+    networks:
+      - app_net
 
   backend:
     build:
       context: ./backend
       target: production
+    container_name: 3d-print-sales-backend
+    env_file:
+      - ${ENV_FILE:-.env.production.example}
     environment:
-      DATABASE_URL: postgresql+asyncpg://${DB_USER:-printuser}:${DB_PASSWORD}@db:5432/${DB_NAME:-printsales}
-      SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-printuser}:${DB_PASSWORD:-replace-with-strong-db-password}@db:5432/${DB_NAME:-printsales}
       ENVIRONMENT: production
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["http://localhost"]}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
-      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-20}
+      TESTING: false
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
+    networks:
+      - app_net
 
   frontend:
     build:
@@ -38,11 +50,26 @@ services:
       target: production
       args:
         VITE_API_URL: /api/v1
-    ports:
-      - "80:80"
+    container_name: 3d-print-sales-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_HTTP_PORT:-80}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
+    networks:
+      - app_net
+
+networks:
+  app_net:
+    driver: bridge
 
 volumes:
-  pgdata:
+  postgres_data:
+    name: 3d_print_sales_postgres_data

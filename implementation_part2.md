@@ -56,6 +56,42 @@
   - Added locked-period safeguards preventing edits and reopen attempts
   - Added backend tests covering closed/locked-period rejection, status changes, and locked-period protection behavior
 
+### Deployment Completed
+- [x] Issue #48 — Deploy 3D Print Sales to web01.bengtson.local with Docker (epic)
+  - Child issues #49, #50, #51, #52, #53, and #54 are complete and closed
+  - Deployment planning, host audit, production compose config, secrets/storage workflow, ingress strategy, first deployment execution, and operations runbook are all now documented in-repo
+  - 3D Print Sales is live on `http://web01.bengtson.local/`
+- [x] Issue #49 — Audit web01.bengtson.local and prepare Docker host prerequisites
+  - Audited `root@web01.bengtson.local` and documented OS/resources/network/security baseline
+  - Identified Docker/Compose absence as the primary deployment blocker
+  - Documented recommended deployment root: `/srv/3d-print-sales`
+  - Added `docs/deployment_web01_audit.md`
+- [x] Issue #50 — Create production Docker Compose configuration for web01
+  - Refined `docker-compose.prod.yml` for server deployment with restart policies, health checks, internal network, and persistent Postgres volume
+  - Added `.env.production.example` for production env/secrets templating
+  - Added `docs/deployment_web01_compose.md` with launch/update guidance
+  - Updated deployment planning docs and README
+- [x] Issue #51 — Configure environment, secrets, and persistent storage for production deployment
+  - Documented server-side env-file workflow for `/srv/3d-print-sales/env/web01.env`
+  - Documented required production secret values, generation guidance, permissions, and launch pattern
+  - Documented backup-sensitive data locations and initial backup/retention guidance
+  - Added `docs/deployment_web01_env_and_storage.md`
+- [x] Issue #52 — Configure ingress for web01.bengtson.local (reverse proxy, hostname routing, and TLS strategy)
+  - Defined the initial ingress strategy using the frontend nginx container as the first HTTP entry point on port 80
+  - Set `web01.bengtson.local` as the canonical LAN hostname for first deployment
+  - Documented hostname resolution assumptions, firewall implications, canonical access URLs, and smoke-test paths
+  - Documented TLS as intentionally deferred for the first LAN-oriented rollout
+  - Added `docs/deployment_web01_ingress.md` and updated `frontend/nginx.conf`
+- [x] Issue #53 — Execute first deployment to web01 and validate smoke tests
+  - Installed Docker Engine and Docker Compose plugin on `web01.bengtson.local`
+  - Synced the repo to `/srv/3d-print-sales/repo` and created `/srv/3d-print-sales/env/web01.env`
+  - Opened HTTP service in firewalld and launched the production compose stack
+  - Verified compose health, frontend reachability, backend `/health`, named Postgres volume presence, and seeded admin login
+- [x] Issue #54 — Document operations runbook for web01 deployment
+  - Added `docs/deployment_web01_runbook.md`
+  - Documented deploy, update, restart, rollback, backup, restore, logs, health checks, env changes, firewall checks, and troubleshooting commands specific to `web01.bengtson.local`
+  - Linked the runbook from README and deployment planning docs
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13

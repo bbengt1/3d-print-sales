@@ -261,6 +261,17 @@ Current accounting foundation capabilities:
 - initial Alembic revision scaffolding for the accounting foundation tables
 - starter chart-of-accounts usage documentation in [docs/starter_chart_of_accounts.md](./docs/starter_chart_of_accounts.md)
 
+## Deployment Planning
+
+Deployment planning for hosting this app on `web01.bengtson.local` via Docker is tracked in:
+- [docs/deployment_web01_plan.md](./docs/deployment_web01_plan.md)
+- [docs/deployment_web01_audit.md](./docs/deployment_web01_audit.md)
+- [docs/deployment_web01_compose.md](./docs/deployment_web01_compose.md)
+- [docs/deployment_web01_env_and_storage.md](./docs/deployment_web01_env_and_storage.md)
+- [docs/deployment_web01_ingress.md](./docs/deployment_web01_ingress.md)
+- [docs/deployment_web01_runbook.md](./docs/deployment_web01_runbook.md)
+- GitHub issues #48–#54
+
 ## P&L Reporting Basis
 
 The Profit & Loss report now treats:
