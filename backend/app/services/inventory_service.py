@@ -7,8 +7,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.inventory_transaction import InventoryTransaction
+from app.models.job import Job
 from app.models.material import Material
 from app.models.product import Product
+from app.services.inventory_accounting_service import post_finished_goods_from_job
 
 
 async def generate_sku(db: AsyncSession, material_id: uuid.UUID) -> str:
@@ -58,6 +60,10 @@ async def add_inventory_from_job(
         if new_qty > 0:
             product.unit_cost = (old_total_cost + new_total_cost) / new_qty
         product.stock_qty = new_qty
+
+    job = (await db.execute(select(Job).where(Job.id == job_id))).scalar_one_or_none()
+    if job:
+        await post_finished_goods_from_job(db, job)
 
     return txn
 

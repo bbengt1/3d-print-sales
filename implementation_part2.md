@@ -109,6 +109,12 @@
   - Updated material-level current cost basis from recorded receipt data using weighted-average logic
   - Added backend tests covering landed cost allocation, material valuation update behavior, and receipt persistence/API flows
   - Added `docs/material_receipts_valuation.md` documenting the selected valuation approach and current limitations
+- [x] Issue #23 — Implement production and sales inventory accounting postings with COGS recognition
+  - Added inventory accounting posting service for production completion and sale-time COGS recognition
+  - Added finished-goods posting flow (Finished Goods Inventory debit / WIP credit) and sale COGS flow (Material COGS debit / Finished Goods credit)
+  - Added FIFO receipt quantity depletion for material usage on completed jobs
+  - Added backend tests covering production posting, receipt depletion, and sale COGS journal creation
+  - Added `docs/inventory_accounting_postings.md` documenting current posting behavior and limitations
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
