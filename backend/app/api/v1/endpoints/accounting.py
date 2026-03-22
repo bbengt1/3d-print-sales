@@ -14,6 +14,7 @@ from app.models.bill import Bill
 from app.models.bill_payment import BillPayment
 from app.models.expense_category import ExpenseCategory
 from app.models.journal_entry import JournalEntry
+from app.models.recurring_expense import RecurringExpense
 from app.models.vendor import Vendor
 from app.schemas.accounting import (
     AccountCreate,
@@ -42,6 +43,13 @@ from app.schemas.expenses import (
     VendorResponse,
     VendorUpdate,
 )
+from app.schemas.recurring_expenses import (
+    ExpenseSummaryRow,
+    RecurringExpenseCreate,
+    RecurringExpenseGenerate,
+    RecurringExpenseResponse,
+    RecurringExpenseUpdate,
+)
 from app.services.accounting_service import AccountingValidationError, create_journal_entry, reverse_journal_entry, set_accounting_period_status
 
 router = APIRouter(prefix="/accounting", tags=["Accounting"])
@@ -67,6 +75,20 @@ def _compute_bill_status(amount: float, amount_paid: float, existing_status: str
     if amount_paid >= amount:
         return "paid"
     return "partially_paid"
+
+
+def _next_due_date(current, frequency: str):
+    from datetime import timedelta
+
+    if frequency == "weekly":
+        return current + timedelta(days=7)
+    if frequency == "monthly":
+        return current + timedelta(days=30)
+    if frequency == "quarterly":
+        return current + timedelta(days=90)
+    if frequency == "yearly":
+        return current + timedelta(days=365)
+    return current
 
 
 @router.post(
@@ -211,6 +233,123 @@ async def create_bill_payment(bill_id: uuid.UUID, body: BillPaymentCreate, admin
     await db.commit()
     await db.refresh(payment)
     return payment
+
+
+@router.post(
+    "/recurring-expenses",
+    response_model=RecurringExpenseResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create recurring expense template (admin only)",
+)
+async def create_recurring_expense(body: RecurringExpenseCreate, admin: CurrentAdmin, db: DB):
+    account = (await db.execute(select(Account).where(Account.id == body.account_id))).scalar_one_or_none()
+    _validate_expense_account(account)
+    recurring = RecurringExpense(**body.model_dump())
+    db.add(recurring)
+    await db.commit()
+    await db.refresh(recurring)
+    return recurring
+
+
+@router.get(
+    "/recurring-expenses",
+    response_model=list[RecurringExpenseResponse],
+    summary="List recurring expense templates (admin only)",
+)
+async def list_recurring_expenses(admin: CurrentAdmin, db: DB, is_active: bool | None = Query(None)):
+    stmt = select(RecurringExpense).order_by(RecurringExpense.next_due_date.asc(), RecurringExpense.created_at.asc())
+    if is_active is not None:
+        stmt = stmt.where(RecurringExpense.is_active == is_active)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.put(
+    "/recurring-expenses/{recurring_id}",
+    response_model=RecurringExpenseResponse,
+    summary="Update recurring expense template (admin only)",
+)
+async def update_recurring_expense(recurring_id: uuid.UUID, body: RecurringExpenseUpdate, admin: CurrentAdmin, db: DB):
+    recurring = (await db.execute(select(RecurringExpense).where(RecurringExpense.id == recurring_id))).scalar_one_or_none()
+    if not recurring:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+    updates = body.model_dump(exclude_unset=True)
+    if "account_id" in updates:
+        account = (await db.execute(select(Account).where(Account.id == updates["account_id"]))).scalar_one_or_none()
+        _validate_expense_account(account)
+    for field, value in updates.items():
+        setattr(recurring, field, value)
+    await db.commit()
+    await db.refresh(recurring)
+    return recurring
+
+
+@router.post(
+    "/recurring-expenses/{recurring_id}/generate",
+    response_model=BillResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Generate bill from recurring expense template (admin only)",
+)
+async def generate_recurring_bill(recurring_id: uuid.UUID, body: RecurringExpenseGenerate, admin: CurrentAdmin, db: DB):
+    recurring = (await db.execute(select(RecurringExpense).where(RecurringExpense.id == recurring_id))).scalar_one_or_none()
+    if not recurring:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+    if not recurring.is_active:
+        raise HTTPException(status_code=400, detail="Recurring expense is inactive")
+    if body.as_of_date < recurring.next_due_date:
+        raise HTTPException(status_code=400, detail="Recurring expense is not due yet")
+
+    bill = Bill(
+        vendor_id=recurring.vendor_id,
+        expense_category_id=recurring.expense_category_id,
+        account_id=recurring.account_id,
+        description=recurring.description,
+        issue_date=body.as_of_date,
+        due_date=body.as_of_date,
+        amount=recurring.amount,
+        tax_amount=recurring.tax_amount,
+        payment_method=recurring.payment_method,
+        notes=recurring.notes,
+        status="open",
+    )
+    db.add(bill)
+    recurring.last_generated_at = recurring.updated_at
+    recurring.next_due_date = _next_due_date(recurring.next_due_date, recurring.frequency)
+    await db.commit()
+    result = await db.execute(select(Bill).options(selectinload(Bill.payments)).where(Bill.id == bill.id))
+    return result.scalar_one()
+
+
+@router.get(
+    "/reports/expenses/by-category",
+    response_model=list[ExpenseSummaryRow],
+    summary="Expense summary by category (admin only)",
+)
+async def expense_summary_by_category(admin: CurrentAdmin, db: DB):
+    rows = (await db.execute(select(ExpenseCategory, Bill).join(Bill, Bill.expense_category_id == ExpenseCategory.id))).all()
+    summary = {}
+    for category, bill in rows:
+        key = str(category.id)
+        row = summary.setdefault(key, {"key": key, "label": category.name, "total_amount": 0, "bill_count": 0})
+        row["total_amount"] += bill.amount
+        row["bill_count"] += 1
+    return list(summary.values())
+
+
+@router.get(
+    "/reports/expenses/by-vendor",
+    response_model=list[ExpenseSummaryRow],
+    summary="Expense summary by vendor (admin only)",
+)
+async def expense_summary_by_vendor(admin: CurrentAdmin, db: DB):
+    rows = (await db.execute(select(Vendor, Bill).join(Bill, Bill.vendor_id == Vendor.id))).all()
+    summary = {}
+    for vendor, bill in rows:
+        key = str(vendor.id)
+        row = summary.setdefault(key, {"key": key, "label": vendor.name, "total_amount": 0, "bill_count": 0})
+        row["total_amount"] += bill.amount
+        row["bill_count"] += 1
+    return list(summary.values())
 
 
 @router.post(

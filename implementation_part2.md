@@ -138,6 +138,12 @@
   - Added status handling for open / partially_paid / paid / void states based on actual payments
   - Added validation for account mapping, overpayment rejection, and void-bill payment blocking
   - Added `docs/bills_and_expenses.md` documenting the workflow foundation and current limitations
+- [x] Issue #28 — Add recurring expenses and expense reporting by category and vendor
+  - Added `recurring_expenses` model plus Alembic revision scaffolding
+  - Added admin APIs for recurring expense create/update/list and bill generation from due templates
+  - Added grouped expense summary endpoints by category and by vendor
+  - Added backend tests covering recurring generation flow, due-date enforcement, and reporting endpoints
+  - Added `docs/recurring_expenses_and_reporting.md` documenting recurring templates and summary reporting
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

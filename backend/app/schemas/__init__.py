@@ -19,6 +19,13 @@ from app.schemas.bills import (
     BillResponse,
     BillUpdate,
 )
+from app.schemas.recurring_expenses import (
+    ExpenseSummaryRow,
+    RecurringExpenseCreate,
+    RecurringExpenseGenerate,
+    RecurringExpenseResponse,
+    RecurringExpenseUpdate,
+)
 from app.schemas.expenses import (
     ExpenseCategoryCreate,
     ExpenseCategoryResponse,
@@ -69,6 +76,7 @@ __all__ = [
     "BillPaymentResponse",
     "BillResponse",
     "BillUpdate",
+    "ExpenseSummaryRow",
     "BulkSettingUpdate",
     "CalculateRequest",
     "CalculateResponse",

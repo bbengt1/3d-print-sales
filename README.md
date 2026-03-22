@@ -250,6 +250,7 @@ See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the can
 Phase 14 expense/AP groundwork now includes:
 - [docs/vendors_and_expense_categories.md](./docs/vendors_and_expense_categories.md)
 - [docs/bills_and_expenses.md](./docs/bills_and_expenses.md)
+- [docs/recurring_expenses_and_reporting.md](./docs/recurring_expenses_and_reporting.md)
 
 ## Inventory Valuation Groundwork
 
