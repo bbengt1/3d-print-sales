@@ -92,17 +92,11 @@
   - Documented deploy, update, restart, rollback, backup, restore, logs, health checks, env changes, firewall checks, and troubleshooting commands specific to `web01.bengtson.local`
   - Linked the runbook from README and deployment planning docs
 
-### Phase 13 Planned / Starting
-- [ ] Issue #21 — Inventory accounting for raw materials, WIP, finished goods, and COGS (epic)
-  - Child issues #22, #23, and #24 will be tracked directly for implementation work
-  - Recommended execution order:
-    1. #22 — raw material purchase receipts / lot costing / landed cost tracking
-    2. #23 — production and sales inventory accounting postings with COGS recognition
-    3. #24 — scrap, waste, and failed-print costing workflows
-  - Rationale:
-    - lot/receipt costing needs to exist before inventory depletion and valuation flows are reliable
-    - production/sales postings depend on inventory value inputs
-    - scrap/waste flows should build on the valuation/posting foundation rather than invent it in parallel
+### Phase 13 Completed
+- [x] Issue #21 — Inventory accounting for raw materials, WIP, finished goods, and COGS (epic)
+  - Child issues #22, #23, and #24 are complete and closed
+  - Added material receipt / lot costing, landed cost tracking, inventory accounting postings, COGS recognition, and scrap/waste workflow foundations
+  - Added Alembic revision scaffolding, backend tests, and Phase 13 inventory-accounting documentation
 - [x] Issue #22 — Add raw material purchase receipts, lot costing, and landed cost tracking
   - Added `material_receipts` model, schema, service logic, API endpoints, and Alembic revision scaffolding
   - Added landed-cost and total-cost calculations per receipt/lot plus remaining quantity tracking

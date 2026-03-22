@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+import uuid
 
 import pytest
 import pytest_asyncio
@@ -32,7 +33,7 @@ async def scrap_material(db_session: AsyncSession) -> Material:
 @pytest_asyncio.fixture
 async def scrap_product(db_session: AsyncSession, scrap_material: Material) -> Product:
     product = Product(
-        sku="SCRAP-001",
+        sku=f"SCRAP-{uuid.uuid4().hex[:8]}",
         name="Scrap Test Product",
         material_id=scrap_material.id,
         unit_cost=Decimal("4.50"),
