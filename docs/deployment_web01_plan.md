@@ -78,6 +78,11 @@ Deliverables:
 - production Docker Compose configuration
 - server-ready deployment commands
 
+Status:
+- production compose file refined in `docker-compose.prod.yml`
+- production env template added in `.env.production.example`
+- final ingress/reverse-proxy approach still depends on issue #52
+
 ---
 
 ## Phase C — Secrets and Persistent Data

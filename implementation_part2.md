@@ -56,6 +56,18 @@
   - Added locked-period safeguards preventing edits and reopen attempts
   - Added backend tests covering closed/locked-period rejection, status changes, and locked-period protection behavior
 
+### Deployment Progress
+- [x] Issue #49 — Audit web01.bengtson.local and prepare Docker host prerequisites
+  - Audited `root@web01.bengtson.local` and documented OS/resources/network/security baseline
+  - Identified Docker/Compose absence as the primary deployment blocker
+  - Documented recommended deployment root: `/srv/3d-print-sales`
+  - Added `docs/deployment_web01_audit.md`
+- [x] Issue #50 — Create production Docker Compose configuration for web01
+  - Refined `docker-compose.prod.yml` for server deployment with restart policies, health checks, internal network, and persistent Postgres volume
+  - Added `.env.production.example` for production env/secrets templating
+  - Added `docs/deployment_web01_compose.md` with launch/update guidance
+  - Updated deployment planning docs and README
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13
