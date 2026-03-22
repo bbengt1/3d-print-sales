@@ -115,6 +115,11 @@
   - Added FIFO receipt quantity depletion for material usage on completed jobs
   - Added backend tests covering production posting, receipt depletion, and sale COGS journal creation
   - Added `docs/inventory_accounting_postings.md` documenting current posting behavior and limitations
+- [x] Issue #24 — Add scrap, waste, and failed-print costing workflows
+  - Added dedicated inventory event handling for `scrap`, `failed_print`, `writeoff`, and `rework`
+  - Added service logic to reduce stock, capture reason/notes, and store the event at product cost or override cost
+  - Added backend tests covering scrap reduction, failed-print override cost, and validation behavior
+  - Added `docs/scrap_and_waste_workflows.md` documenting the workflow and current accounting limitations
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

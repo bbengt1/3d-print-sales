@@ -68,6 +68,39 @@ async def add_inventory_from_job(
     return txn
 
 
+async def record_scrap_inventory(
+    db: AsyncSession,
+    *,
+    product: Product,
+    quantity: int,
+    event_type: str,
+    reason: str,
+    notes: str | None = None,
+    unit_cost: Decimal | None = None,
+    user_id: uuid.UUID | None = None,
+) -> InventoryTransaction:
+    if quantity <= 0:
+        raise ValueError("Scrap quantity must be greater than zero.")
+    if event_type not in {"scrap", "failed_print", "writeoff", "rework"}:
+        raise ValueError("Unsupported scrap event type.")
+
+    resolved_cost = unit_cost if unit_cost is not None else product.unit_cost
+    txn = InventoryTransaction(
+        product_id=product.id,
+        type=event_type,
+        quantity=-quantity,
+        unit_cost=resolved_cost,
+        notes=f"{reason}" + (f" | {notes}" if notes else ""),
+        created_by=user_id,
+    )
+    db.add(txn)
+    product.stock_qty = max(0, product.stock_qty - quantity)
+    await db.commit()
+    await db.refresh(txn)
+    await db.refresh(product)
+    return txn
+
+
 async def adjust_stock(
     db: AsyncSession,
     product_id: uuid.UUID,

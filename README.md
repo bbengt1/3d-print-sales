@@ -250,6 +250,7 @@ See [docs/finance_metric_naming.md](./docs/finance_metric_naming.md) for the can
 Phase 13 inventory accounting groundwork now includes:
 - raw-material receipt / lot tracking and landed cost documentation in [docs/material_receipts_valuation.md](./docs/material_receipts_valuation.md)
 - production and sales posting behavior documentation in [docs/inventory_accounting_postings.md](./docs/inventory_accounting_postings.md)
+- scrap / waste / failed-print workflow documentation in [docs/scrap_and_waste_workflows.md](./docs/scrap_and_waste_workflows.md)
 
 ## Accounting Foundation Status
 
