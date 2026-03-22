@@ -159,6 +159,13 @@ Smoke tests:
 - data persists across restart
 - basic app workflow succeeds
 
+Status:
+- first deployment executed successfully on `web01.bengtson.local`
+- Docker Engine and Compose plugin installed on host as part of rollout
+- firewall opened for HTTP service
+- stack is reachable at `http://web01.bengtson.local/`
+- seeded admin login validated against the live deployment
+
 ---
 
 ## Phase F — Runbook

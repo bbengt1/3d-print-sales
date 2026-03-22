@@ -78,6 +78,11 @@
   - Documented hostname resolution assumptions, firewall implications, canonical access URLs, and smoke-test paths
   - Documented TLS as intentionally deferred for the first LAN-oriented rollout
   - Added `docs/deployment_web01_ingress.md` and updated `frontend/nginx.conf`
+- [x] Issue #53 — Execute first deployment to web01 and validate smoke tests
+  - Installed Docker Engine and Docker Compose plugin on `web01.bengtson.local`
+  - Synced the repo to `/srv/3d-print-sales/repo` and created `/srv/3d-print-sales/env/web01.env`
+  - Opened HTTP service in firewalld and launched the production compose stack
+  - Verified compose health, frontend reachability, backend `/health`, named Postgres volume presence, and seeded admin login
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
