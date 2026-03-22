@@ -12,6 +12,14 @@ from app.schemas.accounting import (
     JournalLineCreate,
     JournalLineResponse,
 )
+from app.schemas.expenses import (
+    ExpenseCategoryCreate,
+    ExpenseCategoryResponse,
+    ExpenseCategoryUpdate,
+    VendorCreate,
+    VendorResponse,
+    VendorUpdate,
+)
 from app.schemas.auth import (
     LoginRequest,
     PasswordChange,

@@ -126,6 +126,12 @@
     - vendors/categories are foundational reference data
     - bills/expenses depend on vendor/category/account structures
     - recurring expenses and reporting should build on the core bill/expense model rather than precede it
+- [x] Issue #26 — Create vendors and expense category management
+  - Added `vendors` and `expense_categories` models plus Alembic revision scaffolding
+  - Added admin APIs for vendor create/update/list and expense category create/update/list
+  - Added account-mapping validation so expense categories must map to expense or COGS accounts
+  - Added backend tests covering admin access, create/update flows, duplicate/name mapping constraints, and non-admin rejection
+  - Added `docs/vendors_and_expense_categories.md` documenting the Phase 14 master-data foundation
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

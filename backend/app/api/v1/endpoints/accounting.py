@@ -10,7 +10,9 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import DB, CurrentAdmin
 from app.models.account import Account
 from app.models.accounting_period import AccountingPeriod
+from app.models.expense_category import ExpenseCategory
 from app.models.journal_entry import JournalEntry
+from app.models.vendor import Vendor
 from app.schemas.accounting import (
     AccountCreate,
     AccountResponse,
@@ -23,12 +25,129 @@ from app.schemas.accounting import (
     JournalEntryResponse,
     JournalEntryReverse,
 )
+from app.schemas.expenses import (
+    ExpenseCategoryCreate,
+    ExpenseCategoryResponse,
+    ExpenseCategoryUpdate,
+    VendorCreate,
+    VendorResponse,
+    VendorUpdate,
+)
 from app.services.accounting_service import AccountingValidationError, create_journal_entry, reverse_journal_entry, set_accounting_period_status
 
 router = APIRouter(prefix="/accounting", tags=["Accounting"])
 
 
 def _validate_period_dates(start_date: date, end_date: date) -> None:
+    if end_date < start_date:
+        raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
+
+
+def _validate_expense_account(account: Account | None) -> None:
+    if not account:
+        raise HTTPException(status_code=404, detail="Mapped account not found")
+    if account.account_type not in {"expense", "cogs"}:
+        raise HTTPException(status_code=400, detail="Expense categories must map to an expense or cogs account")
+
+
+@router.post(
+    "/vendors",
+    response_model=VendorResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create vendor (admin only)",
+)
+async def create_vendor(body: VendorCreate, admin: CurrentAdmin, db: DB):
+    existing = await db.execute(select(Vendor).where(Vendor.name == body.name))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Vendor name already exists")
+    vendor = Vendor(**body.model_dump())
+    db.add(vendor)
+    await db.commit()
+    await db.refresh(vendor)
+    return vendor
+
+
+@router.get(
+    "/vendors",
+    response_model=list[VendorResponse],
+    summary="List vendors (admin only)",
+)
+async def list_vendors(admin: CurrentAdmin, db: DB, is_active: bool | None = Query(None)):
+    stmt = select(Vendor).order_by(Vendor.name.asc())
+    if is_active is not None:
+        stmt = stmt.where(Vendor.is_active == is_active)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.put(
+    "/vendors/{vendor_id}",
+    response_model=VendorResponse,
+    summary="Update vendor (admin only)",
+)
+async def update_vendor(vendor_id: uuid.UUID, body: VendorUpdate, admin: CurrentAdmin, db: DB):
+    vendor = (await db.execute(select(Vendor).where(Vendor.id == vendor_id))).scalar_one_or_none()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(vendor, field, value)
+    await db.commit()
+    await db.refresh(vendor)
+    return vendor
+
+
+@router.post(
+    "/expense-categories",
+    response_model=ExpenseCategoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create expense category (admin only)",
+)
+async def create_expense_category(body: ExpenseCategoryCreate, admin: CurrentAdmin, db: DB):
+    existing = await db.execute(select(ExpenseCategory).where(ExpenseCategory.name == body.name))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Expense category name already exists")
+    account = (await db.execute(select(Account).where(Account.id == body.account_id))).scalar_one_or_none()
+    _validate_expense_account(account)
+    category = ExpenseCategory(**body.model_dump())
+    db.add(category)
+    await db.commit()
+    await db.refresh(category)
+    return category
+
+
+@router.get(
+    "/expense-categories",
+    response_model=list[ExpenseCategoryResponse],
+    summary="List expense categories (admin only)",
+)
+async def list_expense_categories(admin: CurrentAdmin, db: DB, is_active: bool | None = Query(None)):
+    stmt = select(ExpenseCategory).order_by(ExpenseCategory.name.asc())
+    if is_active is not None:
+        stmt = stmt.where(ExpenseCategory.is_active == is_active)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.put(
+    "/expense-categories/{category_id}",
+    response_model=ExpenseCategoryResponse,
+    summary="Update expense category (admin only)",
+)
+async def update_expense_category(category_id: uuid.UUID, body: ExpenseCategoryUpdate, admin: CurrentAdmin, db: DB):
+    category = (await db.execute(select(ExpenseCategory).where(ExpenseCategory.id == category_id))).scalar_one_or_none()
+    if not category:
+        raise HTTPException(status_code=404, detail="Expense category not found")
+    updates = body.model_dump(exclude_unset=True)
+    if "account_id" in updates:
+        account = (await db.execute(select(Account).where(Account.id == updates["account_id"]))).scalar_one_or_none()
+        _validate_expense_account(account)
+    for field, value in updates.items():
+        setattr(category, field, value)
+    await db.commit()
+    await db.refresh(category)
+    return category
+
+
     if end_date < start_date:
         raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
 
