@@ -4,11 +4,13 @@ import datetime
 import uuid
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Body, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser
+from app.models.approval_request import ApprovalRequest
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.sales_channel import SalesChannel
@@ -405,7 +407,7 @@ async def delete_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
     summary="Refund a sale",
     description="Mark a sale as refunded and restore inventory.",
 )
-async def refund_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
+async def refund_sale(sale_id: uuid.UUID, body: RefundRequestBody = Body(...), user: CurrentUser = None, db: DB = None):
     result = await db.execute(
         select(Sale)
         .options(selectinload(Sale.items))
@@ -420,9 +422,45 @@ async def refund_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if sale.status == "refunded":
         raise HTTPException(status_code=400, detail="Sale is already refunded")
+    if not body.reason:
+        raise HTTPException(status_code=400, detail="Refunds require a documented reason")
 
+    if user.role != "admin":
+        request = ApprovalRequest(
+            action_type="sale_refund",
+            entity_type="sale",
+            entity_id=str(sale.id),
+            requested_by_user_id=user.id,
+            reason=body.reason,
+            request_payload={"sale_id": str(sale.id), "reason": body.reason},
+        )
+        db.add(request)
+        await db.flush()
+        await create_audit_log(
+            db,
+            actor_user_id=user.id,
+            entity_type="approval_request",
+            entity_id=str(request.id),
+            action="request_create",
+            after_snapshot={"action_type": request.action_type, "entity_type": request.entity_type, "entity_id": request.entity_id, "status": request.status},
+            reason=body.reason,
+        )
+        await db.commit()
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"detail": "Refund submitted for approval"})
+
+    before = snapshot_model(sale, ["status", "total", "customer_name"])
     sale.status = "refunded"
     await restore_inventory_for_refund(db, sale, user.id)
+    await create_audit_log(
+        db,
+        actor_user_id=user.id,
+        entity_type="sale",
+        entity_id=str(sale.id),
+        action="refund",
+        before_snapshot=before,
+        after_snapshot=snapshot_model(sale, ["status", "total", "customer_name"]),
+        reason=body.reason,
+    )
     await db.commit()
 
     result = await db.execute(

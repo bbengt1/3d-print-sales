@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
+from app.models.approval_request import ApprovalRequest
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.material import Material
 from app.models.product import Product
@@ -59,11 +61,42 @@ async def list_transactions(
     description="Manually adjust inventory stock. Use positive quantity to add, negative to remove.",
 )
 async def create_transaction(body: InventoryTransactionCreate, user: CurrentUser, db: DB):
+    if body.type.value == "adjustment" and not body.notes:
+        raise HTTPException(status_code=400, detail="Manual inventory adjustments require a documented reason")
+
     # Verify product exists
     result = await db.execute(select(Product).where(Product.id == body.product_id))
     product = result.scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+
+    if body.type.value == "adjustment" and user.role != "admin":
+        request = ApprovalRequest(
+            action_type="inventory_adjustment",
+            entity_type="product",
+            entity_id=str(product.id),
+            requested_by_user_id=user.id,
+            reason=body.notes or "",
+            request_payload={
+                "product_id": str(body.product_id),
+                "type": body.type.value,
+                "quantity": body.quantity,
+                "unit_cost": str(body.unit_cost),
+                "notes": body.notes,
+            },
+        )
+        db.add(request)
+        await create_audit_log(
+            db,
+            actor_user_id=user.id,
+            entity_type="approval_request",
+            entity_id=str(request.id),
+            action="request_create",
+            after_snapshot={"action_type": request.action_type, "entity_type": request.entity_type, "entity_id": request.entity_id, "status": request.status},
+            reason=request.reason,
+        )
+        await db.commit()
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"detail": "Inventory adjustment submitted for approval"})
 
     before = snapshot_model(product, ["stock_qty", "unit_cost", "reorder_point"])
     txn = await adjust_stock(

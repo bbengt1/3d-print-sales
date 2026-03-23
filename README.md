@@ -276,6 +276,7 @@ Phase 17 groundwork now includes:
 
 Phase 18 groundwork now includes:
 - [docs/finance_audit_log.md](./docs/finance_audit_log.md)
+- [docs/refund_and_adjustment_approvals.md](./docs/refund_and_adjustment_approvals.md)
 
 ## Inventory Valuation Groundwork
 

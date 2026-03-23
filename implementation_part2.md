@@ -899,6 +899,12 @@ Make the app safer to use as real business software.
   - Added audit coverage for manual inventory adjustments, settings changes, and core sale lifecycle events
   - Added backend tests covering audit-log creation and admin-only audit access
   - Added `docs/finance_audit_log.md` documenting the audit-log foundation and current limitations
+- [x] Issue #42 — Add reason/approval workflow for refunds and manual inventory adjustments
+  - Added `approval_requests` model plus Alembic revision scaffolding and admin approval endpoints
+  - Required documented reasons for refunds and manual inventory adjustments
+  - Added pending-approval flow for non-admin refunds and manual inventory adjustments, with admin approve/reject actions
+  - Added backend tests covering pending approval creation, reason validation, and approved refund execution
+  - Added `docs/refund_and_adjustment_approvals.md` documenting the approval workflow foundation
 
 ---
 
