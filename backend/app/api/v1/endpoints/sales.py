@@ -12,6 +12,7 @@ from app.api.deps import DB, CurrentUser
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.sales_channel import SalesChannel
+from app.models.tax_profile import TaxProfile
 from app.schemas.sale import (
     PaginatedSales,
     SaleCreate,
@@ -41,6 +42,8 @@ def _to_sale_response(sale: Sale) -> SaleResponse:
         customer_id=sale.customer_id,
         customer_name=sale.customer_name,
         channel_id=sale.channel_id,
+        tax_profile_id=sale.tax_profile_id,
+        tax_treatment=sale.tax_treatment,
         status=sale.status,
         subtotal=sale.subtotal,
         shipping_charged=sale.shipping_charged,
@@ -261,6 +264,8 @@ async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
         customer_id=body.customer_id,
         customer_name=body.customer_name,
         channel_id=body.channel_id,
+        tax_profile_id=body.tax_profile_id,
+        tax_treatment=body.tax_treatment,
         status=body.status.value,
         shipping_charged=body.shipping_charged,
         shipping_cost=body.shipping_cost,

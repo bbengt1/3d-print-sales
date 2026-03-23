@@ -91,6 +91,23 @@ from app.schemas.quote import (
 )
 from app.schemas.rate import RateCreate, RateResponse, RateUpdate
 from app.schemas.setting import BulkSettingUpdate, SettingResponse, SettingUpdate
+from app.schemas.tax import (
+    TaxLiabilityRow,
+    TaxLiabilitySummary,
+    TaxProfileCreate,
+    TaxProfileResponse,
+    TaxProfileUpdate,
+    TaxRemittanceCreate,
+    TaxRemittanceResponse,
+)
+from app.schemas.settlement import (
+    MarketplaceSettlementCreate,
+    MarketplaceSettlementResponse,
+    SettlementLineCreate,
+    SettlementLineResponse,
+    SettlementReconciliationRow,
+    SettlementReconciliationSummary,
+)
 
 __all__ = [
     "AccountCreate",

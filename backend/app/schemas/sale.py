@@ -46,6 +46,8 @@ class SaleCreate(BaseModel):
     customer_id: uuid.UUID | None = None
     customer_name: str | None = Field(None, max_length=200, examples=["John Doe"])
     channel_id: uuid.UUID | None = None
+    tax_profile_id: uuid.UUID | None = None
+    tax_treatment: str = Field("seller_collected", pattern="^(seller_collected|marketplace_facilitated|non_taxable)$")
     shipping_charged: Decimal = Field(Decimal(0), ge=0, examples=[5.99])
     shipping_cost: Decimal = Field(Decimal(0), ge=0, examples=[4.50])
     tax_collected: Decimal = Field(Decimal(0), ge=0, examples=[0])
@@ -61,6 +63,8 @@ class SaleUpdate(BaseModel):
     customer_id: uuid.UUID | None = None
     customer_name: str | None = Field(None, max_length=200)
     channel_id: uuid.UUID | None = None
+    tax_profile_id: uuid.UUID | None = None
+    tax_treatment: str | None = Field(None, pattern="^(seller_collected|marketplace_facilitated|non_taxable)$")
     shipping_charged: Decimal | None = Field(None, ge=0)
     shipping_cost: Decimal | None = Field(None, ge=0)
     tax_collected: Decimal | None = Field(None, ge=0)
@@ -77,6 +81,8 @@ class SaleResponse(BaseModel):
     customer_id: uuid.UUID | None = None
     customer_name: str | None = None
     channel_id: uuid.UUID | None = None
+    tax_profile_id: uuid.UUID | None = None
+    tax_treatment: str
     status: str
     subtotal: Decimal
     shipping_charged: Decimal
@@ -102,6 +108,8 @@ class SaleListResponse(BaseModel):
     date: datetime.date
     customer_name: str | None = None
     channel_id: uuid.UUID | None = None
+    tax_profile_id: uuid.UUID | None = None
+    tax_treatment: str | None = None
     status: str
     total: Decimal
     gross_profit: Decimal

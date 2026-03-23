@@ -784,6 +784,12 @@ Support custom print jobs and wholesale customers like a real business.
 
 ## Phase 16 — Tax and Marketplace Settlement
 
+### Status
+- [x] Issue #33 — Sales tax and marketplace settlement tracking (epic)
+  - Child issues #34 and #35 are complete and closed
+  - Added liability-aware sales tax tracking, remittance records, marketplace settlement batches, and payout reconciliation foundations
+  - Added Phase 16 Alembic revision scaffolding, backend tests, and supporting tax/marketplace documentation
+
 ### Goals
 Model the reality of Etsy/Amazon/direct-channel cash flows.
 
@@ -805,6 +811,19 @@ Model the reality of Etsy/Amazon/direct-channel cash flows.
 - tax liability report
 - marketplace payout reconciliation screen
 - net deposit tracking
+
+- [x] Issue #34 — Implement sales tax liability tracking and remittance workflow
+  - Added `tax_profiles` and `tax_remittances` models plus Alembic revision scaffolding
+  - Added sale-level tax profile and tax treatment support for seller-collected vs marketplace-facilitated scenarios
+  - Added tax profile/remittance APIs and a tax liability report showing seller-collected, marketplace-facilitated, remitted, and outstanding balances
+  - Added backend tests covering direct-sale tax vs marketplace-facilitated tax scenarios and remittance reduction of liability
+  - Added `docs/sales_tax_liability.md` documenting liability-aware tax tracking and remittance behavior
+- [x] Issue #35 — Add marketplace settlement batches and payout reconciliation
+  - Added `marketplace_settlements` and `settlement_lines` models plus Alembic revision scaffolding
+  - Added settlement APIs for settlement create/list and reconciliation reporting by payout batch
+  - Added expected-net and discrepancy tracking for gross sales, fees, adjustments, reserve holds, and actual net deposit
+  - Added backend tests covering settlement creation, linked sales/line items, and reconciliation totals/discrepancies
+  - Added `docs/marketplace_settlements.md` documenting payout batch structure and reconciliation behavior
 
 ---
 
