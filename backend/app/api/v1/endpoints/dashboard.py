@@ -1,19 +1,28 @@
 from __future__ import annotations
 
 import datetime
+from decimal import Decimal
 
 from fastapi import APIRouter, Query
 from sqlalchemy import func, select
 
 from app.api.deps import DB
-from app.models.job import Job
+from app.models.bill import Bill
+from app.models.invoice import Invoice
+from app.models.journal_entry import JournalEntry
+from app.models.journal_line import JournalLine
+from app.models.marketplace_settlement import MarketplaceSettlement
 from app.models.material import Material
+from app.models.material_receipt import MaterialReceipt
+from app.models.job import Job
+from app.models.account import Account
 from app.schemas.dashboard import (
     DashboardSummary,
     MaterialUsageDataPoint,
     ProfitMarginDataPoint,
     RevenueDataPoint,
 )
+from app.schemas.finance_dashboard import FinanceDashboardSummary
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -160,3 +169,72 @@ async def profit_margin_chart(
         )
         for r in result.all()
     ]
+
+
+@router.get(
+    "/finance-summary",
+    response_model=FinanceDashboardSummary,
+    summary="Finance dashboard summary",
+    description="Returns finance-focused dashboard widgets for cash, receivables, payables, inventory, tax, and payouts in transit.",
+)
+async def finance_summary(db: DB):
+    today = datetime.date.today()
+    month_start = today.replace(day=1)
+
+    cash_stmt = (
+        select(Account.normal_balance, JournalLine.entry_type, JournalLine.amount)
+        .join(JournalLine, JournalLine.account_id == Account.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+        .where(JournalEntry.status == "posted", Account.code == "1000")
+    )
+    cash_rows = (await db.execute(cash_stmt)).all()
+    cash_on_hand = Decimal("0")
+    for normal_balance, entry_type, amount in cash_rows:
+        cash_on_hand += amount if entry_type == normal_balance else -amount
+
+    unpaid_invoices = (await db.execute(select(func.coalesce(func.sum(Invoice.balance_due), 0)).where(Invoice.status != "void"))).scalar_one()
+    unpaid_bills = (await db.execute(select(func.coalesce(func.sum(Bill.amount - Bill.amount_paid), 0)).where(Bill.status != "void"))).scalar_one()
+
+    income_stmt = (
+        select(Account.account_type, Account.normal_balance, JournalLine.entry_type, JournalLine.amount)
+        .join(JournalLine, JournalLine.account_id == Account.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+        .where(JournalEntry.status == "posted", JournalEntry.entry_date >= month_start, JournalEntry.entry_date <= today, Account.account_type.in_(["revenue", "cogs", "expense"]))
+    )
+    income_rows = (await db.execute(income_stmt)).all()
+    revenue = cogs = expenses = Decimal("0")
+    for account_type, normal_balance, entry_type, amount in income_rows:
+        signed = amount if entry_type == normal_balance else -amount
+        if account_type == "revenue":
+            revenue += signed
+        elif account_type == "cogs":
+            cogs += signed
+        elif account_type == "expense":
+            expenses += signed
+    current_month_net_income = revenue - cogs - expenses
+
+    inv_rows = (await db.execute(select(MaterialReceipt.quantity_remaining_g, MaterialReceipt.landed_cost_per_g))).all()
+    inventory_asset_value = sum(((qty or Decimal("0")) * (cost or Decimal("0")) for qty, cost in inv_rows), Decimal("0"))
+
+    tax_payable_stmt = (
+        select(Account.normal_balance, JournalLine.entry_type, JournalLine.amount)
+        .join(JournalLine, JournalLine.account_id == Account.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+        .where(JournalEntry.status == "posted", Account.code == "2100")
+    )
+    tax_rows = (await db.execute(tax_payable_stmt)).all()
+    tax_payable = Decimal("0")
+    for normal_balance, entry_type, amount in tax_rows:
+        tax_payable += amount if entry_type == normal_balance else -amount
+
+    payouts_in_transit = (await db.execute(select(func.coalesce(func.sum(MarketplaceSettlement.expected_net), 0)).where(MarketplaceSettlement.payout_date > today))).scalar_one()
+
+    return FinanceDashboardSummary(
+        cash_on_hand=cash_on_hand,
+        unpaid_invoices=unpaid_invoices,
+        unpaid_bills=unpaid_bills,
+        current_month_net_income=current_month_net_income,
+        inventory_asset_value=inventory_asset_value,
+        tax_payable=tax_payable,
+        payouts_in_transit=payouts_in_transit,
+    )

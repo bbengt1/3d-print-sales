@@ -69,6 +69,7 @@ from app.schemas.finance_reports import (
     InventoryValuationSummary,
     TaxLiabilityReportResponse,
 )
+from app.schemas.finance_dashboard import FinanceDashboardSummary
 from app.schemas.invoice import (
     InvoiceCreate,
     InvoiceCreditApply,

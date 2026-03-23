@@ -861,6 +861,11 @@ Make reporting trustworthy and decision-grade.
   - Reused the existing invoice aging logic and added complementary bill-aging and inventory-valuation service logic
   - Added backend tests covering core totals for A/R, A/P, tax liability, inventory valuation, and COGS breakdown outputs
   - Added `docs/finance_specialized_reports.md` documenting the new specialized finance-reporting APIs and current limitations
+- [x] Issue #39 — Add finance dashboard widgets for cash, receivables, payables, tax, and inventory value
+  - Added a dedicated finance dashboard summary endpoint for cash on hand, unpaid invoices, unpaid bills, current month net income, inventory asset value, tax payable, and payouts in transit
+  - Added dashboard UI cards for the finance widget set so the finance lens is distinct from the operations dashboard summary
+  - Added backend test coverage validating dashboard widget values against seeded finance data and frontend build validation for the updated dashboard page
+  - Added `docs/finance_dashboard_widgets.md` documenting the finance widget data sources and current limitations
 - current month true net income
 - inventory asset value
 - tax payable

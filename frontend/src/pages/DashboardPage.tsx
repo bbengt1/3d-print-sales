@@ -4,7 +4,7 @@ import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award, AlertTriangl
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
-import type { DashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert, SalesMetrics } from '@/types';
+import type { DashboardSummary, FinanceDashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert, SalesMetrics } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
@@ -42,6 +42,11 @@ export default function DashboardPage() {
   const { data: revenueData } = useQuery<RevenueDataPoint[]>({
     queryKey: ['dashboard', 'revenue'],
     queryFn: () => api.get('/dashboard/charts/revenue').then((r) => r.data),
+  });
+
+  const { data: financeData } = useQuery<FinanceDashboardSummary>({
+    queryKey: ['dashboard', 'finance-summary'],
+    queryFn: () => api.get('/dashboard/finance-summary').then((r) => r.data),
   });
 
   const { data: materialData } = useQuery<MaterialUsageDataPoint[]>({
@@ -114,6 +119,22 @@ export default function DashboardPage() {
                 <span className="text-amber-600 dark:text-amber-400 font-bold">{a.current_stock}</span>
               </Link>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Finance Metrics */}
+      {financeData && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Finance Overview</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard icon={DollarSign} label="Cash on Hand" value={formatCurrency(financeData.cash_on_hand)} />
+            <StatCard icon={TrendingUp} label="Current Month Net Income" value={formatCurrency(financeData.current_month_net_income)} />
+            <StatCard icon={BarChart3} label="Unpaid Invoices" value={formatCurrency(financeData.unpaid_invoices)} />
+            <StatCard icon={Layers} label="Unpaid Bills" value={formatCurrency(financeData.unpaid_bills)} />
+            <StatCard icon={Package} label="Inventory Asset Value" value={formatCurrency(financeData.inventory_asset_value)} />
+            <StatCard icon={AlertTriangle} label="Tax Payable" value={formatCurrency(financeData.tax_payable)} />
+            <StatCard icon={ShoppingCart} label="Payouts in Transit" value={formatCurrency(financeData.payouts_in_transit)} />
           </div>
         </div>
       )}
