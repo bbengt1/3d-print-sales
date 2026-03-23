@@ -876,6 +876,12 @@ Make reporting trustworthy and decision-grade.
 
 ## Phase 18 — Controls, Auditability, and Trust
 
+### Status
+- [x] Issue #40 — Controls, auditability, and close discipline (epic)
+  - Child issues #41, #42, and #43 are complete and closed
+  - Added audit logging, approval workflows for high-risk actions, and locked-period destructive-edit protections
+  - Added Phase 18 backend tests and supporting controls/audit documentation
+
 ### Goals
 Make the app safer to use as real business software.
 
