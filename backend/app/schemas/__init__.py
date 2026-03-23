@@ -60,6 +60,14 @@ from app.schemas.job import (
     PaginatedJobs,
 )
 from app.schemas.material import MaterialCreate, MaterialResponse, MaterialUpdate
+from app.schemas.quote import (
+    PaginatedQuotes,
+    QuoteConvertToJob,
+    QuoteCreate,
+    QuoteResponse,
+    QuoteStatus,
+    QuoteUpdate,
+)
 from app.schemas.rate import RateCreate, RateResponse, RateUpdate
 from app.schemas.setting import BulkSettingUpdate, SettingResponse, SettingUpdate
 
@@ -100,7 +108,13 @@ __all__ = [
     "MaterialUpdate",
     "MaterialUsageDataPoint",
     "PaginatedJobs",
+    "PaginatedQuotes",
     "ProfitMarginDataPoint",
+    "QuoteConvertToJob",
+    "QuoteCreate",
+    "QuoteResponse",
+    "QuoteStatus",
+    "QuoteUpdate",
     "RateCreate",
     "RateResponse",
     "RateUpdate",

@@ -139,6 +139,24 @@
   - Added backend tests covering recurring generation flow, due-date enforcement, and reporting endpoints
   - Added `docs/recurring_expenses_and_reporting.md` documenting recurring templates and summary reporting
 
+### Phase 15 Planned / Starting
+- [ ] Issue #29 — Quotes, invoices, payments, and accounts receivable (epic)
+  - Child issues #30, #31, and #32 will be tracked directly for implementation work
+  - Recommended execution order:
+    1. #30 — implement quote workflow for custom 3D printing jobs
+    2. #31 — implement invoice lifecycle with balances due and partial payment support
+    3. #32 — add payment records, customer credits, and A/R aging report
+  - Rationale:
+    - quotes create the front door for custom-work estimation
+    - invoices/balances depend on quote-to-order/customer workflow shape
+    - payments and A/R reporting build on invoice balances rather than preceding them
+- [x] Issue #30 — Implement quote workflow for custom 3D printing jobs
+  - Added `quotes` model plus Alembic revision scaffolding
+  - Added quote APIs for create/update/list/detail/delete and accepted-quote conversion into jobs
+  - Reused the existing cost calculator so quotes inherit the same job-style pricing and cost assumptions
+  - Added backend tests covering quote create/update, accepted conversion flow, and rejection of unaccepted conversion attempts
+  - Added `docs/quotes_workflow.md` documenting statuses, costing behavior, and current limitations
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13

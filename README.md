@@ -252,6 +252,11 @@ Phase 14 expense/AP groundwork now includes:
 - [docs/bills_and_expenses.md](./docs/bills_and_expenses.md)
 - [docs/recurring_expenses_and_reporting.md](./docs/recurring_expenses_and_reporting.md)
 
+## Quote / A/R Groundwork
+
+Phase 15 quote-to-cash groundwork now includes:
+- [docs/quotes_workflow.md](./docs/quotes_workflow.md)
+
 ## Inventory Valuation Groundwork
 
 Phase 13 inventory accounting groundwork now includes:
