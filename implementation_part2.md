@@ -784,6 +784,12 @@ Support custom print jobs and wholesale customers like a real business.
 
 ## Phase 16 — Tax and Marketplace Settlement
 
+### Status
+- [x] Issue #33 — Sales tax and marketplace settlement tracking (epic)
+  - Child issues #34 and #35 are complete and closed
+  - Added liability-aware sales tax tracking, remittance records, marketplace settlement batches, and payout reconciliation foundations
+  - Added Phase 16 Alembic revision scaffolding, backend tests, and supporting tax/marketplace documentation
+
 ### Goals
 Model the reality of Etsy/Amazon/direct-channel cash flows.
 
