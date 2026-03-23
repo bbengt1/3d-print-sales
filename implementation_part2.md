@@ -844,6 +844,13 @@ Make reporting trustworthy and decision-grade.
 9. Expense by category/vendor
 10. Tax Liability Summary
 
+- [x] Issue #37 — Build formal financial statements: balance sheet, cash flow, accrual P&L, cash-basis P&L
+  - Added formal statement APIs for balance sheet, cash flow summary, accrual P&L, and cash-basis P&L
+  - Added journal-driven statement aggregation for balance-sheet and accrual P&L outputs
+  - Added simplified cash-basis statement logic using invoice receipts and bill payments for current cash timing visibility
+  - Added backend tests covering statement totals and core balance/profit relationships
+  - Added `docs/formal_financial_statements.md` documenting statement behavior and current limitations
+
 ### Dashboard upgrades
 - cash on hand
 - unpaid invoices

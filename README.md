@@ -269,6 +269,7 @@ Phase 16 groundwork now includes:
 
 Phase 17 groundwork now includes:
 - [docs/finance_specialized_reports.md](./docs/finance_specialized_reports.md)
+- [docs/formal_financial_statements.md](./docs/formal_financial_statements.md)
 
 ## Inventory Valuation Groundwork
 

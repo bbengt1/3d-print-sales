@@ -11,11 +11,16 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.account import Account
 from app.models.bill import Bill
+from app.models.invoice import Invoice
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.job import Job
+from app.models.journal_entry import JournalEntry
+from app.models.journal_line import JournalLine
 from app.models.material import Material
 from app.models.material_receipt import MaterialReceipt
+from app.models.payment import Payment
 from app.models.product import Product
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
@@ -525,6 +530,145 @@ async def generate_cogs_breakdown_report(db: AsyncSession, date_from: date | Non
             total_cogs += line_cogs
             total_revenue += line_revenue
     return {"rows": list(bucket.values()), "total_units_sold": total_units, "total_cogs": total_cogs, "total_revenue": total_revenue}
+
+
+async def _posted_journal_balances(db: AsyncSession, date_from: date | None = None, date_to: date | None = None):
+    stmt = (
+        select(Account.code, Account.name, Account.account_type, Account.normal_balance, JournalLine.entry_type, JournalLine.amount)
+        .join(JournalLine, JournalLine.account_id == Account.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+        .where(JournalEntry.status == "posted")
+    )
+    if date_from:
+        stmt = stmt.where(JournalEntry.entry_date >= date_from)
+    if date_to:
+        stmt = stmt.where(JournalEntry.entry_date <= date_to)
+    rows = (await db.execute(stmt)).all()
+    balances = {}
+    for code, name, account_type, normal_balance, entry_type, amount in rows:
+        key = (code, name, account_type, normal_balance)
+        bal = balances.setdefault(key, Decimal("0"))
+        if entry_type == normal_balance:
+            balances[key] = bal + amount
+        else:
+            balances[key] = bal - amount
+    return balances
+
+
+async def generate_balance_sheet_report(db: AsyncSession, as_of_date: date):
+    balances = await _posted_journal_balances(db, date_to=as_of_date)
+    assets = []
+    liabilities = []
+    equity = []
+    total_assets = total_liabilities = total_equity = Decimal("0")
+    for (code, name, account_type, _), amount in balances.items():
+        line = {"account_code": code, "account_name": name, "account_type": account_type, "amount": amount}
+        if account_type == "asset":
+            assets.append(line)
+            total_assets += amount
+        elif account_type == "liability":
+            liabilities.append(line)
+            total_liabilities += amount
+        elif account_type == "equity":
+            equity.append(line)
+            total_equity += amount
+    return {
+        "as_of_date": as_of_date.isoformat(),
+        "assets": {"lines": assets, "total": total_assets},
+        "liabilities": {"lines": liabilities, "total": total_liabilities},
+        "equity": {"lines": equity, "total": total_equity},
+        "liabilities_and_equity_total": total_liabilities + total_equity,
+        "is_balanced": total_assets == (total_liabilities + total_equity),
+    }
+
+
+async def generate_accrual_pl_report(db: AsyncSession, date_from: date | None, date_to: date | None):
+    balances = await _posted_journal_balances(db, date_from=date_from, date_to=date_to)
+    revenue = []
+    cogs = []
+    expenses = []
+    total_revenue = total_cogs = total_expenses = Decimal("0")
+    for (code, name, account_type, _), amount in balances.items():
+        line = {"account_code": code, "account_name": name, "account_type": account_type, "amount": amount}
+        if account_type == "revenue":
+            revenue.append(line)
+            total_revenue += amount
+        elif account_type == "cogs":
+            cogs.append(line)
+            total_cogs += amount
+        elif account_type == "expense":
+            expenses.append(line)
+            total_expenses += amount
+    gross_profit = total_revenue - total_cogs
+    net_income = gross_profit - total_expenses
+    return {
+        "date_from": date_from.isoformat() if date_from else None,
+        "date_to": date_to.isoformat() if date_to else None,
+        "basis": "accrual",
+        "revenue": {"lines": revenue, "total": total_revenue},
+        "cogs": {"lines": cogs, "total": total_cogs},
+        "expenses": {"lines": expenses, "total": total_expenses},
+        "gross_profit": gross_profit,
+        "net_income": net_income,
+    }
+
+
+async def generate_cash_pl_report(db: AsyncSession, date_from: date | None, date_to: date | None):
+    revenue_total = Decimal("0")
+    expense_total = Decimal("0")
+    invoice_stmt = select(Invoice).where(Invoice.status != "void")
+    if date_from:
+        invoice_stmt = invoice_stmt.where(Invoice.issue_date >= date_from)
+    if date_to:
+        invoice_stmt = invoice_stmt.where(Invoice.issue_date <= date_to)
+    invoices = (await db.execute(invoice_stmt)).scalars().all()
+    revenue_total = sum((inv.amount_paid for inv in invoices), Decimal("0"))
+
+    bill_stmt = select(Bill).where(Bill.status != "void")
+    if date_from:
+        bill_stmt = bill_stmt.where(Bill.issue_date >= date_from)
+    if date_to:
+        bill_stmt = bill_stmt.where(Bill.issue_date <= date_to)
+    bills = (await db.execute(bill_stmt)).scalars().all()
+    expense_total = sum((bill.amount_paid for bill in bills), Decimal("0"))
+
+    return {
+        "date_from": date_from.isoformat() if date_from else None,
+        "date_to": date_to.isoformat() if date_to else None,
+        "basis": "cash",
+        "revenue": {"lines": [{"account_code": "cash", "account_name": "Cash Receipts", "account_type": "revenue", "amount": revenue_total}], "total": revenue_total},
+        "cogs": {"lines": [], "total": Decimal("0")},
+        "expenses": {"lines": [{"account_code": "cash", "account_name": "Cash Expenses", "account_type": "expense", "amount": expense_total}], "total": expense_total},
+        "gross_profit": revenue_total,
+        "net_income": revenue_total - expense_total,
+    }
+
+
+async def generate_cash_flow_summary_report(db: AsyncSession, date_from: date | None, date_to: date | None):
+    payment_stmt = select(Payment)
+    if date_from:
+        payment_stmt = payment_stmt.where(Payment.payment_date >= date_from)
+    if date_to:
+        payment_stmt = payment_stmt.where(Payment.payment_date <= date_to)
+    payments = (await db.execute(payment_stmt)).scalars().all()
+    inflows = sum((payment.amount - payment.unapplied_amount for payment in payments), Decimal("0"))
+
+    bill_stmt = select(Bill)
+    if date_from:
+        bill_stmt = bill_stmt.where(Bill.issue_date >= date_from)
+    if date_to:
+        bill_stmt = bill_stmt.where(Bill.issue_date <= date_to)
+    bills = (await db.execute(bill_stmt)).scalars().all()
+    outflows = sum((bill.amount_paid for bill in bills), Decimal("0"))
+
+    return {
+        "date_from": date_from.isoformat() if date_from else None,
+        "date_to": date_to.isoformat() if date_to else None,
+        "operating": {"total": inflows - outflows},
+        "investing": {"total": Decimal("0")},
+        "financing": {"total": Decimal("0")},
+        "net_change_in_cash": inflows - outflows,
+    }
 
 
 def export_to_csv(rows: list[dict], columns: list[str] | None = None) -> str:
