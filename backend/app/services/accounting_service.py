@@ -165,6 +165,25 @@ async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) ->
     return result.scalar_one()
 
 
+async def assert_financial_date_editable(
+    db: AsyncSession,
+    *,
+    target_date,
+    detail_prefix: str = "This financial record",
+) -> None:
+    result = await db.execute(
+        select(AccountingPeriod).where(
+            AccountingPeriod.start_date <= target_date,
+            AccountingPeriod.end_date >= target_date,
+        )
+    )
+    period = result.scalar_one_or_none()
+    if period and period.status == "locked":
+        raise AccountingValidationError(
+            f"{detail_prefix} falls in locked accounting period '{period.period_key}' and cannot be edited destructively."
+        )
+
+
 async def set_accounting_period_status(
     db: AsyncSession,
     *,

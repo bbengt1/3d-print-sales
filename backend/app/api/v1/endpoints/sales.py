@@ -22,6 +22,8 @@ from app.schemas.sale import (
     SaleUpdate,
     SalesMetrics,
 )
+from app.services.accounting_service import AccountingValidationError, assert_financial_date_editable
+from app.services.audit_service import create_audit_log, snapshot_model
 from app.services.sales_service import (
     compute_sale_totals,
     deduct_inventory_for_sale,
@@ -298,6 +300,21 @@ async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
     # Deduct inventory
     await deduct_inventory_for_sale(db, sale.id, sale_items, user.id)
 
+    await create_audit_log(
+        db,
+        actor_user_id=user.id,
+        entity_type="sale",
+        entity_id=str(sale.id),
+        action="create",
+        after_snapshot={
+            "sale_number": sale.sale_number,
+            "status": sale.status,
+            "total": sale.total,
+            "customer_name": sale.customer_name,
+            "tax_treatment": sale.tax_treatment,
+        },
+        reason=body.notes,
+    )
     await db.commit()
 
     # Re-fetch with items
@@ -322,6 +339,10 @@ async def update_sale(sale_id: uuid.UUID, body: SaleUpdate, user: CurrentUser, d
     sale = result.scalar_one_or_none()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
+    try:
+        await assert_financial_date_editable(db, target_date=sale.date, detail_prefix="This sale")
+    except AccountingValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     old_status = sale.status
     for field, value in body.model_dump(exclude_unset=True).items():
@@ -370,6 +391,10 @@ async def delete_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
     sale = result.scalar_one_or_none()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
+    try:
+        await assert_financial_date_editable(db, target_date=sale.date, detail_prefix="This sale")
+    except AccountingValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     sale.is_deleted = True
     await db.commit()
 
@@ -389,6 +414,10 @@ async def refund_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
     sale = result.scalar_one_or_none()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
+    try:
+        await assert_financial_date_editable(db, target_date=sale.date, detail_prefix="This sale")
+    except AccountingValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if sale.status == "refunded":
         raise HTTPException(status_code=400, detail="Sale is already refunded")
 

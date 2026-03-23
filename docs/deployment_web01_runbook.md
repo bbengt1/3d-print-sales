@@ -47,10 +47,32 @@ FRONTEND_HTTP_PORT=80 \
   docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+### Required migration step
+Production should be migration-driven, not `create_all()`-driven.
+
+After updating code and before relying on new endpoints/models, run:
+
+```bash
+ssh root@web01.bengtson.local
+cd /srv/3d-print-sales/repo/backend
+python3 - <<'PY'
+from urllib.parse import quote
+import os, subprocess
+user = os.environ.get('DB_USER', 'printuser')
+password = quote(os.environ['DB_PASSWORD'], safe='')
+db = os.environ.get('DB_NAME', 'printsales')
+host = os.environ.get('DB_HOST', 'db')
+port = os.environ.get('DB_PORT', '5432')
+os.environ['DATABASE_URL'] = f'postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}'
+subprocess.run(['docker', 'exec', '3d-print-sales-backend', 'alembic', 'upgrade', 'head'], check=True)
+PY
+```
+
 ### What this does
 - uses the server-side env file
 - rebuilds images from the checked-out repo
 - starts or updates the stack in detached mode
+- applies schema changes through Alembic instead of relying on runtime table creation
 
 ---
 

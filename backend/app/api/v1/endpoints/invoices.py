@@ -33,6 +33,8 @@ from app.schemas.invoice import (
     InvoiceUpdate,
     PaginatedInvoices,
 )
+from app.services.accounting_service import AccountingValidationError, assert_financial_date_editable
+from app.services.audit_service import create_audit_log, snapshot_model
 
 router = APIRouter(prefix="/invoices", tags=["Invoices"])
 
@@ -187,6 +189,7 @@ async def update_invoice(invoice_id: uuid.UUID, body: InvoiceUpdate, user: Curre
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
+    before = snapshot_model(invoice, ["status", "total_due", "amount_paid", "balance_due", "due_date", "notes"])
     for field, value in body.model_dump(exclude_unset=True).items():
         if field == "status":
             invoice.status = value.value if hasattr(value, "value") else value
@@ -264,6 +267,15 @@ async def create_customer_credit(body: CustomerCreditCreate, user: CurrentUser, 
         notes=body.notes,
     )
     db.add(credit)
+    await create_audit_log(
+        db,
+        actor_user_id=user.id,
+        entity_type="customer_credit",
+        entity_id=str(credit.id),
+        action="create",
+        after_snapshot=snapshot_model(credit, ["customer_id", "invoice_id", "amount", "remaining_amount", "reason"]),
+        reason=body.notes or body.reason,
+    )
     await db.commit()
     await db.refresh(credit)
     return credit
@@ -360,5 +372,9 @@ async def delete_invoice(invoice_id: uuid.UUID, user: CurrentUser, db: DB):
     invoice = await _get_invoice(db, invoice_id)
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
+    try:
+        await assert_financial_date_editable(db, target_date=invoice.issue_date, detail_prefix="This invoice")
+    except AccountingValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     invoice.is_deleted = True
     await db.commit()

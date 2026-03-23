@@ -15,6 +15,7 @@ from app.schemas.product import (
     InventoryTransactionResponse,
     PaginatedTransactions,
 )
+from app.services.audit_service import create_audit_log, snapshot_model
 from app.services.inventory_service import adjust_stock
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
@@ -64,6 +65,7 @@ async def create_transaction(body: InventoryTransactionCreate, user: CurrentUser
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
+    before = snapshot_model(product, ["stock_qty", "unit_cost", "reorder_point"])
     txn = await adjust_stock(
         db=db,
         product_id=body.product_id,
@@ -72,6 +74,19 @@ async def create_transaction(body: InventoryTransactionCreate, user: CurrentUser
         unit_cost=body.unit_cost,
         notes=body.notes,
         user_id=user.id,
+    )
+    await db.flush()
+    await db.refresh(product)
+    after = snapshot_model(product, ["stock_qty", "unit_cost", "reorder_point"])
+    await create_audit_log(
+        db,
+        actor_user_id=user.id,
+        entity_type="inventory_transaction",
+        entity_id=str(txn.id),
+        action="create",
+        before_snapshot={"product_id": str(product.id), **before},
+        after_snapshot={"product_id": str(product.id), "transaction_type": body.type.value, "quantity": body.quantity, **after},
+        reason=body.notes,
     )
     await db.commit()
     await db.refresh(txn)

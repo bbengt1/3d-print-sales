@@ -41,8 +41,10 @@ from app.models.tax_profile import TaxProfile  # noqa
 from app.models.tax_remittance import TaxRemittance  # noqa
 from app.models.marketplace_settlement import MarketplaceSettlement  # noqa
 from app.models.settlement_line import SettlementLine  # noqa
+from app.models.audit_log import AuditLog  # noqa
 
 config = context.config
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 

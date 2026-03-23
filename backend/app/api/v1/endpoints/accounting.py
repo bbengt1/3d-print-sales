@@ -51,6 +51,7 @@ from app.schemas.recurring_expenses import (
     RecurringExpenseUpdate,
 )
 from app.services.accounting_service import AccountingValidationError, create_journal_entry, reverse_journal_entry, set_accounting_period_status
+from app.services.audit_service import create_audit_log
 
 router = APIRouter(prefix="/accounting", tags=["Accounting"])
 
@@ -184,6 +185,10 @@ async def update_bill(bill_id: uuid.UUID, body: BillUpdate, admin: CurrentAdmin,
     bill = (await db.execute(select(Bill).options(selectinload(Bill.payments)).where(Bill.id == bill_id))).scalar_one_or_none()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
+    try:
+        await assert_financial_date_editable(db, target_date=bill.issue_date, detail_prefix="This bill")
+    except AccountingValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     updates = body.model_dump(exclude_unset=True)
     if "account_id" in updates:

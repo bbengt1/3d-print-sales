@@ -893,6 +893,13 @@ Make the app safer to use as real business software.
 - safer edit/delete workflow
 - finance event history
 
+- [x] Issue #41 — Add audit log for finance-sensitive changes
+  - Added `audit_logs` model plus Alembic revision scaffolding and an admin audit history endpoint
+  - Added reusable audit snapshot/write helpers for before/after state capture
+  - Added audit coverage for manual inventory adjustments, settings changes, and core sale lifecycle events
+  - Added backend tests covering audit-log creation and admin-only audit access
+  - Added `docs/finance_audit_log.md` documenting the audit-log foundation and current limitations
+
 ---
 
 # Suggested Data Model Additions
