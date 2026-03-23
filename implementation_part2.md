@@ -812,6 +812,12 @@ Model the reality of Etsy/Amazon/direct-channel cash flows.
   - Added tax profile/remittance APIs and a tax liability report showing seller-collected, marketplace-facilitated, remitted, and outstanding balances
   - Added backend tests covering direct-sale tax vs marketplace-facilitated tax scenarios and remittance reduction of liability
   - Added `docs/sales_tax_liability.md` documenting liability-aware tax tracking and remittance behavior
+- [x] Issue #35 — Add marketplace settlement batches and payout reconciliation
+  - Added `marketplace_settlements` and `settlement_lines` models plus Alembic revision scaffolding
+  - Added settlement APIs for settlement create/list and reconciliation reporting by payout batch
+  - Added expected-net and discrepancy tracking for gross sales, fees, adjustments, reserve holds, and actual net deposit
+  - Added backend tests covering settlement creation, linked sales/line items, and reconciliation totals/discrepancies
+  - Added `docs/marketplace_settlements.md` documenting payout batch structure and reconciliation behavior
 
 ---
 

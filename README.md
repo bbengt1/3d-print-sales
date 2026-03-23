@@ -263,6 +263,7 @@ Phase 15 quote-to-cash groundwork now includes:
 
 Phase 16 groundwork now includes:
 - [docs/sales_tax_liability.md](./docs/sales_tax_liability.md)
+- [docs/marketplace_settlements.md](./docs/marketplace_settlements.md)
 
 ## Inventory Valuation Groundwork
 
