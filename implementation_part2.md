@@ -156,6 +156,12 @@
   - Reused the existing cost calculator so quotes inherit the same job-style pricing and cost assumptions
   - Added backend tests covering quote create/update, accepted conversion flow, and rejection of unaccepted conversion attempts
   - Added `docs/quotes_workflow.md` documenting statuses, costing behavior, and current limitations
+- [x] Issue #31 — Implement invoice lifecycle with balances due and partial payment support
+  - Added `invoices` and `invoice_lines` models plus Alembic revision scaffolding
+  - Added invoice APIs for direct create/update/list/detail/delete, quote-to-invoice creation, payment application, and credit application
+  - Added invoice status handling for draft / sent / partially_paid / paid / overdue / void based on balances and due dates
+  - Added backend tests covering partial payment, full payment, credit application, accepted-quote invoicing, and void behavior
+  - Added `docs/invoice_lifecycle.md` documenting invoice balances, statuses, and current limitations
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
