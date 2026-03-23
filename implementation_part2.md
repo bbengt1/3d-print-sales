@@ -139,6 +139,30 @@
   - Added backend tests covering recurring generation flow, due-date enforcement, and reporting endpoints
   - Added `docs/recurring_expenses_and_reporting.md` documenting recurring templates and summary reporting
 
+### Phase 15 Completed
+- [x] Issue #29 — Quotes, invoices, payments, and accounts receivable (epic)
+  - Child issues #30, #31, and #32 are complete and closed
+  - Added quote workflow, invoice lifecycle foundations, persistent payment/customer-credit tracking, and A/R aging foundations
+  - Added Phase 15 Alembic revision scaffolding, backend tests, and supporting quote-to-cash documentation
+- [x] Issue #30 — Implement quote workflow for custom 3D printing jobs
+  - Added `quotes` model plus Alembic revision scaffolding
+  - Added quote APIs for create/update/list/detail/delete and accepted-quote conversion into jobs
+  - Reused the existing cost calculator so quotes inherit the same job-style pricing and cost assumptions
+  - Added backend tests covering quote create/update, accepted conversion flow, and rejection of unaccepted conversion attempts
+  - Added `docs/quotes_workflow.md` documenting statuses, costing behavior, and current limitations
+- [x] Issue #31 — Implement invoice lifecycle with balances due and partial payment support
+  - Added `invoices` and `invoice_lines` models plus Alembic revision scaffolding
+  - Added invoice APIs for direct create/update/list/detail/delete, quote-to-invoice creation, payment application, and credit application
+  - Added invoice status handling for draft / sent / partially_paid / paid / overdue / void based on balances and due dates
+  - Added backend tests covering partial payment, full payment, credit application, accepted-quote invoicing, and void behavior
+  - Added `docs/invoice_lifecycle.md` documenting invoice balances, statuses, and current limitations
+- [x] Issue #32 — Add payment records, customer credits, and A/R aging report
+  - Added `payments` and `customer_credits` models plus Alembic revision scaffolding
+  - Added payment recording and customer-credit creation/application flows on top of invoice balances
+  - Added A/R aging report buckets for current / 1-30 / 31-60 / 61-90 / 90+
+  - Added backend tests covering unapplied cash, tracked credits, credit application, and aging-bucket totals
+  - Added `docs/ar_payments_and_aging.md` documenting payment allocation, credit tracking, and aging behavior
+
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs
   - Added repo-level `.python-version` pinned to Python 3.13

@@ -32,6 +32,11 @@ from app.models.expense_category import ExpenseCategory  # noqa
 from app.models.bill import Bill  # noqa
 from app.models.bill_payment import BillPayment  # noqa
 from app.models.recurring_expense import RecurringExpense  # noqa
+from app.models.quote import Quote  # noqa
+from app.models.invoice import Invoice  # noqa
+from app.models.invoice_line import InvoiceLine  # noqa
+from app.models.payment import Payment  # noqa
+from app.models.customer_credit import CustomerCredit  # noqa
 
 config = context.config
 if config.config_file_name is not None:
