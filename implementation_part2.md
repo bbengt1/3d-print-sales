@@ -876,6 +876,12 @@ Make reporting trustworthy and decision-grade.
 
 ## Phase 18 — Controls, Auditability, and Trust
 
+### Status
+- [x] Issue #40 — Controls, auditability, and close discipline (epic)
+  - Child issues #41, #42, and #43 are complete and closed
+  - Added audit logging, approval workflows for high-risk actions, and locked-period destructive-edit protections
+  - Added Phase 18 backend tests and supporting controls/audit documentation
+
 ### Goals
 Make the app safer to use as real business software.
 
@@ -892,6 +898,19 @@ Make the app safer to use as real business software.
 - locked period rules
 - safer edit/delete workflow
 - finance event history
+
+- [x] Issue #41 — Add audit log for finance-sensitive changes
+  - Added `audit_logs` model plus Alembic revision scaffolding and an admin audit history endpoint
+  - Added reusable audit snapshot/write helpers for before/after state capture
+  - Added audit coverage for manual inventory adjustments, settings changes, and core sale lifecycle events
+  - Added backend tests covering audit-log creation and admin-only audit access
+  - Added `docs/finance_audit_log.md` documenting the audit-log foundation and current limitations
+- [x] Issue #42 — Add reason/approval workflow for refunds and manual inventory adjustments
+  - Added `approval_requests` model plus Alembic revision scaffolding and admin approval endpoints
+  - Required documented reasons for refunds and manual inventory adjustments
+  - Added pending-approval flow for non-admin refunds and manual inventory adjustments, with admin approve/reject actions
+  - Added backend tests covering pending approval creation, reason validation, and approved refund execution
+  - Added `docs/refund_and_adjustment_approvals.md` documenting the approval workflow foundation
 
 ---
 

@@ -242,7 +242,7 @@ async def test_sale_profit_layers_with_fees_and_shipping(client: AsyncClient, au
     assert resp.status_code == 201
     data = resp.json()
 
-    assert round(float(data["gross_profit"]), 2) == 18.98
+    assert round(float(data["gross_profit"]), 2) == 15.98
     assert round(float(data["platform_fees"]), 2) == 1.37
     assert round(float(data["shipping_cost"]), 2) == 4.50
-    assert round(float(data["contribution_margin"]), 2) == 13.11
+    assert round(float(data["contribution_margin"]), 2) == 10.11

@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 from app.api.deps import DB, CurrentAdmin
 from app.schemas.setting import BulkSettingUpdate, SettingResponse, SettingUpdate
+from app.services.audit_service import create_audit_log
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
@@ -51,7 +52,9 @@ async def update_setting(key: str, body: SettingUpdate, admin: CurrentAdmin, db:
     setting = result.scalar_one_or_none()
     if not setting:
         raise HTTPException(status_code=404, detail=f"Setting '{key}' not found")
+    before = {"key": setting.key, "value": setting.value}
     setting.value = body.value
+    await create_audit_log(db, actor_user_id=admin.id, entity_type="setting", entity_id=setting.key, action="update", before_snapshot=before, after_snapshot={"key": setting.key, "value": setting.value})
     await db.commit()
     await db.refresh(setting)
     return setting
@@ -71,7 +74,9 @@ async def bulk_update_settings(body: BulkSettingUpdate, admin: CurrentAdmin, db:
         result = await db.execute(select(Setting).where(Setting.key == key))
         setting = result.scalar_one_or_none()
         if setting:
+            before = {"key": setting.key, "value": setting.value}
             setting.value = value
+            await create_audit_log(db, actor_user_id=admin.id, entity_type="setting", entity_id=setting.key, action="bulk_update", before_snapshot=before, after_snapshot={"key": setting.key, "value": setting.value})
             updated.append(setting)
     await db.commit()
     return updated

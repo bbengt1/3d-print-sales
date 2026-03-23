@@ -272,6 +272,12 @@ Phase 17 groundwork now includes:
 - [docs/formal_financial_statements.md](./docs/formal_financial_statements.md)
 - [docs/finance_dashboard_widgets.md](./docs/finance_dashboard_widgets.md)
 
+## Controls / Audit Groundwork
+
+Phase 18 groundwork now includes:
+- [docs/finance_audit_log.md](./docs/finance_audit_log.md)
+- [docs/refund_and_adjustment_approvals.md](./docs/refund_and_adjustment_approvals.md)
+
 ## Inventory Valuation Groundwork
 
 Phase 13 inventory accounting groundwork now includes:

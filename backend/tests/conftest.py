@@ -10,18 +10,21 @@ os.environ.setdefault("ENVIRONMENT", "test")
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base, get_db
 from app.core.security import hash_password
 from app.main import app
+from app.models.account import Account
 from app.models.customer import Customer
 from app.models.material import Material
 from app.models.material_receipt import MaterialReceipt
 from app.models.rate import Rate
 from app.models.setting import Setting
 from app.models.user import User
+from app.services.accounting_service import seed_chart_of_accounts
 
 TEST_DB_URL = "sqlite+aiosqlite:///./test.db"
 
@@ -41,6 +44,9 @@ async def setup_db():
 @pytest_asyncio.fixture
 async def db_session():
     async with TestSession() as session:
+        existing_account = await session.execute(select(Account.id).limit(1))
+        if existing_account.scalar_one_or_none() is None:
+            await seed_chart_of_accounts(session)
         yield session
 
 
