@@ -806,6 +806,13 @@ Model the reality of Etsy/Amazon/direct-channel cash flows.
 - marketplace payout reconciliation screen
 - net deposit tracking
 
+- [x] Issue #34 — Implement sales tax liability tracking and remittance workflow
+  - Added `tax_profiles` and `tax_remittances` models plus Alembic revision scaffolding
+  - Added sale-level tax profile and tax treatment support for seller-collected vs marketplace-facilitated scenarios
+  - Added tax profile/remittance APIs and a tax liability report showing seller-collected, marketplace-facilitated, remitted, and outstanding balances
+  - Added backend tests covering direct-sale tax vs marketplace-facilitated tax scenarios and remittance reduction of liability
+  - Added `docs/sales_tax_liability.md` documenting liability-aware tax tracking and remittance behavior
+
 ---
 
 ## Phase 17 — Financial Reporting Layer

@@ -259,6 +259,11 @@ Phase 15 quote-to-cash groundwork now includes:
 - [docs/invoice_lifecycle.md](./docs/invoice_lifecycle.md)
 - [docs/ar_payments_and_aging.md](./docs/ar_payments_and_aging.md)
 
+## Tax / Marketplace Groundwork
+
+Phase 16 groundwork now includes:
+- [docs/sales_tax_liability.md](./docs/sales_tax_liability.md)
+
 ## Inventory Valuation Groundwork
 
 Phase 13 inventory accounting groundwork now includes:

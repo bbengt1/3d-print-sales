@@ -23,6 +23,10 @@ class Sale(Base):
     channel_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("sales_channels.id"), nullable=True
     )
+    tax_profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("tax_profiles.id"), nullable=True
+    )
+    tax_treatment: Mapped[str] = mapped_column(String(30), default="seller_collected")
     status: Mapped[str] = mapped_column(String(20), default="pending")
     subtotal: Mapped[Decimal] = mapped_column(Numeric(10, 4), default=0)
     shipping_charged: Mapped[Decimal] = mapped_column(Numeric(10, 4), default=0)
@@ -49,4 +53,5 @@ class Sale(Base):
 
     customer = relationship("Customer")
     channel = relationship("SalesChannel")
+    tax_profile = relationship("TaxProfile")
     items = relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
