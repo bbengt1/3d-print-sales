@@ -11,13 +11,17 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.bill import Bill
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.job import Job
 from app.models.material import Material
+from app.models.material_receipt import MaterialReceipt
 from app.models.product import Product
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.sales_channel import SalesChannel
+from app.models.tax_profile import TaxProfile
+from app.models.tax_remittance import TaxRemittance
 
 
 def _trunc_period(d: date, period: str) -> str:
@@ -381,6 +385,146 @@ async def generate_pl_report(
 
 
 # ── CSV Export ───────────────────────────────────────────────────
+
+
+async def generate_ap_aging_report(db: AsyncSession, as_of_date: date):
+    result = await db.execute(select(Bill).options(selectinload(Bill.vendor)).where(Bill.status != "void"))
+    bills = result.scalars().all()
+    rows = []
+    totals = {"current": Decimal("0"), "bucket_1_30": Decimal("0"), "bucket_31_60": Decimal("0"), "bucket_61_90": Decimal("0"), "bucket_90_plus": Decimal("0")}
+    for bill in bills:
+        balance_due = (bill.amount or Decimal("0")) - (bill.amount_paid or Decimal("0"))
+        if balance_due <= 0:
+            continue
+        due_date = bill.due_date or bill.issue_date
+        age_days = max((as_of_date - due_date).days, 0)
+        current = bucket_1_30 = bucket_31_60 = bucket_61_90 = bucket_90_plus = Decimal("0")
+        if bill.due_date and as_of_date <= bill.due_date:
+            current = balance_due
+            totals["current"] += balance_due
+        elif age_days <= 30:
+            bucket_1_30 = balance_due
+            totals["bucket_1_30"] += balance_due
+        elif age_days <= 60:
+            bucket_31_60 = balance_due
+            totals["bucket_31_60"] += balance_due
+        elif age_days <= 90:
+            bucket_61_90 = balance_due
+            totals["bucket_61_90"] += balance_due
+        else:
+            bucket_90_plus = balance_due
+            totals["bucket_90_plus"] += balance_due
+        rows.append({
+            "bill_id": str(bill.id),
+            "bill_number": bill.bill_number,
+            "vendor_name": bill.vendor.name if bill.vendor else None,
+            "due_date": bill.due_date,
+            "balance_due": balance_due,
+            "current": current,
+            "bucket_1_30": bucket_1_30,
+            "bucket_31_60": bucket_31_60,
+            "bucket_61_90": bucket_61_90,
+            "bucket_90_plus": bucket_90_plus,
+        })
+    return {"as_of_date": as_of_date, "rows": rows, **{k + '_total': v for k, v in totals.items()}, "total_outstanding": sum(totals.values(), Decimal('0'))}
+
+
+async def generate_tax_liability_summary_report(db: AsyncSession, date_from: date | None, date_to: date | None):
+    profiles = (await db.execute(select(TaxProfile).where(TaxProfile.is_active == True))).scalars().all()
+    rows = []
+    total_seller = total_marketplace = total_remitted = total_outstanding = Decimal("0")
+    for profile in profiles:
+        sale_stmt = select(Sale).where(Sale.tax_profile_id == profile.id, Sale.is_deleted == False)
+        if date_from:
+            sale_stmt = sale_stmt.where(Sale.date >= date_from)
+        if date_to:
+            sale_stmt = sale_stmt.where(Sale.date <= date_to)
+        sales = (await db.execute(sale_stmt)).scalars().all()
+        seller_collected = sum((sale.tax_collected for sale in sales if sale.tax_treatment == "seller_collected"), Decimal("0"))
+        marketplace_facilitated = sum((sale.tax_collected for sale in sales if sale.tax_treatment == "marketplace_facilitated"), Decimal("0"))
+        remit_stmt = select(TaxRemittance).where(TaxRemittance.tax_profile_id == profile.id)
+        if date_from:
+            remit_stmt = remit_stmt.where(TaxRemittance.period_end >= date_from)
+        if date_to:
+            remit_stmt = remit_stmt.where(TaxRemittance.period_start <= date_to)
+        remitted = sum((row.amount for row in (await db.execute(remit_stmt)).scalars().all()), Decimal("0"))
+        outstanding = seller_collected - remitted
+        rows.append({
+            "tax_profile_id": profile.id,
+            "tax_profile_name": profile.name,
+            "jurisdiction": profile.jurisdiction,
+            "seller_collected": seller_collected,
+            "marketplace_facilitated": marketplace_facilitated,
+            "remitted": remitted,
+            "outstanding_liability": outstanding,
+        })
+        total_seller += seller_collected
+        total_marketplace += marketplace_facilitated
+        total_remitted += remitted
+        total_outstanding += outstanding
+    return {
+        "rows": rows,
+        "total_seller_collected": total_seller,
+        "total_marketplace_facilitated": total_marketplace,
+        "total_remitted": total_remitted,
+        "total_outstanding_liability": total_outstanding,
+    }
+
+
+async def generate_inventory_valuation_report(db: AsyncSession, date_from: date | None, date_to: date | None):
+    stmt = select(MaterialReceipt).options(selectinload(MaterialReceipt.material)).order_by(MaterialReceipt.purchase_date.desc())
+    if date_from:
+        stmt = stmt.where(MaterialReceipt.purchase_date >= date_from)
+    if date_to:
+        stmt = stmt.where(MaterialReceipt.purchase_date <= date_to)
+    receipts = (await db.execute(stmt)).scalars().all()
+    rows = []
+    total_inventory_value = Decimal("0")
+    total_quantity = Decimal("0")
+    for r in receipts:
+        remaining_value = (r.quantity_remaining_g or Decimal("0")) * (r.landed_cost_per_g or Decimal("0"))
+        rows.append({
+            "material_id": str(r.material_id),
+            "material_name": r.material.name if r.material else "Unknown",
+            "receipt_id": str(r.id),
+            "vendor_name": r.vendor_name,
+            "purchase_date": r.purchase_date,
+            "quantity_remaining_g": r.quantity_remaining_g,
+            "landed_cost_per_g": r.landed_cost_per_g,
+            "remaining_value": remaining_value,
+        })
+        total_inventory_value += remaining_value
+        total_quantity += r.quantity_remaining_g or Decimal("0")
+    return {"rows": rows, "total_inventory_value": total_inventory_value, "total_quantity_remaining_g": total_quantity}
+
+
+async def generate_cogs_breakdown_report(db: AsyncSession, date_from: date | None, date_to: date | None, period: str = "monthly"):
+    stmt = select(Sale).options(selectinload(Sale.items), selectinload(Sale.channel)).where(Sale.is_deleted == False)
+    if date_from:
+        stmt = stmt.where(Sale.date >= date_from)
+    if date_to:
+        stmt = stmt.where(Sale.date <= date_to)
+    sales = (await db.execute(stmt)).scalars().all()
+    bucket = {}
+    total_units = 0
+    total_cogs = Decimal("0")
+    total_revenue = Decimal("0")
+    for sale in sales:
+        if sale.status in ("cancelled", "refunded"):
+            continue
+        channel_name = sale.channel.name if sale.channel else "Direct"
+        for item in sale.items:
+            key = (_trunc_period(sale.date, period), channel_name, item.description)
+            row = bucket.setdefault(key, {"period": key[0], "channel_name": key[1], "product_description": key[2], "units_sold": 0, "cogs": Decimal("0"), "revenue": Decimal("0")})
+            line_cogs = (item.unit_cost or Decimal("0")) * item.quantity
+            line_revenue = item.line_total or Decimal("0")
+            row["units_sold"] += item.quantity
+            row["cogs"] += line_cogs
+            row["revenue"] += line_revenue
+            total_units += item.quantity
+            total_cogs += line_cogs
+            total_revenue += line_revenue
+    return {"rows": list(bucket.values()), "total_units_sold": total_units, "total_cogs": total_cogs, "total_revenue": total_revenue}
 
 
 def export_to_csv(rows: list[dict], columns: list[str] | None = None) -> str:

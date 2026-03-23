@@ -848,6 +848,12 @@ Make reporting trustworthy and decision-grade.
 - cash on hand
 - unpaid invoices
 - unpaid bills
+
+- [x] Issue #38 — Add A/R, A/P, tax liability, and inventory valuation reports
+  - Added dedicated report APIs for A/R aging, A/P aging, tax liability summary, inventory valuation, and COGS breakdown
+  - Reused the existing invoice aging logic and added complementary bill-aging and inventory-valuation service logic
+  - Added backend tests covering core totals for A/R, A/P, tax liability, inventory valuation, and COGS breakdown outputs
+  - Added `docs/finance_specialized_reports.md` documenting the new specialized finance-reporting APIs and current limitations
 - current month true net income
 - inventory asset value
 - tax payable
