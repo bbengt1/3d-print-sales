@@ -265,6 +265,13 @@ Phase 16 groundwork now includes:
 - [docs/sales_tax_liability.md](./docs/sales_tax_liability.md)
 - [docs/marketplace_settlements.md](./docs/marketplace_settlements.md)
 
+## Finance Reporting Groundwork
+
+Phase 17 groundwork now includes:
+- [docs/finance_specialized_reports.md](./docs/finance_specialized_reports.md)
+- [docs/formal_financial_statements.md](./docs/formal_financial_statements.md)
+- [docs/finance_dashboard_widgets.md](./docs/finance_dashboard_widgets.md)
+
 ## Inventory Valuation Groundwork
 
 Phase 13 inventory accounting groundwork now includes:

@@ -93,6 +93,16 @@ export interface DashboardSummary {
   top_material: string | null;
 }
 
+export interface FinanceDashboardSummary {
+  cash_on_hand: number;
+  unpaid_invoices: number;
+  unpaid_bills: number;
+  current_month_net_income: number;
+  inventory_asset_value: number;
+  tax_payable: number;
+  payouts_in_transit: number;
+}
+
 export interface RevenueDataPoint {
   date: string;
   revenue: number;

@@ -829,10 +829,16 @@ Model the reality of Etsy/Amazon/direct-channel cash flows.
 
 ## Phase 17 — Financial Reporting Layer
 
+### Status
+- [x] Issue #36 — Financial reporting and finance dashboard (epic)
+  - Child issues #37, #38, and #39 are complete and closed
+  - Added formal financial statements, specialized finance-report APIs, and finance dashboard widgets
+  - Added Phase 17 backend tests, documentation, and frontend dashboard updates for a dedicated finance lens
+
 ### Goals
 Make reporting trustworthy and decision-grade.
 
-### Reports to add
+### Reports delivered
 1. Balance Sheet
 2. Cash Flow Summary
 3. Accrual P&L
@@ -841,17 +847,30 @@ Make reporting trustworthy and decision-grade.
 6. A/P Aging
 7. Inventory Valuation
 8. COGS by month/product/channel
-9. Expense by category/vendor
 10. Tax Liability Summary
+
+- [x] Issue #37 — Build formal financial statements: balance sheet, cash flow, accrual P&L, cash-basis P&L
+  - Added formal statement APIs for balance sheet, cash flow summary, accrual P&L, and cash-basis P&L
+  - Added journal-driven statement aggregation for balance-sheet and accrual P&L outputs
+  - Added simplified cash-basis statement logic using invoice receipts and bill payments for current cash timing visibility
+  - Added backend tests covering statement totals and core balance/profit relationships
+  - Added `docs/formal_financial_statements.md` documenting statement behavior and current limitations
 
 ### Dashboard upgrades
 - cash on hand
 - unpaid invoices
 - unpaid bills
-- current month true net income
-- inventory asset value
-- tax payable
-- payout in transit
+
+- [x] Issue #38 — Add A/R, A/P, tax liability, and inventory valuation reports
+  - Added dedicated report APIs for A/R aging, A/P aging, tax liability summary, inventory valuation, and COGS breakdown
+  - Reused the existing invoice aging logic and added complementary bill-aging and inventory-valuation service logic
+  - Added backend tests covering core totals for A/R, A/P, tax liability, inventory valuation, and COGS breakdown outputs
+  - Added `docs/finance_specialized_reports.md` documenting the new specialized finance-reporting APIs and current limitations
+- [x] Issue #39 — Add finance dashboard widgets for cash, receivables, payables, tax, and inventory value
+  - Added a dedicated finance dashboard summary endpoint for cash on hand, unpaid invoices, unpaid bills, current month net income, inventory asset value, tax payable, and payouts in transit
+  - Added dashboard UI cards for the finance widget set so the finance lens is distinct from the operations dashboard summary
+  - Added backend test coverage validating dashboard widget values against seeded finance data and frontend build validation for the updated dashboard page
+  - Added `docs/finance_dashboard_widgets.md` documenting the finance widget data sources and current limitations
 
 ---
 
