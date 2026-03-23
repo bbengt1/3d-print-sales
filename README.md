@@ -257,6 +257,7 @@ Phase 14 expense/AP groundwork now includes:
 Phase 15 quote-to-cash groundwork now includes:
 - [docs/quotes_workflow.md](./docs/quotes_workflow.md)
 - [docs/invoice_lifecycle.md](./docs/invoice_lifecycle.md)
+- [docs/ar_payments_and_aging.md](./docs/ar_payments_and_aging.md)
 
 ## Inventory Valuation Groundwork
 

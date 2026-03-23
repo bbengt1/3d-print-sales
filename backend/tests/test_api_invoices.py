@@ -86,8 +86,22 @@ async def test_create_invoice_and_apply_partial_then_full_payment(client, auth_h
 
 @pytest.mark.asyncio
 async def test_apply_credit_and_mark_invoice_paid(client, auth_headers):
-    create_resp = await client.post("/api/v1/invoices", headers=auth_headers, json=_invoice_payload())
+    customer = await _seed_customer(client, auth_headers)
+    create_resp = await client.post("/api/v1/invoices", headers=auth_headers, json=_invoice_payload(customer["id"]))
     invoice = create_resp.json()
+
+    create_credit = await client.post(
+        "/api/v1/invoices/credits",
+        headers=auth_headers,
+        json={
+            "customer_id": customer["id"],
+            "invoice_id": invoice["id"],
+            "credit_date": "2026-03-24",
+            "amount": "15.00",
+            "reason": "Adjustment",
+        },
+    )
+    assert create_credit.status_code == 201
 
     credit = await client.post(
         f"/api/v1/invoices/{invoice['id']}/apply-credit",

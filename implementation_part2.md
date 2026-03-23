@@ -162,6 +162,12 @@
   - Added invoice status handling for draft / sent / partially_paid / paid / overdue / void based on balances and due dates
   - Added backend tests covering partial payment, full payment, credit application, accepted-quote invoicing, and void behavior
   - Added `docs/invoice_lifecycle.md` documenting invoice balances, statuses, and current limitations
+- [x] Issue #32 — Add payment records, customer credits, and A/R aging report
+  - Added `payments` and `customer_credits` models plus Alembic revision scaffolding
+  - Added payment recording and customer-credit creation/application flows on top of invoice balances
+  - Added A/R aging report buckets for current / 1-30 / 31-60 / 61-90 / 90+
+  - Added backend tests covering unapplied cash, tracked credits, credit application, and aging-bucket totals
+  - Added `docs/ar_payments_and_aging.md` documenting payment allocation, credit tracking, and aging behavior
 
 ### Maintenance Completed
 - [x] Issue #44 — Fix backend test environment and API rate-limit failures in local/CI test runs

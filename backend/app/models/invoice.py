@@ -36,3 +36,5 @@ class Invoice(Base):
     customer = relationship("Customer")
     quote = relationship("Quote")
     lines = relationship("InvoiceLine", back_populates="invoice", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="invoice")
+    credits = relationship("CustomerCredit", back_populates="invoice")
