@@ -829,10 +829,16 @@ Model the reality of Etsy/Amazon/direct-channel cash flows.
 
 ## Phase 17 — Financial Reporting Layer
 
+### Status
+- [x] Issue #36 — Financial reporting and finance dashboard (epic)
+  - Child issues #37, #38, and #39 are complete and closed
+  - Added formal financial statements, specialized finance-report APIs, and finance dashboard widgets
+  - Added Phase 17 backend tests, documentation, and frontend dashboard updates for a dedicated finance lens
+
 ### Goals
 Make reporting trustworthy and decision-grade.
 
-### Reports to add
+### Reports delivered
 1. Balance Sheet
 2. Cash Flow Summary
 3. Accrual P&L
@@ -841,7 +847,6 @@ Make reporting trustworthy and decision-grade.
 6. A/P Aging
 7. Inventory Valuation
 8. COGS by month/product/channel
-9. Expense by category/vendor
 10. Tax Liability Summary
 
 - [x] Issue #37 — Build formal financial statements: balance sheet, cash flow, accrual P&L, cash-basis P&L
@@ -866,10 +871,6 @@ Make reporting trustworthy and decision-grade.
   - Added dashboard UI cards for the finance widget set so the finance lens is distinct from the operations dashboard summary
   - Added backend test coverage validating dashboard widget values against seeded finance data and frontend build validation for the updated dashboard page
   - Added `docs/finance_dashboard_widgets.md` documenting the finance widget data sources and current limitations
-- current month true net income
-- inventory asset value
-- tax payable
-- payout in transit
 
 ---
 
