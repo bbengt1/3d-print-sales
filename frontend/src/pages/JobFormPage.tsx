@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
-import type { Material, Job, CalculateResponse, PaginatedProducts } from '@/types';
+import type { Material, Job, CalculateResponse, PaginatedProducts, Product } from '@/types';
 
 interface FieldProps {
   label: string;
@@ -37,6 +38,16 @@ export default function JobFormPage() {
   const isEdit = !!id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const emptyProductForm = {
+    name: '',
+    description: '',
+    material_id: '',
+    unit_cost: 0,
+    unit_price: 0,
+    reorder_point: 5,
+    upc: '',
+  };
 
   const { data: materials } = useQuery<Material[]>({
     queryKey: ['materials', 'active'],
@@ -75,6 +86,10 @@ export default function JobFormPage() {
   const [preview, setPreview] = useState<CalculateResponse | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showCreateProduct, setShowCreateProduct] = useState(false);
+  const [creatingProduct, setCreatingProduct] = useState(false);
+  const [productForm, setProductForm] = useState(emptyProductForm);
+  const [productErrors, setProductErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (existingJob) {
@@ -130,6 +145,60 @@ export default function JobFormPage() {
     setErrors((e) => ({ ...e, [field]: '' }));
   };
 
+  const openCreateProduct = () => {
+    setProductForm({
+      ...emptyProductForm,
+      name: String(form.product_name || ''),
+      material_id: String(form.material_id || ''),
+      unit_cost: Number(preview?.cost_per_piece || 0),
+      unit_price: Number(preview?.price_per_piece || 0),
+    });
+    setProductErrors({});
+    setShowCreateProduct(true);
+  };
+
+  const updateProductForm = (field: string, value: string | number) => {
+    setProductForm((f) => ({ ...f, [field]: value }));
+    setProductErrors((e) => ({ ...e, [field]: '' }));
+  };
+
+  const validateProductForm = () => {
+    const errs: Record<string, string> = {};
+    if (!String(productForm.name).trim()) errs.name = 'Name is required';
+    if (!productForm.material_id) errs.material_id = 'Select a material';
+    setProductErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleCreateProduct = async () => {
+    if (!validateProductForm()) return;
+    setCreatingProduct(true);
+    try {
+      const payload = {
+        name: String(productForm.name).trim(),
+        description: String(productForm.description || '') || null,
+        material_id: productForm.material_id,
+        unit_cost: Number(productForm.unit_cost || 0),
+        unit_price: Number(productForm.unit_price || 0),
+        reorder_point: Number(productForm.reorder_point || 0),
+        upc: String(productForm.upc || '') || null,
+      };
+      const { data } = await api.post<Product>('/products', payload);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setForm((f) => ({
+        ...f,
+        product_id: data.id,
+        product_name: f.product_name || data.name,
+      }));
+      setShowCreateProduct(false);
+      toast.success('Product created and linked to job');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to create product');
+    } finally {
+      setCreatingProduct(false);
+    }
+  };
+
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.job_number) errs.job_number = 'Required';
@@ -176,6 +245,76 @@ export default function JobFormPage() {
     <div className="max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">{isEdit ? 'Edit Job' : 'New Job'}</h1>
 
+      {showCreateProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && setShowCreateProduct(false)}>
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Create and Link Product</h3>
+              <button type="button" onClick={() => setShowCreateProduct(false)} className="p-1 hover:bg-accent rounded-md cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name *</label>
+                <input
+                  value={productForm.name}
+                  onChange={(e) => updateProductForm('name', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.name ? 'border-destructive' : 'border-input'}`}
+                />
+                {productErrors.name && <p className="text-destructive text-xs mt-1">{productErrors.name}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <input
+                  value={productForm.description}
+                  onChange={(e) => updateProductForm('description', e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Material *</label>
+                <select
+                  value={productForm.material_id}
+                  onChange={(e) => updateProductForm('material_id', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.material_id ? 'border-destructive' : 'border-input'}`}
+                >
+                  <option value="">Select material...</option>
+                  {materials?.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name} ({m.brand})</option>
+                  ))}
+                </select>
+                {productErrors.material_id && <p className="text-destructive text-xs mt-1">{productErrors.material_id}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Unit Cost ($)</label>
+                  <input type="number" min="0" step="0.01" value={productForm.unit_cost} onChange={(e) => updateProductForm('unit_cost', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Unit Price ($)</label>
+                  <input type="number" min="0" step="0.01" value={productForm.unit_price} onChange={(e) => updateProductForm('unit_price', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Reorder Point</label>
+                  <input type="number" min="0" value={productForm.reorder_point} onChange={(e) => updateProductForm('reorder_point', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">UPC/EAN</label>
+                  <input value={productForm.upc} onChange={(e) => updateProductForm('upc', e.target.value)} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button type="button" onClick={handleCreateProduct} disabled={creatingProduct} className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer">
+                {creatingProduct ? 'Creating...' : 'Create & Link'}
+              </button>
+              <button type="button" onClick={() => setShowCreateProduct(false)} className="px-4 py-2 border border-border rounded-md hover:bg-accent cursor-pointer">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
           {/* Job Info */}
@@ -200,7 +339,16 @@ export default function JobFormPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Link to Product (optional)</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium">Link to Product (optional)</label>
+                  <button
+                    type="button"
+                    onClick={openCreateProduct}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Create product
+                  </button>
+                </div>
                 <select
                   value={form.product_id}
                   onChange={(e) => update('product_id', e.target.value)}
