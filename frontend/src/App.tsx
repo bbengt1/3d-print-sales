@@ -14,6 +14,7 @@ import RatesPage from '@/pages/RatesPage';
 import CustomersPage from '@/pages/CustomersPage';
 import ProductsPage from '@/pages/ProductsPage';
 import ProductDetailPage from '@/pages/ProductDetailPage';
+import InventoryPage from '@/pages/InventoryPage';
 import SalesPage from '@/pages/SalesPage';
 import SaleDetailPage from '@/pages/SaleDetailPage';
 import SaleFormPage from '@/pages/SaleFormPage';
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="/jobs/:id/edit" element={<JobFormPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/sales" element={<SalesPage />} />
               <Route path="/sales/new" element={<SaleFormPage />} />
               <Route path="/sales/channels" element={<SalesChannelsPage />} />

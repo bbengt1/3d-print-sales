@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import pytest
 import pytest_asyncio
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from app.models.material import Material
 from app.models.product import Product
@@ -98,6 +100,7 @@ async def test_list_transactions(
                 "product_id": str(seed_product.id),
                 "type": "adjustment",
                 "quantity": qty,
+                "notes": f"Adjustment {qty}",
             },
         )
     resp = await client.get(
@@ -107,6 +110,63 @@ async def test_list_transactions(
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 2
+
+
+@pytest.mark.asyncio
+async def test_list_transactions_supports_date_and_search_filters(
+    client: AsyncClient, auth_headers: dict, seed_product: Product, db_session: AsyncSession
+):
+    first = await client.post(
+        "/api/v1/inventory/transactions",
+        headers=auth_headers,
+        json={
+            "product_id": str(seed_product.id),
+            "type": "production",
+            "quantity": 3,
+            "notes": "Older production batch",
+        },
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        "/api/v1/inventory/transactions",
+        headers=auth_headers,
+        json={
+            "product_id": str(seed_product.id),
+            "type": "waste",
+            "quantity": -1,
+            "notes": "Recent waste",
+        },
+    )
+    assert second.status_code == 201
+
+    from app.models.inventory_transaction import InventoryTransaction
+
+    first_txn = await db_session.get(InventoryTransaction, UUID(first.json()["id"]))
+    second_txn = await db_session.get(InventoryTransaction, UUID(second.json()["id"]))
+    first_txn.created_at = datetime.now(timezone.utc) - timedelta(days=3)
+    second_txn.created_at = datetime.now(timezone.utc)
+    await db_session.commit()
+
+    search_resp = await client.get("/api/v1/inventory/transactions", params={"search": "Test Widget"})
+    assert search_resp.status_code == 200
+    search_data = search_resp.json()
+    assert search_data["total"] >= 2
+    assert search_data["items"][0]["product_name"] == "Test Widget"
+    assert search_data["items"][0]["product_sku"] == "PRD-PLA-0001"
+
+    type_resp = await client.get("/api/v1/inventory/transactions", params={"type": "production"})
+    assert type_resp.status_code == 200
+    assert all(item["type"] == "production" for item in type_resp.json()["items"])
+
+    date_resp = await client.get(
+        "/api/v1/inventory/transactions",
+        params={"date_from": (datetime.now(timezone.utc) - timedelta(days=1)).date().isoformat()},
+    )
+    assert date_resp.status_code == 200
+    ids = {item["id"] for item in date_resp.json()["items"]}
+    assert second.json()["id"] in ids
+    assert first.json()["id"] not in ids
 
 
 @pytest.mark.asyncio
@@ -184,3 +244,50 @@ async def test_job_auto_inventory(
     # Verify product stock increased by total_pieces (4*2=8)
     prod_check = await client.get(f"/api/v1/products/{product_id}")
     assert prod_check.json()["stock_qty"] == 8
+
+
+@pytest.mark.asyncio
+async def test_reconcile_inventory_creates_adjustment(
+    client: AsyncClient, auth_headers: dict, seed_product: Product
+):
+    resp = await client.post(
+        "/api/v1/inventory/reconcile",
+        headers=auth_headers,
+        json={
+            "product_id": str(seed_product.id),
+            "counted_qty": 6,
+            "reason": "Cycle count",
+            "notes": "Back shelf recount",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["current_qty"] == 10
+    assert data["counted_qty"] == 6
+    assert data["variance"] == -4
+    assert data["approval_required"] is False
+    assert data["transaction"]["type"] == "adjustment"
+    assert data["transaction"]["quantity"] == -4
+
+    prod_resp = await client.get(f"/api/v1/products/{seed_product.id}")
+    assert prod_resp.json()["stock_qty"] == 6
+
+
+@pytest.mark.asyncio
+async def test_reconcile_inventory_zero_variance_returns_noop(
+    client: AsyncClient, auth_headers: dict, seed_product: Product
+):
+    resp = await client.post(
+        "/api/v1/inventory/reconcile",
+        headers=auth_headers,
+        json={
+            "product_id": str(seed_product.id),
+            "counted_qty": 10,
+            "reason": "Cycle count",
+            "notes": "Matched shelf count",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["variance"] == 0
+    assert data["transaction"] is None
