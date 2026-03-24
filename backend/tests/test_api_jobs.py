@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import pytest
 from sqlalchemy import select
 
@@ -32,6 +34,49 @@ async def test_create_job(client, seed_settings, seed_rates, seed_material, auth
     assert data["total_pieces"] == 1
     assert float(data["total_cost"]) > 0
     assert float(data["net_profit"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_create_job_auto_generates_number(client, seed_settings, seed_rates, seed_material, auth_headers):
+    resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "date": "2026-03-24",
+            "product_name": "Auto Numbered Job",
+            "qty_per_plate": 1,
+            "num_plates": 1,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["job_number"] == "2026.03.24.001"
+
+
+@pytest.mark.asyncio
+async def test_next_job_number_ignores_malformed_numbers(client, seed_settings, seed_rates, seed_material, auth_headers):
+    for job_number in ["2026.03.24.001", "2026.03.24.bad", "2026.03.24.007", "OTHER-001"]:
+        await client.post(
+            "/api/v1/jobs",
+            json={
+                "job_number": job_number,
+                "date": "2026-03-24",
+                "product_name": f"Job {job_number}",
+                "qty_per_plate": 1,
+                "num_plates": 1,
+                "material_id": str(seed_material.id),
+                "material_per_plate_g": 45,
+                "print_time_per_plate_hrs": 2.5,
+            },
+            headers=auth_headers,
+        )
+
+    resp = await client.get("/api/v1/jobs/next-number", params={"date": "2026-03-24"}, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["job_number"] == "2026.03.24.008"
 
 
 @pytest.mark.asyncio
@@ -240,7 +285,7 @@ async def test_duplicate_job_creates_new_draft(client, seed_settings, seed_rates
 
     assert data["id"] != source["id"]
     assert data["job_number"] != source["job_number"]
-    assert data["job_number"].startswith("J-")
+    assert re.match(r"^\d{4}\.\d{2}\.\d{2}\.\d{3}$", data["job_number"])
     assert data["status"] == "draft"
     assert data["inventory_added"] is False
     assert data["product_name"] == source["product_name"]

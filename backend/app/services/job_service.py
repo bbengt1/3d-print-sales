@@ -1,24 +1,40 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job import Job
 from app.schemas.job import JobCreate
 
+_SEQUENCE_RE = re.compile(r"^(\d{4}\.\d{2}\.\d{2})\.(\d{3})$")
+
+
+def build_job_number_prefix(job_date: date) -> str:
+    return job_date.strftime("%Y.%m.%d.")
+
 
 async def generate_job_number(db: AsyncSession, job_date: date | None = None) -> str:
-    """Generate a unique job number in format J-YYYY-NNNN."""
+    """Generate the next job number in YYYY.MM.DD.NNN format."""
     target_date = job_date or date.today()
-    prefix = f"J-{target_date.year}-"
-    result = await db.execute(
-        select(func.count()).select_from(Job).where(Job.job_number.like(f"{prefix}%"))
-    )
-    count = result.scalar() or 0
-    return f"{prefix}{count + 1:04d}"
+    prefix = build_job_number_prefix(target_date)
+
+    result = await db.execute(select(Job.job_number).where(Job.job_number.like(f"{prefix}%")))
+    existing_numbers = result.scalars().all()
+
+    max_sequence = 0
+    for job_number in existing_numbers:
+        match = _SEQUENCE_RE.match(job_number)
+        if not match:
+            continue
+        if match.group(1) != prefix[:-1]:
+            continue
+        max_sequence = max(max_sequence, int(match.group(2)))
+
+    return f"{prefix}{max_sequence + 1:03d}"
 
 
 def build_duplicate_job_create(source: Job, *, job_number: str, job_date: date | None = None) -> JobCreate:

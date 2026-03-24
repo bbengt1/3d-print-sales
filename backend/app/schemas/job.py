@@ -16,7 +16,7 @@ class JobStatus(str, Enum):
 
 
 class JobCreate(BaseModel):
-    job_number: str = Field(..., min_length=1, max_length=50, examples=["2026.3.4.001"])
+    job_number: str | None = Field(None, min_length=1, max_length=50, examples=["2026.03.04.001"])
     date: datetime.date = Field(..., examples=["2026-03-04"])
     customer_id: uuid.UUID | None = None
     customer_name: str | None = Field(None, max_length=200, examples=["Sample Customer"])

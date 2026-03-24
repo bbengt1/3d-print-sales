@@ -77,6 +77,18 @@ async def list_jobs(
 
 
 @router.get(
+    "/next-number",
+    summary="Get next job number",
+    description="Preview the next available job number for the provided job date using YYYY.MM.DD.NNN sequencing.",
+)
+async def get_next_job_number(
+    db: DB,
+    date: datetime.date = Query(..., description="Job date to generate the next sequence for"),
+):
+    return {"job_number": await generate_job_number(db, date)}
+
+
+@router.get(
     "/{job_id}",
     response_model=JobResponse,
     summary="Get job by ID",
@@ -100,10 +112,12 @@ async def get_job(job_id: uuid.UUID, db: DB):
     description="Create a new print job. All cost fields (electricity, material, labor, etc.) are automatically calculated from the input parameters and current business settings/rates.",
 )
 async def create_job(body: JobCreate, user: CurrentUser, db: DB):
+    job_number = body.job_number or await generate_job_number(db, body.date)
+
     # Check for duplicate job number
-    existing = await db.execute(select(Job.id).where(Job.job_number == body.job_number))
+    existing = await db.execute(select(Job.id).where(Job.job_number == job_number))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail=f"Job number '{body.job_number}' already exists")
+        raise HTTPException(status_code=409, detail=f"Job number '{job_number}' already exists")
 
     calc = CostCalculator(db)
     costs = await calc.calculate(
@@ -119,6 +133,7 @@ async def create_job(body: JobCreate, user: CurrentUser, db: DB):
     )
     # Exclude shipping_cost from body since it's included in calculated costs
     body_data = body.model_dump(exclude={"shipping_cost"})
+    body_data["job_number"] = job_number
     job = Job(
         **body_data,
         total_pieces=body.qty_per_plate * body.num_plates,

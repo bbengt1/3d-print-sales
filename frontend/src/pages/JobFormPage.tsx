@@ -86,6 +86,7 @@ export default function JobFormPage() {
   const [preview, setPreview] = useState<CalculateResponse | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [jobNumberTouched, setJobNumberTouched] = useState(false);
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [productForm, setProductForm] = useState(emptyProductForm);
@@ -93,6 +94,7 @@ export default function JobFormPage() {
 
   useEffect(() => {
     if (existingJob) {
+      setJobNumberTouched(true);
       setForm({
         job_number: existingJob.job_number,
         date: existingJob.date,
@@ -112,6 +114,24 @@ export default function JobFormPage() {
       });
     }
   }, [existingJob]);
+
+  useEffect(() => {
+    if (isEdit || jobNumberTouched || !form.date) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await api.get('/jobs/next-number', { params: { date: form.date } });
+        setForm((current) => {
+          if (current.job_number && jobNumberTouched) return current;
+          return { ...current, job_number: data.job_number };
+        });
+      } catch {
+        // ignore preview fetch failures; backend still generates on create
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [isEdit, jobNumberTouched, form.date]);
 
   // Live cost preview
   useEffect(() => {
@@ -142,6 +162,7 @@ export default function JobFormPage() {
 
   const update = (field: string, value: string | number) => {
     setForm((f) => ({ ...f, [field]: value }));
+    if (field === 'job_number') setJobNumberTouched(true);
     setErrors((e) => ({ ...e, [field]: '' }));
   };
 
@@ -201,7 +222,7 @@ export default function JobFormPage() {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!form.job_number) errs.job_number = 'Required';
+    if (isEdit && !form.job_number) errs.job_number = 'Required';
     if (!form.product_name) errs.product_name = 'Required';
     if (!form.material_id) errs.material_id = 'Select a material';
     if (form.qty_per_plate < 1) errs.qty_per_plate = 'Must be at least 1';
@@ -321,7 +342,14 @@ export default function JobFormPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Job Info</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Job Number" field="job_number" value={form.job_number} error={errors.job_number} onChange={update} placeholder="2026.3.4.001" />
+              <div>
+                <Field label="Job Number" field="job_number" value={form.job_number} error={errors.job_number} onChange={update} placeholder="2026.03.24.001" />
+                {!isEdit && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {jobNumberTouched ? 'Manual override enabled' : 'Auto-generated from selected date'}
+                  </p>
+                )}
+              </div>
               <Field label="Date" field="date" type="date" value={form.date} error={errors.date} onChange={update} />
               <Field label="Customer" field="customer_name" value={form.customer_name} error={errors.customer_name} onChange={update} placeholder="Optional" />
               <Field label="Product Name" field="product_name" value={form.product_name} error={errors.product_name} onChange={update} placeholder="Phone Stand" />
