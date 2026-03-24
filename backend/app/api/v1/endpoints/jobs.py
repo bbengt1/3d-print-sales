@@ -20,6 +20,7 @@ from app.schemas.job import (
 )
 from app.services.cost_calculator import CostCalculator
 from app.services.inventory_service import add_inventory_from_job
+from app.services.job_service import build_duplicate_job_create, generate_job_number
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -203,6 +204,50 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: 
         )
         job.inventory_added = True
 
+    await db.commit()
+    await db.refresh(job)
+    return job
+
+
+@router.post(
+    "/{job_id}/duplicate",
+    response_model=JobResponse,
+    status_code=201,
+    summary="Duplicate a job",
+    description="Create a new draft job by copying the editable inputs from an existing job and generating a new job number.",
+)
+async def duplicate_job(job_id: uuid.UUID, user: CurrentUser, db: DB):
+    result = await db.execute(
+        select(Job).where(Job.id == job_id, Job.is_deleted == False)
+    )
+    source_job = result.scalar_one_or_none()
+    if not source_job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    new_job_number = await generate_job_number(db)
+    duplicate_body = build_duplicate_job_create(source_job, job_number=new_job_number)
+
+    calc = CostCalculator(db)
+    costs = await calc.calculate(
+        material_id=duplicate_body.material_id,
+        qty_per_plate=duplicate_body.qty_per_plate,
+        num_plates=duplicate_body.num_plates,
+        material_per_plate_g=duplicate_body.material_per_plate_g,
+        print_time_per_plate_hrs=duplicate_body.print_time_per_plate_hrs,
+        labor_mins=duplicate_body.labor_mins,
+        design_time_hrs=duplicate_body.design_time_hrs or Decimal(0),
+        shipping_cost=duplicate_body.shipping_cost,
+        target_margin_pct=duplicate_body.target_margin_pct,
+    )
+
+    body_data = duplicate_body.model_dump(exclude={"shipping_cost"})
+    job = Job(
+        **body_data,
+        total_pieces=duplicate_body.qty_per_plate * duplicate_body.num_plates,
+        inventory_added=False,
+        **costs,
+    )
+    db.add(job)
     await db.commit()
     await db.refresh(job)
     return job

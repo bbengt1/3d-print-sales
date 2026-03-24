@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import pytest
+from sqlalchemy import select
+
+from app.models.inventory_transaction import InventoryTransaction
 
 
 @pytest.mark.asyncio
@@ -205,6 +208,88 @@ async def test_update_job(client, seed_settings, seed_rates, seed_material, auth
     assert resp.status_code == 200
     assert resp.json()["total_pieces"] == 3
     assert float(resp.json()["total_cost"]) > original_cost
+
+
+@pytest.mark.asyncio
+async def test_duplicate_job_creates_new_draft(client, seed_settings, seed_rates, seed_material, auth_headers):
+    create_resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "COPY-001",
+            "date": "2026-03-01",
+            "customer_name": "Repeat Customer",
+            "product_name": "Repeat Widget",
+            "qty_per_plate": 2,
+            "num_plates": 3,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+            "labor_mins": 15,
+            "design_time_hrs": 0.5,
+            "shipping_cost": 4,
+            "target_margin_pct": 40,
+            "status": "completed",
+        },
+        headers=auth_headers,
+    )
+    source = create_resp.json()
+
+    duplicate_resp = await client.post(f"/api/v1/jobs/{source['id']}/duplicate", headers=auth_headers)
+    assert duplicate_resp.status_code == 201
+    data = duplicate_resp.json()
+
+    assert data["id"] != source["id"]
+    assert data["job_number"] != source["job_number"]
+    assert data["job_number"].startswith("J-")
+    assert data["status"] == "draft"
+    assert data["inventory_added"] is False
+    assert data["product_name"] == source["product_name"]
+    assert data["customer_name"] == source["customer_name"]
+    assert data["qty_per_plate"] == source["qty_per_plate"]
+    assert data["num_plates"] == source["num_plates"]
+    assert data["total_pieces"] == source["total_pieces"]
+    assert float(data["total_cost"]) > 0
+    assert float(data["net_profit"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_duplicate_completed_job_does_not_create_inventory_transaction(
+    client, seed_settings, seed_rates, seed_material, auth_headers, db_session
+):
+    product_resp = await client.post(
+        "/api/v1/products",
+        json={"name": "Copy Product", "material_id": str(seed_material.id)},
+        headers=auth_headers,
+    )
+    product_id = product_resp.json()["id"]
+
+    create_resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "COPY-INV-001",
+            "date": "2026-03-01",
+            "product_name": "Copy Product",
+            "qty_per_plate": 2,
+            "num_plates": 2,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+            "product_id": product_id,
+            "status": "completed",
+        },
+        headers=auth_headers,
+    )
+    source = create_resp.json()
+
+    before_count = len((await db_session.execute(select(InventoryTransaction))).scalars().all())
+    duplicate_resp = await client.post(f"/api/v1/jobs/{source['id']}/duplicate", headers=auth_headers)
+    assert duplicate_resp.status_code == 201
+    data = duplicate_resp.json()
+    after_count = len((await db_session.execute(select(InventoryTransaction))).scalars().all())
+
+    assert data["status"] == "draft"
+    assert data["inventory_added"] is False
+    assert after_count == before_count
 
 
 @pytest.mark.asyncio

@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Search, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
-import type { PaginatedJobs } from '@/types';
+import type { Job, PaginatedJobs } from '@/types';
 
 export default function JobsPage() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(0);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const limit = 20;
 
   const { data, isLoading } = useQuery<PaginatedJobs>({
@@ -33,6 +37,20 @@ export default function JobsPage() {
     in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     draft: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  };
+
+  const handleDuplicate = async (job: Job) => {
+    setDuplicatingId(job.id);
+    try {
+      const { data } = await api.post(`/jobs/${job.id}/duplicate`);
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      toast.success('Job copied to draft successfully');
+      navigate(`/jobs/${data.id}`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to copy job');
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   return (
@@ -92,6 +110,7 @@ export default function JobsPage() {
                   <th className="px-4 py-3 font-medium text-right">Revenue</th>
                   <th className="px-4 py-3 font-medium text-right">Profit</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,11 +136,21 @@ export default function JobsPage() {
                         {job.status.replace('_', ' ')}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleDuplicate(job)}
+                        disabled={duplicatingId === job.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-md text-xs font-medium hover:bg-accent disabled:opacity-50 cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        {duplicatingId === job.id ? 'Copying...' : 'Copy'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {jobs.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                       No jobs found. {!search && !status && 'Create your first job to get started.'}
                     </td>
                   </tr>
