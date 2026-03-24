@@ -51,9 +51,7 @@ cd /srv/3d-print-sales/repo
 cp .env.production.example /srv/3d-print-sales/env/web01.env
 # edit secrets before launch
 
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml up -d --build
+scripts/web01-compose.sh up -d --build
 ```
 
 ## Example Update
@@ -61,9 +59,24 @@ FRONTEND_HTTP_PORT=80 \
 ```bash
 cd /srv/3d-print-sales/repo
 git pull --ff-only
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml up -d --build
+scripts/web01-compose.sh up -d --build
+```
+
+## Repo Helper Script
+
+The repo includes `scripts/web01-compose.sh` to standardize production compose usage on `web01`.
+
+Defaults:
+- `ENV_FILE=/srv/3d-print-sales/env/web01.env`
+- `FRONTEND_HTTP_PORT=80`
+
+Examples:
+
+```bash
+scripts/web01-compose.sh ps
+scripts/web01-compose.sh up -d --build
+scripts/web01-compose.sh logs -f
+scripts/web01-compose.sh restart
 ```
 
 ## Notes

@@ -26,9 +26,8 @@ services:
       target: production
     container_name: 3d-print-sales-backend
     env_file:
-      - ${ENV_FILE:-.env.production.example}
+      - ${ENV_FILE:?set ENV_FILE to the server env file}
     environment:
-      DATABASE_URL: postgresql+asyncpg://${DB_USER:-printuser}:${DB_PASSWORD:-replace-with-strong-db-password}@db:5432/${DB_NAME:-printsales}
       ENVIRONMENT: production
       TESTING: false
     depends_on:

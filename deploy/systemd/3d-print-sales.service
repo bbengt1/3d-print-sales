@@ -1,0 +1,20 @@
+[Unit]
+Description=3D Print Sales production stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/srv/3d-print-sales/repo
+Environment=ENV_FILE=/srv/3d-print-sales/env/web01.env
+Environment=FRONTEND_HTTP_PORT=80
+ExecStart=/usr/bin/bash /srv/3d-print-sales/repo/scripts/web01-compose.sh up -d --build
+ExecStop=/usr/bin/bash /srv/3d-print-sales/repo/scripts/web01-compose.sh down
+ExecReload=/usr/bin/bash /srv/3d-print-sales/repo/scripts/web01-compose.sh up -d --build
+TimeoutStartSec=0
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

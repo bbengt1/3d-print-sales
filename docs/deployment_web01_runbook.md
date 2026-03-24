@@ -42,9 +42,7 @@ Named Docker volume:
 ```bash
 ssh root@web01.bengtson.local
 cd /srv/3d-print-sales/repo
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml up -d --build
+scripts/web01-compose.sh up -d --build
 ```
 
 ### Required migration step
@@ -82,14 +80,12 @@ PY
 ssh root@web01.bengtson.local
 cd /srv/3d-print-sales/repo
 git pull --ff-only
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml up -d --build
+scripts/web01-compose.sh up -d --build
 ```
 
 ### Post-update checks
 ```bash
-docker compose -f docker-compose.prod.yml ps
+scripts/web01-compose.sh ps
 curl -fsS http://127.0.0.1/health
 curl -I http://127.0.0.1/
 ```
@@ -101,9 +97,7 @@ curl -I http://127.0.0.1/
 ### On-host
 ```bash
 cd /srv/3d-print-sales/repo
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml ps
+scripts/web01-compose.sh ps
 
 curl -fsS http://127.0.0.1/health
 curl -I http://127.0.0.1/
@@ -126,17 +120,13 @@ Use the browser or scripted login against:
 ### Compose service status
 ```bash
 cd /srv/3d-print-sales/repo
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml ps
+scripts/web01-compose.sh ps
 ```
 
 ### Tail all logs
 ```bash
 cd /srv/3d-print-sales/repo
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml logs -f
+scripts/web01-compose.sh logs -f
 ```
 
 ### Tail individual services
@@ -168,9 +158,7 @@ docker restart 3d-print-sales-db
 ### Restart whole stack
 ```bash
 cd /srv/3d-print-sales/repo
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml restart
+scripts/web01-compose.sh restart
 ```
 
 ---
@@ -186,9 +174,7 @@ cd /srv/3d-print-sales/repo
 git log --oneline -n 10
 # choose prior known-good commit
 git checkout <known-good-commit>
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml up -d --build
+scripts/web01-compose.sh up -d --build
 ```
 
 ### After rollback
@@ -255,12 +241,27 @@ chmod 600 /srv/3d-print-sales/env/web01.env
 ### Apply env changes
 ```bash
 cd /srv/3d-print-sales/repo
-ENV_FILE=/srv/3d-print-sales/env/web01.env \
-FRONTEND_HTTP_PORT=80 \
-  docker compose -f docker-compose.prod.yml up -d --build
+scripts/web01-compose.sh up -d --build
 ```
 
 ---
+
+## systemd Service
+
+The host should manage the production stack with a dedicated unit:
+- `/etc/systemd/system/3d-print-sales.service`
+
+A tracked example unit is included in the repo at:
+- `deploy/systemd/3d-print-sales.service`
+
+Useful commands:
+
+```bash
+systemctl status 3d-print-sales
+systemctl restart 3d-print-sales
+systemctl reload 3d-print-sales
+journalctl -u 3d-print-sales -f
+```
 
 ## Firewall / Access Notes
 
