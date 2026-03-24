@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app.core.config import settings
 from app.core.database import Base
 # Import all models so metadata is populated
 from app.models.setting import Setting  # noqa
