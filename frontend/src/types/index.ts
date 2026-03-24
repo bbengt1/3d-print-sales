@@ -174,12 +174,15 @@ export interface PaginatedProducts {
 export interface InventoryTransaction {
   id: string;
   product_id: string;
+  product_name: string | null;
+  product_sku: string | null;
   job_id: string | null;
   type: string;
   quantity: number;
   unit_cost: number;
   notes: string | null;
   created_by: string | null;
+  created_by_name: string | null;
   created_at: string | null;
 }
 
@@ -188,6 +191,16 @@ export interface PaginatedTransactions {
   total: number;
   skip: number;
   limit: number;
+}
+
+export interface InventoryReconcileResponse {
+  product_id: string;
+  current_qty: number;
+  counted_qty: number;
+  variance: number;
+  approval_required: boolean;
+  detail: string;
+  transaction: InventoryTransaction | null;
 }
 
 export interface InventoryAlert {

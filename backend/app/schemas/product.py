@@ -76,12 +76,15 @@ class InventoryTransactionCreate(BaseModel):
 class InventoryTransactionResponse(BaseModel):
     id: uuid.UUID
     product_id: uuid.UUID
+    product_name: str | None = None
+    product_sku: str | None = None
     job_id: uuid.UUID | None = None
     type: str
     quantity: int
     unit_cost: Decimal
     notes: str | None = None
     created_by: uuid.UUID | None = None
+    created_by_name: str | None = None
     created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
@@ -92,6 +95,23 @@ class PaginatedTransactions(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class InventoryReconcileRequest(BaseModel):
+    product_id: uuid.UUID
+    counted_qty: int = Field(..., ge=0)
+    reason: str = Field(..., min_length=3, max_length=255)
+    notes: str | None = Field(None, max_length=500)
+
+
+class InventoryReconcileResponse(BaseModel):
+    product_id: uuid.UUID
+    current_qty: int
+    counted_qty: int
+    variance: int
+    approval_required: bool = False
+    detail: str
+    transaction: InventoryTransactionResponse | None = None
 
 
 class InventoryAlert(BaseModel):
