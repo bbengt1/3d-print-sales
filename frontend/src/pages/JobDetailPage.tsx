@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Package, Printer } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, User, Package, Printer, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
@@ -18,6 +19,8 @@ function CostRow({ label, value }: { label: string; value: number }) {
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [duplicating, setDuplicating] = useState(false);
 
   const { data: job, isLoading } = useQuery<Job>({
     queryKey: ['job', id],
@@ -32,6 +35,20 @@ export default function JobDetailPage() {
       navigate('/jobs');
     } catch {
       toast.error('Failed to delete job');
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    try {
+      const { data } = await api.post(`/jobs/${id}/duplicate`);
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      toast.success('Job copied to draft successfully');
+      navigate(`/jobs/${data.id}`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to copy job');
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -61,6 +78,9 @@ export default function JobDetailPage() {
           </span>
         </div>
         <div className="flex gap-2">
+          <button onClick={handleDuplicate} disabled={duplicating} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 cursor-pointer">
+            <Copy className="w-4 h-4" /> {duplicating ? 'Copying...' : 'Copy to New Job'}
+          </button>
           <Link to={`/jobs/${id}/edit`} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors no-underline">
             <Edit className="w-4 h-4" /> Edit
           </Link>
