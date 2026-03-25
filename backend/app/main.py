@@ -35,6 +35,10 @@ OPENAPI_TAGS = [
         "description": "Print jobs with automatic cost calculation, pricing, and profit analysis.",
     },
     {
+        "name": "Printers",
+        "description": "Tracked printer resources for production-floor operations and monitoring.",
+    },
+    {
         "name": "Products",
         "description": "Product catalog with SKU tracking, inventory levels, and pricing.",
     },
