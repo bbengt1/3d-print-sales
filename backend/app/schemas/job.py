@@ -7,6 +7,8 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from app.schemas.printer import PrinterResponse
+
 
 class JobStatus(str, Enum):
     draft = "draft"
@@ -31,6 +33,7 @@ class JobCreate(BaseModel):
     shipping_cost: Decimal = Field(Decimal(0), ge=0, examples=[0])
     target_margin_pct: Decimal = Field(Decimal(40), ge=0, le=99, examples=[40])
     product_id: uuid.UUID | None = None
+    printer_id: uuid.UUID | None = None
     status: JobStatus = Field(JobStatus.completed, examples=["completed"])
 
 
@@ -50,6 +53,7 @@ class JobUpdate(BaseModel):
     shipping_cost: Decimal | None = Field(None, ge=0)
     target_margin_pct: Decimal | None = Field(None, ge=0, le=99)
     product_id: uuid.UUID | None = None
+    printer_id: uuid.UUID | None = None
     status: JobStatus | None = None
 
 
@@ -120,6 +124,8 @@ class JobResponse(BaseModel):
     net_profit: Decimal
     profit_per_piece: Decimal
     product_id: uuid.UUID | None = None
+    printer_id: uuid.UUID | None = None
+    printer: PrinterResponse | None = None
     inventory_added: bool = False
     status: str
     created_at: datetime.datetime | None = None

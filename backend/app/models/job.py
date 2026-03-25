@@ -55,6 +55,9 @@ class Job(Base):
     product_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("products.id"), nullable=True
     )
+    printer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("printers.id"), nullable=True, index=True
+    )
     inventory_added: Mapped[bool] = mapped_column(Boolean, default=False)
 
     status: Mapped[str] = mapped_column(String(20), default="completed")
@@ -71,3 +74,4 @@ class Job(Base):
     customer = relationship("Customer", back_populates="jobs")
     material = relationship("Material")
     product = relationship("Product")
+    printer = relationship("Printer")

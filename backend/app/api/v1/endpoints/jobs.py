@@ -6,9 +6,11 @@ from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser
 from app.models.job import Job
+from app.models.printer import Printer
 from app.schemas.job import (
     CalculateRequest,
     CalculateResponse,
@@ -36,6 +38,7 @@ async def list_jobs(
     status: JobStatus | None = Query(None, description="Filter by job status"),
     material_id: uuid.UUID | None = Query(None, description="Filter by material ID"),
     customer_id: uuid.UUID | None = Query(None, description="Filter by customer ID"),
+    printer_id: uuid.UUID | None = Query(None, description="Filter by printer ID"),
     date_from: datetime.date | None = Query(None, description="Start date (inclusive)"),
     date_to: datetime.date | None = Query(None, description="End date (inclusive)"),
     search: str | None = Query(None, description="Search by product name or job number"),
@@ -44,7 +47,7 @@ async def list_jobs(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(50, ge=1, le=100, description="Max records to return"),
 ):
-    base = select(Job).where(Job.is_deleted == False)
+    base = select(Job).options(selectinload(Job.printer)).where(Job.is_deleted == False)
 
     if status:
         base = base.where(Job.status == status.value)
@@ -52,6 +55,8 @@ async def list_jobs(
         base = base.where(Job.material_id == material_id)
     if customer_id:
         base = base.where(Job.customer_id == customer_id)
+    if printer_id:
+        base = base.where(Job.printer_id == printer_id)
     if date_from:
         base = base.where(Job.date >= date_from)
     if date_to:
@@ -96,7 +101,7 @@ async def get_next_job_number(
 )
 async def get_job(job_id: uuid.UUID, db: DB):
     result = await db.execute(
-        select(Job).where(Job.id == job_id, Job.is_deleted == False)
+        select(Job).options(selectinload(Job.printer)).where(Job.id == job_id, Job.is_deleted == False)
     )
     job = result.scalar_one_or_none()
     if not job:
@@ -113,6 +118,11 @@ async def get_job(job_id: uuid.UUID, db: DB):
 )
 async def create_job(body: JobCreate, user: CurrentUser, db: DB):
     job_number = body.job_number or await generate_job_number(db, body.date)
+
+    if body.printer_id:
+        printer_exists = await db.execute(select(Printer.id).where(Printer.id == body.printer_id))
+        if not printer_exists.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Printer not found")
 
     # Check for duplicate job number
     existing = await db.execute(select(Job.id).where(Job.job_number == job_number))
@@ -155,8 +165,8 @@ async def create_job(body: JobCreate, user: CurrentUser, db: DB):
         job.inventory_added = True
 
     await db.commit()
-    await db.refresh(job)
-    return job
+    result = await db.execute(select(Job).options(selectinload(Job.printer)).execution_options(populate_existing=True).where(Job.id == job.id))
+    return result.scalar_one()
 
 
 @router.put(
@@ -167,7 +177,7 @@ async def create_job(body: JobCreate, user: CurrentUser, db: DB):
 )
 async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: DB):
     result = await db.execute(
-        select(Job).where(Job.id == job_id, Job.is_deleted == False)
+        select(Job).options(selectinload(Job.printer)).where(Job.id == job_id, Job.is_deleted == False)
     )
     job = result.scalar_one_or_none()
     if not job:
@@ -180,6 +190,11 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: 
         )
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=409, detail=f"Job number '{body.job_number}' already exists")
+
+    if body.printer_id:
+        printer_exists = await db.execute(select(Printer.id).where(Printer.id == body.printer_id))
+        if not printer_exists.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Printer not found")
 
     old_status = job.status
     for field, value in body.model_dump(exclude_unset=True).items():
@@ -220,8 +235,8 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: 
         job.inventory_added = True
 
     await db.commit()
-    await db.refresh(job)
-    return job
+    result = await db.execute(select(Job).options(selectinload(Job.printer)).execution_options(populate_existing=True).where(Job.id == job.id))
+    return result.scalar_one()
 
 
 @router.post(
@@ -233,7 +248,7 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: 
 )
 async def duplicate_job(job_id: uuid.UUID, user: CurrentUser, db: DB):
     result = await db.execute(
-        select(Job).where(Job.id == job_id, Job.is_deleted == False)
+        select(Job).options(selectinload(Job.printer)).where(Job.id == job_id, Job.is_deleted == False)
     )
     source_job = result.scalar_one_or_none()
     if not source_job:
@@ -264,8 +279,8 @@ async def duplicate_job(job_id: uuid.UUID, user: CurrentUser, db: DB):
     )
     db.add(job)
     await db.commit()
-    await db.refresh(job)
-    return job
+    result = await db.execute(select(Job).options(selectinload(Job.printer)).execution_options(populate_existing=True).where(Job.id == job.id))
+    return result.scalar_one()
 
 
 @router.delete(

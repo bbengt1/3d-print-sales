@@ -203,6 +203,55 @@ async def test_list_jobs_filter_by_date(client, seed_settings, seed_rates, seed_
 
 
 @pytest.mark.asyncio
+async def test_create_job_with_printer_assignment(client, seed_settings, seed_rates, seed_material, auth_headers):
+    printer_resp = await client.post(
+        "/api/v1/printers",
+        json={"name": "Farm Printer 1", "slug": "farm-printer-1", "status": "idle"},
+        headers=auth_headers,
+    )
+    printer_id = printer_resp.json()["id"]
+
+    create_resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "date": "2026-03-24",
+            "product_name": "Printer Assigned Job",
+            "qty_per_plate": 1,
+            "num_plates": 1,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+            "printer_id": printer_id,
+        },
+        headers=auth_headers,
+    )
+    assert create_resp.status_code == 201
+    data = create_resp.json()
+    assert data["printer_id"] == printer_id
+    assert data["printer"]["id"] == printer_id
+    assert data["printer"]["name"] == "Farm Printer 1"
+
+
+@pytest.mark.asyncio
+async def test_create_job_rejects_invalid_printer(client, seed_settings, seed_rates, seed_material, auth_headers):
+    resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "date": "2026-03-24",
+            "product_name": "Bad Printer Job",
+            "qty_per_plate": 1,
+            "num_plates": 1,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+            "printer_id": "00000000-0000-0000-0000-000000000999",
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_get_job(client, seed_settings, seed_rates, seed_material, auth_headers):
     create_resp = await client.post(
         "/api/v1/jobs",
@@ -224,6 +273,88 @@ async def test_get_job(client, seed_settings, seed_rates, seed_material, auth_he
     assert resp.status_code == 200
     assert resp.json()["product_name"] == "Get Test"
     assert resp.json()["total_pieces"] == 2
+
+
+@pytest.mark.asyncio
+async def test_update_job_with_printer_assignment(client, seed_settings, seed_rates, seed_material, auth_headers):
+    printer_resp = await client.post(
+        "/api/v1/printers",
+        json={"name": "Farm Printer 2", "slug": "farm-printer-2", "status": "printing"},
+        headers=auth_headers,
+    )
+    printer_id = printer_resp.json()["id"]
+
+    create_resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "UPD-PRN-001",
+            "date": "2026-03-01",
+            "product_name": "Update Printer Test",
+            "qty_per_plate": 1,
+            "num_plates": 1,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+        },
+        headers=auth_headers,
+    )
+    job_id = create_resp.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/jobs/{job_id}",
+        json={"printer_id": printer_id, "status": "completed"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["printer_id"] == printer_id
+    assert data["printer"]["slug"] == "farm-printer-2"
+
+
+@pytest.mark.asyncio
+async def test_list_jobs_filter_by_printer(client, seed_settings, seed_rates, seed_material, auth_headers):
+    printer_resp = await client.post(
+        "/api/v1/printers",
+        json={"name": "Farm Printer 3", "slug": "farm-printer-3", "status": "idle"},
+        headers=auth_headers,
+    )
+    printer_id = printer_resp.json()["id"]
+
+    await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "FILTER-PRN-001",
+            "date": "2026-03-01",
+            "product_name": "Filtered Printer Job",
+            "qty_per_plate": 1,
+            "num_plates": 1,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+            "printer_id": printer_id,
+        },
+        headers=auth_headers,
+    )
+    await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "FILTER-PRN-002",
+            "date": "2026-03-01",
+            "product_name": "Unassigned Job",
+            "qty_per_plate": 1,
+            "num_plates": 1,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 45,
+            "print_time_per_plate_hrs": 2.5,
+        },
+        headers=auth_headers,
+    )
+
+    resp = await client.get(f"/api/v1/jobs?printer_id={printer_id}")
+    assert resp.status_code == 200
+    items = resp.json()["items"]
+    assert len(items) >= 1
+    assert all(item["printer_id"] == printer_id for item in items)
 
 
 @pytest.mark.asyncio

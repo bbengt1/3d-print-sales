@@ -55,5 +55,6 @@ def build_duplicate_job_create(source: Job, *, job_number: str, job_date: date |
         shipping_cost=source.shipping_cost,
         target_margin_pct=source.target_margin_pct,
         product_id=source.product_id,
+        printer_id=source.printer_id,
         status="draft",
     )
