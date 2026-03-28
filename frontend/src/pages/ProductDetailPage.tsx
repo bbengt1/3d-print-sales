@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft, Plus, X, Archive, ArchiveRestore } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
@@ -65,8 +65,37 @@ export default function ProductDetailPage() {
     }
   };
 
+  const toggleActive = async () => {
+    const confirmed = window.confirm(
+      currentProduct.is_active
+        ? `Archive ${currentProduct.name}?\n\nThis keeps historical records and inventory history, but removes the product from active use.`
+        : `Restore ${currentProduct.name} to active products?`
+    );
+
+    if (!confirmed) return;
+
+    setSaving(true);
+    try {
+      if (currentProduct.is_active) {
+        await api.delete(`/products/${currentProduct.id}`);
+        toast.success(`${currentProduct.name} archived`);
+      } else {
+        await api.put(`/products/${currentProduct.id}`, { is_active: true });
+        toast.success(`${currentProduct.name} restored`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', id] });
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to update product status');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (productLoading) return <SkeletonTable rows={3} cols={4} />;
   if (!product) return <p className="text-center py-16 text-muted-foreground">Product not found</p>;
+
+  const currentProduct = product;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -76,15 +105,26 @@ export default function ProductDetailPage() {
 
       {/* Product Info */}
       <div className="bg-card border border-border rounded-lg p-6 mb-6">
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-2xl font-bold">{product.name}</h1>
-            <p className="text-sm text-muted-foreground font-mono">{product.sku}</p>
-            {product.upc && <p className="text-xs text-muted-foreground mt-1">UPC: {product.upc}</p>}
+            <h1 className="text-2xl font-bold">{currentProduct.name}</h1>
+            <p className="text-sm text-muted-foreground font-mono">{currentProduct.sku}</p>
+            {currentProduct.upc && <p className="text-xs text-muted-foreground mt-1">UPC: {currentProduct.upc}</p>}
+            {!currentProduct.is_active && <p className="text-sm text-muted-foreground mt-2">This product is archived. Historical records and inventory history are preserved.</p>}
           </div>
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-            {product.is_active ? 'Active' : 'Inactive'}
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentProduct.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+              {currentProduct.is_active ? 'Active' : 'Archived'}
+            </span>
+            <button
+              onClick={toggleActive}
+              disabled={saving}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent disabled:opacity-50 cursor-pointer"
+            >
+              {currentProduct.is_active ? <Archive className="w-4 h-4" /> : <ArchiveRestore className="w-4 h-4" />}
+              {currentProduct.is_active ? 'Archive Product' : 'Restore Product'}
+            </button>
+          </div>
         </div>
         {product.description && <p className="text-sm text-muted-foreground mb-4">{product.description}</p>}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
