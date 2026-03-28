@@ -36,6 +36,28 @@ export interface Customer {
   job_count: number;
 }
 
+export interface Printer {
+  id: string;
+  name: string;
+  slug: string;
+  manufacturer: string | null;
+  model: string | null;
+  serial_number: string | null;
+  location: string | null;
+  status: string;
+  is_active: boolean;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PaginatedPrinters {
+  items: Printer[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 export interface Job {
   id: string;
   job_number: string;
@@ -70,6 +92,8 @@ export interface Job {
   net_profit: number;
   profit_per_piece: number;
   product_id: string | null;
+  printer_id: string | null;
+  printer: Printer | null;
   inventory_added: boolean;
   status: string;
 }

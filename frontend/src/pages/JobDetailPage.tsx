@@ -107,6 +107,16 @@ export default function JobDetailPage() {
           <Printer className="w-5 h-5 text-muted-foreground" />
           <div><p className="text-xs text-muted-foreground">Print Time</p><p className="font-medium">{Number(job.print_time_per_plate_hrs).toFixed(1)}h x {job.num_plates} plates</p></div>
         </div>
+        <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+          <Printer className="w-5 h-5 text-muted-foreground" />
+          <div>
+            <p className="text-xs text-muted-foreground">Assigned Printer</p>
+            <p className="font-medium">{job.printer?.name || 'Unassigned'}</p>
+            {job.printer && (
+              <p className="text-xs text-muted-foreground">{job.printer.status}{job.printer.location ? ` · ${job.printer.location}` : ''}</p>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

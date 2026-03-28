@@ -106,6 +106,7 @@ export default function JobsPage() {
                   <th className="px-4 py-3 font-medium">Date</th>
                   <th className="px-4 py-3 font-medium">Customer</th>
                   <th className="px-4 py-3 font-medium">Product</th>
+                  <th className="px-4 py-3 font-medium">Printer</th>
                   <th className="px-4 py-3 font-medium text-right">Pieces</th>
                   <th className="px-4 py-3 font-medium text-right">Revenue</th>
                   <th className="px-4 py-3 font-medium text-right">Profit</th>
@@ -124,6 +125,7 @@ export default function JobsPage() {
                     <td className="px-4 py-3">{job.date}</td>
                     <td className="px-4 py-3">{job.customer_name || '—'}</td>
                     <td className="px-4 py-3">{job.product_name}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{job.printer?.name || '—'}</td>
                     <td className="px-4 py-3 text-right">{job.total_pieces}</td>
                     <td className="px-4 py-3 text-right">{formatCurrency(job.total_revenue)}</td>
                     <td className="px-4 py-3 text-right">
@@ -150,7 +152,7 @@ export default function JobsPage() {
                 ))}
                 {jobs.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
                       No jobs found. {!search && !status && 'Create your first job to get started.'}
                     </td>
                   </tr>
