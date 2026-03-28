@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, X, Eye, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, X, Eye, AlertTriangle, ArchiveRestore, Archive } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
@@ -89,17 +89,27 @@ export default function ProductsPage() {
   };
 
   const toggleActive = async (p: Product) => {
+    const action = p.is_active ? 'archive' : 'restore';
+    const confirmed = window.confirm(
+      p.is_active
+        ? `Archive ${p.name}?\n\nThis will remove it from active use but keep historical records and inventory history.`
+        : `Restore ${p.name} to active products?`
+    );
+
+    if (!confirmed) return;
+
     try {
       if (p.is_active) {
         await api.delete(`/products/${p.id}`);
-        toast.success(`${p.name} deactivated`);
+        toast.success(`${p.name} archived`);
       } else {
         await api.put(`/products/${p.id}`, { is_active: true });
-        toast.success(`${p.name} activated`);
+        toast.success(`${p.name} restored`);
       }
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', p.id] });
     } catch {
-      toast.error('Failed to update');
+      toast.error(`Failed to ${action} product`);
     }
   };
 
@@ -217,7 +227,10 @@ export default function ProductsPage() {
                 {products.map((p) => (
                   <tr key={p.id} className="border-b border-border last:border-0 hover:bg-accent/50">
                     <td className="px-4 py-3 font-mono text-xs">{p.sku}</td>
-                    <td className="px-4 py-3 font-medium">{p.name}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{p.name}</div>
+                      {!p.is_active && <div className="text-xs text-muted-foreground mt-0.5">Archived product</div>}
+                    </td>
                     <td className="px-4 py-3 text-right">{formatCurrency(p.unit_price)}</td>
                     <td className="px-4 py-3 text-right">{formatCurrency(p.unit_cost)}</td>
                     <td className="px-4 py-3 text-right">
@@ -227,9 +240,9 @@ export default function ProductsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button onClick={() => toggleActive(p)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${p.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                        {p.is_active ? 'Active' : 'Inactive'}
-                      </button>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${p.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                        {p.is_active ? 'Active' : 'Archived'}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
@@ -238,6 +251,13 @@ export default function ProductsPage() {
                         </Link>
                         <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
                           <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleActive(p)}
+                          className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer"
+                          title={p.is_active ? 'Archive product' : 'Restore product'}
+                        >
+                          {p.is_active ? <Archive className="w-4 h-4" /> : <ArchiveRestore className="w-4 h-4" />}
                         </button>
                       </div>
                     </td>
@@ -255,9 +275,10 @@ export default function ProductsPage() {
                   <div>
                     <p className="font-semibold">{p.name}</p>
                     <p className="text-xs text-muted-foreground font-mono">{p.sku}</p>
+                    {!p.is_active && <p className="text-xs text-muted-foreground mt-1">Archived product</p>}
                   </div>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${p.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                    {p.is_active ? 'Active' : 'Inactive'}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${p.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                    {p.is_active ? 'Active' : 'Archived'}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-sm">
