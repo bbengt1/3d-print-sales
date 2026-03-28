@@ -5,7 +5,7 @@ import { Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
-import type { Material, Job, CalculateResponse, PaginatedProducts, Product } from '@/types';
+import type { Material, Job, CalculateResponse, PaginatedProducts, PaginatedPrinters, Product } from '@/types';
 
 interface FieldProps {
   label: string;
@@ -59,6 +59,11 @@ export default function JobFormPage() {
     queryFn: () => api.get('/products?is_active=true&limit=100').then((r) => r.data),
   });
 
+  const { data: printersData } = useQuery<PaginatedPrinters>({
+    queryKey: ['printers', 'active'],
+    queryFn: () => api.get('/printers?is_active=true&limit=100').then((r) => r.data),
+  });
+
   const { data: existingJob } = useQuery<Job>({
     queryKey: ['job', id],
     queryFn: () => api.get(`/jobs/${id}`).then((r) => r.data),
@@ -80,6 +85,7 @@ export default function JobFormPage() {
     shipping_cost: 0,
     target_margin_pct: 40,
     product_id: '',
+    printer_id: '',
     status: 'completed',
   });
 
@@ -110,6 +116,7 @@ export default function JobFormPage() {
         shipping_cost: existingJob.shipping_cost,
         target_margin_pct: existingJob.target_margin_pct,
         product_id: existingJob.product_id || '',
+        printer_id: existingJob.printer_id || '',
         status: existingJob.status,
       });
     }
@@ -243,6 +250,7 @@ export default function JobFormPage() {
         customer_name: form.customer_name || null,
         design_time_hrs: form.design_time_hrs || 0,
         product_id: form.product_id || null,
+        printer_id: form.printer_id || null,
       };
       if (isEdit) {
         await api.put(`/jobs/${id}`, payload);
@@ -365,6 +373,22 @@ export default function JobFormPage() {
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Assign Printer (optional)</label>
+                <select
+                  value={form.printer_id}
+                  onChange={(e) => update('printer_id', e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Unassigned</option>
+                  {printersData?.items?.map((printer) => (
+                    <option key={printer.id} value={printer.id}>
+                      {printer.name} ({printer.status}){printer.location ? ` — ${printer.location}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">Optional printer assignment for the physical machine running this job.</p>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5">
