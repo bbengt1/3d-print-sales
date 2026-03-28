@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Archive, ArchiveRestore } from 'lucide-react';
+import { ArrowLeft, Plus, X, Archive, ArchiveRestore, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
@@ -39,7 +39,9 @@ export default function ProductDetailPage() {
   });
 
   const [showAdjust, setShowAdjust] = useState(false);
+  const [showZeroStock, setShowZeroStock] = useState(false);
   const [adjForm, setAdjForm] = useState({ type: 'adjustment', quantity: 0, notes: '' });
+  const [zeroReason, setZeroReason] = useState('');
   const [saving, setSaving] = useState(false);
 
   const submitAdjustment = async () => {
@@ -87,6 +89,40 @@ export default function ProductDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to update product status');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitZeroStock = async () => {
+    if (currentProduct.stock_qty === 0) {
+      toast.error('Product stock is already 0');
+      return;
+    }
+    if (!zeroReason.trim()) {
+      toast.error('Reason is required');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await api.post('/inventory/transactions', {
+        product_id: currentProduct.id,
+        type: 'adjustment',
+        quantity: currentProduct.stock_qty * -1,
+        unit_cost: currentProduct.unit_cost || 0,
+        notes: zeroReason.trim(),
+      });
+      toast.success('Product stock set to 0');
+      setShowZeroStock(false);
+      setZeroReason('');
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', id] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-alerts'] });
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to set stock to 0');
     } finally {
       setSaving(false);
     }
@@ -158,12 +194,74 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Adjust Stock */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <h2 className="text-xl font-bold">Transaction History</h2>
-        <button onClick={() => setShowAdjust(true)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
-          <Plus className="w-4 h-4" /> Adjust Stock
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              if (currentProduct.stock_qty === 0) {
+                toast.error('Product stock is already 0');
+                return;
+              }
+              setZeroReason('');
+              setShowZeroStock(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium border border-border hover:bg-accent transition-colors cursor-pointer"
+          >
+            <RotateCcw className="w-4 h-4" /> Set Stock to 0
+          </button>
+          <button onClick={() => setShowAdjust(true)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
+            <Plus className="w-4 h-4" /> Adjust Stock
+          </button>
+        </div>
       </div>
+
+      {/* Zero Stock Modal */}
+      {showZeroStock && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && setShowZeroStock(false)}>
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Set Stock to 0</h3>
+              <button onClick={() => setShowZeroStock(false)} className="p-1 hover:bg-accent rounded-md"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-md bg-accent/40 p-4 text-sm space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Current stock</span>
+                  <span className="font-semibold">{currentProduct.stock_qty}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Resulting stock</span>
+                  <span className="font-semibold">0</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Inventory adjustment</span>
+                  <span className="font-semibold text-red-600 dark:text-red-400">-{currentProduct.stock_qty}</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This creates an inventory adjustment record and preserves audit history. A reason is required.
+              </p>
+              <div>
+                <label className="block text-sm font-medium mb-1">Reason</label>
+                <textarea
+                  value={zeroReason}
+                  onChange={(e) => setZeroReason(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Why is stock being reset to zero?"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={submitZeroStock} disabled={saving} className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer">
+                {saving ? 'Submitting...' : 'Set Stock to 0'}
+              </button>
+              <button onClick={() => setShowZeroStock(false)} className="px-4 py-2 border border-border rounded-md hover:bg-accent cursor-pointer">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Adjustment Modal */}
       {showAdjust && (
