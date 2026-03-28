@@ -15,6 +15,7 @@ from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.sales_channel import SalesChannel
 from app.models.tax_profile import TaxProfile
+from app.schemas.approval import RefundRequestBody
 from app.schemas.sale import (
     PaginatedSales,
     SaleCreate,
