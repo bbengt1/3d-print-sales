@@ -95,6 +95,17 @@ class PrinterResponse(BaseModel):
     monitor_last_error: str | None = None
     monitor_bed_temp_c: float | None = None
     monitor_tool_temp_c: float | None = None
+    monitor_bed_target_c: float | None = None
+    monitor_tool_target_c: float | None = None
+    monitor_current_layer: int | None = None
+    monitor_total_layers: int | None = None
+    monitor_elapsed_seconds: float | None = None
+    monitor_remaining_seconds: float | None = None
+    monitor_eta_at: datetime | None = None
+    monitor_last_event_type: str | None = None
+    monitor_last_event_at: datetime | None = None
+    monitor_ws_connected: bool | None = None
+    monitor_ws_last_error: str | None = None
     monitor_last_seen_at: datetime | None = None
     monitor_last_updated_at: datetime | None = None
     created_at: datetime | None = None

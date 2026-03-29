@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.seed import run_seed
+from app.services.printer_monitoring import moonraker_websocket_manager
 
 OPENAPI_TAGS = [
     {
@@ -71,7 +72,10 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     await run_seed()
-    yield
+    try:
+        yield
+    finally:
+        await moonraker_websocket_manager.shutdown()
 
 
 app = FastAPI(

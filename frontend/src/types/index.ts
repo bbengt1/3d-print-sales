@@ -60,6 +60,17 @@ export interface Printer {
   monitor_last_error: string | null;
   monitor_bed_temp_c: number | null;
   monitor_tool_temp_c: number | null;
+  monitor_bed_target_c: number | null;
+  monitor_tool_target_c: number | null;
+  monitor_current_layer: number | null;
+  monitor_total_layers: number | null;
+  monitor_elapsed_seconds: number | null;
+  monitor_remaining_seconds: number | null;
+  monitor_eta_at: string | null;
+  monitor_last_event_type: string | null;
+  monitor_last_event_at: string | null;
+  monitor_ws_connected: boolean | null;
+  monitor_ws_last_error: string | null;
   monitor_last_seen_at: string | null;
   monitor_last_updated_at: string | null;
   created_at: string | null;

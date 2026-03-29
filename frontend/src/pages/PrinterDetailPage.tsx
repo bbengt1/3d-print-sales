@@ -32,6 +32,28 @@ function formatDateTime(value: string | null) {
   return new Date(value).toLocaleString();
 }
 
+function formatDuration(seconds: number | null | undefined) {
+  if (seconds == null || Number.isNaN(seconds)) return '—';
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function formatTemperature(actual: number | null | undefined, target: number | null | undefined) {
+  if (actual == null && target == null) return '—';
+  if (actual != null && target != null) return `${actual.toFixed(1)} / ${target.toFixed(1)} °C`;
+  if (actual != null) return `${actual.toFixed(1)} °C`;
+  return `Target ${target?.toFixed(1)} °C`;
+}
+
+function formatLayer(current: number | null | undefined, total: number | null | undefined) {
+  if (current == null && total == null) return '—';
+  if (current != null && total != null) return `${current} / ${total}`;
+  return String(current ?? total ?? '—');
+}
+
 export default function PrinterDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -122,6 +144,11 @@ export default function PrinterDetailPage() {
                   {printer.monitor_online ? 'Monitor online' : 'Monitor offline'}
                 </span>
               ) : null}
+              {printer.monitor_enabled && printer.monitor_provider === 'moonraker' ? (
+                <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', printer.monitor_ws_connected ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400')}>
+                  {printer.monitor_ws_connected ? 'WebSocket live' : 'Polling fallback'}
+                </span>
+              ) : null}
             </div>
             <p className="text-sm text-muted-foreground font-mono">{printer.slug}</p>
             {!printer.is_active && <p className="mt-2 text-sm text-muted-foreground">This printer is inactive. Historical job assignments are still preserved.</p>}
@@ -206,14 +233,20 @@ export default function PrinterDetailPage() {
           <p className="text-sm text-muted-foreground">Monitoring is not configured for this printer yet. The printer still works as a static record.</p>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div><p className="text-xs text-muted-foreground">Provider</p><p className="font-semibold">{printer.monitor_provider || '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Provider</p><p className="font-semibold capitalize">{printer.monitor_provider || '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Progress</p><p className="font-semibold">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(1)}%` : '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Current print</p><p className="font-semibold">{printer.current_print_name || '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Poll interval</p><p className="font-semibold">{printer.monitor_poll_interval_seconds}s</p></div>
-            <div><p className="text-xs text-muted-foreground">Tool temp</p><p className="font-semibold">{printer.monitor_tool_temp_c != null ? `${printer.monitor_tool_temp_c.toFixed(1)} °C` : '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Bed temp</p><p className="font-semibold">{printer.monitor_bed_temp_c != null ? `${printer.monitor_bed_temp_c.toFixed(1)} °C` : '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Tool temp / target</p><p className="font-semibold">{formatTemperature(printer.monitor_tool_temp_c, printer.monitor_tool_target_c)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Bed temp / target</p><p className="font-semibold">{formatTemperature(printer.monitor_bed_temp_c, printer.monitor_bed_target_c)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Layer</p><p className="font-semibold">{formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Elapsed / remaining</p><p className="font-semibold">{formatDuration(printer.monitor_elapsed_seconds)} / {formatDuration(printer.monitor_remaining_seconds)}</p></div>
+            <div><p className="text-xs text-muted-foreground">ETA</p><p className="font-semibold">{formatDateTime(printer.monitor_eta_at)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Last event</p><p className="font-semibold">{printer.monitor_last_event_type ? printer.monitor_last_event_type.replace('notify_', '').replaceAll('_', ' ') : '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Last event at</p><p className="font-semibold">{formatDateTime(printer.monitor_last_event_at)}</p></div>
             <div><p className="text-xs text-muted-foreground">Last seen</p><p className="font-semibold">{formatDateTime(printer.monitor_last_seen_at)}</p></div>
             <div><p className="text-xs text-muted-foreground">Last updated</p><p className="font-semibold">{formatDateTime(printer.monitor_last_updated_at)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Live transport</p><p className="font-semibold">{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket streaming' : 'HTTP polling fallback') : 'HTTP polling'}</p></div>
           </div>
         )}
 
@@ -223,6 +256,13 @@ export default function PrinterDetailPage() {
               <p className="text-xs text-muted-foreground mb-1">Provider message</p>
               <p className="text-sm">{printer.monitor_last_message || '—'}</p>
             </div>
+            {printer.monitor_provider === 'moonraker' ? (
+              <div className="rounded-lg border border-border bg-background/40 p-4">
+                <p className="text-xs text-muted-foreground mb-1">Moonraker live channel</p>
+                <p className="text-sm">{printer.monitor_ws_connected ? 'WebSocket connected and receiving live status events.' : 'WebSocket not fresh right now — using polling fallback.'}</p>
+                {printer.monitor_ws_last_error ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">Last socket issue: {printer.monitor_ws_last_error}</p> : null}
+              </div>
+            ) : null}
             {printer.monitor_last_error ? (
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
                 <p className="text-xs uppercase tracking-wide">Last monitor error</p>

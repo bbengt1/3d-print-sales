@@ -137,6 +137,17 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
         printer.monitor_last_error = None
         printer.monitor_bed_temp_c = None
         printer.monitor_tool_temp_c = None
+        printer.monitor_bed_target_c = None
+        printer.monitor_tool_target_c = None
+        printer.monitor_current_layer = None
+        printer.monitor_total_layers = None
+        printer.monitor_elapsed_seconds = None
+        printer.monitor_remaining_seconds = None
+        printer.monitor_eta_at = None
+        printer.monitor_last_event_type = None
+        printer.monitor_last_event_at = None
+        printer.monitor_ws_connected = None
+        printer.monitor_ws_last_error = None
         printer.monitor_last_seen_at = None
         printer.monitor_last_updated_at = None
 
