@@ -84,6 +84,15 @@ function PrinterAssignmentCard({ printer, currentJob }: { printer: Printer; curr
             {[printer.manufacturer, printer.model].filter(Boolean).join(' · ') || 'Printer details pending'}
             {printer.location ? ` · ${printer.location}` : ''}
           </p>
+          {printer.monitor_enabled ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Live: {printer.monitor_status || printer.status}
+              {printer.monitor_progress_percent != null ? ` · ${printer.monitor_progress_percent.toFixed(0)}%` : ''}
+              {printer.current_print_name ? ` · ${printer.current_print_name}` : ''}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">Static record only</p>
+          )}
         </div>
         <Link to={`/printers/${printer.id}`} className="rounded-md border border-border p-2 text-muted-foreground hover:bg-accent" title="View printer">
           <Eye className="h-4 w-4" />
@@ -147,6 +156,7 @@ export default function PrintersPage() {
       const { data } = await api.get(`/printers?${params.toString()}`);
       return data;
     },
+    refetchInterval: 15000,
   });
 
   const { data: activeJobsData, isLoading: jobsLoading } = useQuery<PaginatedJobs>({
@@ -396,6 +406,7 @@ export default function PrintersPage() {
                   <th className="px-4 py-3 font-medium">Manufacturer / Model</th>
                   <th className="px-4 py-3 font-medium">Location</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Live monitor</th>
                   <th className="px-4 py-3 font-medium">Assignment</th>
                   <th className="px-4 py-3 font-medium">State</th>
                   <th className="px-4 py-3 font-medium">Notes</th>
@@ -418,6 +429,16 @@ export default function PrintersPage() {
                       </td>
                       <td className="px-4 py-3">{printer.location || '—'}</td>
                       <td className="px-4 py-3"><StatusBadge status={printer.status} /></td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {printer.monitor_enabled ? (
+                          <div>
+                            <div>{printer.monitor_status || printer.status}{printer.monitor_online === false ? ' · offline' : ''}</div>
+                            <div>{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}{printer.current_print_name ? ` · ${printer.current_print_name}` : ''}</div>
+                          </div>
+                        ) : (
+                          'Not configured'
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         {currentJob ? (
                           <div>
