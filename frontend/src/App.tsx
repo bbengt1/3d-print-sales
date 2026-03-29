@@ -14,6 +14,9 @@ import RatesPage from '@/pages/RatesPage';
 import CustomersPage from '@/pages/CustomersPage';
 import ProductsPage from '@/pages/ProductsPage';
 import ProductDetailPage from '@/pages/ProductDetailPage';
+import PrintersPage from '@/pages/PrintersPage';
+import PrinterDetailPage from '@/pages/PrinterDetailPage';
+import PrinterFormPage from '@/pages/PrinterFormPage';
 import InventoryPage from '@/pages/InventoryPage';
 import SalesPage from '@/pages/SalesPage';
 import SaleDetailPage from '@/pages/SaleDetailPage';
@@ -56,6 +59,10 @@ export default function App() {
               <Route path="/jobs/:id/edit" element={<JobFormPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/printers" element={<PrintersPage />} />
+              <Route path="/printers/new" element={<PrinterFormPage />} />
+              <Route path="/printers/:id" element={<PrinterDetailPage />} />
+              <Route path="/printers/:id/edit" element={<PrinterFormPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/sales" element={<SalesPage />} />
               <Route path="/sales/new" element={<SaleFormPage />} />

@@ -11,6 +11,7 @@ const navLinks = [
   { to: '/materials', label: 'Materials' },
   { to: '/rates', label: 'Rates' },
   { to: '/products', label: 'Products' },
+  { to: '/printers', label: 'Printers' },
   { to: '/sales', label: 'Sales' },
   { to: '/customers', label: 'Customers' },
   { to: '/reports', label: 'Reports' },
