@@ -11,7 +11,7 @@ from app.models.printer import Printer
 
 DEFAULT_TIMEOUT_SECONDS = 8.0
 DEFAULT_STALE_AFTER_MINUTES = 10
-SUPPORTED_PROVIDERS = {"octoprint"}
+SUPPORTED_PROVIDERS = {"octoprint", "moonraker"}
 
 
 @dataclass
@@ -42,23 +42,32 @@ class PrinterMonitorProvider:
         raise NotImplementedError
 
 
-class OctoPrintMonitorProvider(PrinterMonitorProvider):
-    provider_name = "octoprint"
+class HttpPrinterMonitorProvider(PrinterMonitorProvider):
+    auth_header_name: str | None = None
+
+    def _build_headers(self, printer: Printer) -> dict[str, str]:
+        if self.auth_header_name and printer.monitor_api_key:
+            return {self.auth_header_name: printer.monitor_api_key}
+        return {}
+
+    def _build_url(self, printer: Printer, path: str) -> str:
+        if not printer.monitor_base_url:
+            raise PrinterMonitoringError(f"Monitoring base URL is required for {self.provider_name}")
+        return f"{printer.monitor_base_url.rstrip('/')}{path}"
 
     async def _request(self, printer: Printer, path: str) -> dict[str, Any]:
-        if not printer.monitor_base_url:
-            raise PrinterMonitoringError("Monitoring base URL is required for OctoPrint")
-
-        headers: dict[str, str] = {}
-        if printer.monitor_api_key:
-            headers["X-Api-Key"] = printer.monitor_api_key
-
         timeout = httpx.Timeout(DEFAULT_TIMEOUT_SECONDS)
-        url = f"{printer.monitor_base_url.rstrip('/')}{path}"
+        url = self._build_url(printer, path)
+        headers = self._build_headers(printer)
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(url, headers=headers)
             response.raise_for_status()
             return response.json()
+
+
+class OctoPrintMonitorProvider(HttpPrinterMonitorProvider):
+    provider_name = "octoprint"
+    auth_header_name = "X-Api-Key"
 
     def _normalize_status(self, state_text: str | None, flags: dict[str, Any] | None) -> tuple[str, bool]:
         text = (state_text or "").strip().lower()
@@ -120,10 +129,126 @@ class OctoPrintMonitorProvider(PrinterMonitorProvider):
         }
 
 
+class MoonrakerMonitorProvider(HttpPrinterMonitorProvider):
+    provider_name = "moonraker"
+    auth_header_name = "X-Api-Key"
+
+    def _normalize_status(
+        self,
+        *,
+        server_state: str | None,
+        printer_state: str | None,
+        print_state: str | None,
+        sdcard_active: bool | None,
+    ) -> tuple[str, bool]:
+        server = (server_state or "").strip().lower()
+        printer = (printer_state or "").strip().lower()
+        job = (print_state or "").strip().lower()
+
+        if server and server not in {"ready"}:
+            if server in {"error", "shutdown"}:
+                return "error", True
+            if server in {"startup", "loading", "initializing"}:
+                return "maintenance", True
+            if server in {"disconnected", "offline"}:
+                return "offline", False
+
+        if printer in {"error", "shutdown"}:
+            return "error", True
+        if printer in {"startup", "initializing"}:
+            return "maintenance", True
+        if printer in {"disconnected", "offline"}:
+            return "offline", False
+
+        if job in {"paused"}:
+            return "paused", True
+        if job in {"printing"} or bool(sdcard_active):
+            return "printing", True
+        if job in {"error", "cancelled", "canceled", "complete", "standby"}:
+            return "idle", True
+        if printer in {"paused"}:
+            return "paused", True
+        if printer in {"printing"}:
+            return "printing", True
+        if printer in {"ready", "standby"}:
+            return "idle", True
+        return "idle", True
+
+    async def test_connection(self, printer: Printer) -> ProviderTestResult:
+        server_payload = await self._request(printer, "/server/info")
+        printer_payload = await self._request(printer, "/printer/info")
+        server_info = server_payload.get("result") or {}
+        printer_info = printer_payload.get("result") or {}
+        normalized_status, online = self._normalize_status(
+            server_state=server_info.get("klippy_state"),
+            printer_state=printer_info.get("state"),
+            print_state=None,
+            sdcard_active=None,
+        )
+        message = printer_info.get("state_message") or f"Moonraker {server_info.get('moonraker_version', 'connected')}"
+        return ProviderTestResult(
+            ok=True,
+            provider=self.provider_name,
+            normalized_status=normalized_status,
+            online=online,
+            message=message,
+            raw={"server": server_payload, "printer": printer_payload},
+        )
+
+    async def fetch_live_state(self, printer: Printer) -> dict[str, Any]:
+        server_payload, printer_payload, objects_payload = await _gather_moonraker_payloads(self, printer)
+        server_info = server_payload.get("result") or {}
+        printer_info = printer_payload.get("result") or {}
+        status = (objects_payload.get("result") or {}).get("status") or {}
+        print_stats = status.get("print_stats") or {}
+        virtual_sdcard = status.get("virtual_sdcard") or {}
+        extruder = status.get("extruder") or {}
+        heater_bed = status.get("heater_bed") or {}
+
+        normalized_status, online = self._normalize_status(
+            server_state=server_info.get("klippy_state"),
+            printer_state=printer_info.get("state"),
+            print_state=print_stats.get("state"),
+            sdcard_active=virtual_sdcard.get("is_active"),
+        )
+
+        progress = _to_float(virtual_sdcard.get("progress"))
+        completion = None if progress is None else round(progress * 100, 2)
+        file_name = print_stats.get("filename") or _extract_filename_from_path(virtual_sdcard.get("file_path"))
+        message = print_stats.get("message") or printer_info.get("state_message") or server_info.get("klippy_state")
+
+        now = datetime.now(timezone.utc)
+        return {
+            "monitor_online": online,
+            "status": normalized_status,
+            "monitor_status": normalized_status,
+            "monitor_progress_percent": completion,
+            "current_print_name": file_name,
+            "monitor_last_message": message,
+            "monitor_bed_temp_c": _to_float(heater_bed.get("temperature")),
+            "monitor_tool_temp_c": _to_float(extruder.get("temperature")),
+            "monitor_last_seen_at": now,
+            "monitor_last_updated_at": now,
+            "monitor_last_error": None,
+        }
+
+
 async def _gather_octoprint_payloads(provider: OctoPrintMonitorProvider, printer: Printer) -> tuple[dict[str, Any], dict[str, Any]]:
     printer_payload = await provider._request(printer, "/api/printer")
     job_payload = await provider._request(printer, "/api/job")
     return printer_payload, job_payload
+
+
+async def _gather_moonraker_payloads(
+    provider: MoonrakerMonitorProvider, printer: Printer
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    server_payload = await provider._request(printer, "/server/info")
+    printer_payload = await provider._request(printer, "/printer/info")
+    objects_payload = await provider._request(
+        printer,
+        "/printer/objects/query?print_stats&virtual_sdcard&extruder&heater_bed",
+    )
+    return server_payload, printer_payload, objects_payload
 
 
 def _to_float(value: Any) -> float | None:
@@ -143,10 +268,21 @@ def _extract_tool_actual(temp_payload: dict[str, Any]) -> float | None:
     return None
 
 
+def _extract_filename_from_path(value: Any) -> str | None:
+    if not value or not isinstance(value, str):
+        return None
+    normalized = value.rstrip("/")
+    if not normalized:
+        return None
+    return normalized.rsplit("/", 1)[-1] or None
+
+
 def get_provider(printer: Printer) -> PrinterMonitorProvider:
     provider = (printer.monitor_provider or "").strip().lower()
     if provider == "octoprint":
         return OctoPrintMonitorProvider()
+    if provider == "moonraker":
+        return MoonrakerMonitorProvider()
     raise UnsupportedPrinterProviderError(f"Unsupported monitor provider '{printer.monitor_provider}'")
 
 
