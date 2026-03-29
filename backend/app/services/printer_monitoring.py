@@ -443,7 +443,7 @@ def _build_moonraker_state_from_poll(
         status=status,
         event_type="poll",
         event_time=datetime.now(timezone.utc),
-        ws_connected=False,
+        ws_connected=None,
         ws_error=None,
     )
 
@@ -500,7 +500,7 @@ def _build_moonraker_updates(
     status: dict[str, Any],
     event_type: str,
     event_time: datetime,
-    ws_connected: bool,
+    ws_connected: bool | None,
     ws_error: str | None,
 ) -> dict[str, Any]:
     print_stats = status.get("print_stats") or {}
@@ -552,7 +552,7 @@ def _build_moonraker_updates(
     if current_layer is None:
         current_layer = _to_int(gcode_move.get("layer"))
 
-    return {
+    updates = {
         "monitor_online": online,
         "status": normalized_status,
         "monitor_status": normalized_status,
@@ -573,9 +573,12 @@ def _build_moonraker_updates(
         "monitor_last_error": None,
         "monitor_last_event_type": event_type,
         "monitor_last_event_at": event_time,
-        "monitor_ws_connected": ws_connected,
-        "monitor_ws_last_error": ws_error,
     }
+    if ws_connected is not None:
+        updates["monitor_ws_connected"] = ws_connected
+    if ws_error is not None or ws_connected is not None:
+        updates["monitor_ws_last_error"] = ws_error
+    return updates
 
 
 def _build_moonraker_websocket_url(base_url: str, api_key: str | None) -> str:
