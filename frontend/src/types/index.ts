@@ -47,8 +47,31 @@ export interface Printer {
   status: string;
   is_active: boolean;
   notes: string | null;
+  monitor_enabled: boolean;
+  monitor_provider: string | null;
+  monitor_base_url: string | null;
+  monitor_api_key: string | null;
+  monitor_poll_interval_seconds: number;
+  monitor_online: boolean | null;
+  monitor_status: string | null;
+  monitor_progress_percent: number | null;
+  current_print_name: string | null;
+  monitor_last_message: string | null;
+  monitor_last_error: string | null;
+  monitor_bed_temp_c: number | null;
+  monitor_tool_temp_c: number | null;
+  monitor_last_seen_at: string | null;
+  monitor_last_updated_at: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+export interface PrinterConnectionTestResult {
+  ok: boolean;
+  provider: string;
+  normalized_status: string | null;
+  online: boolean | null;
+  message: string | null;
 }
 
 export interface PaginatedPrinters {

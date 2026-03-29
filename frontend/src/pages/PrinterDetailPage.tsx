@@ -1,11 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Edit, Archive, ArchiveRestore } from 'lucide-react';
+import { ArrowLeft, Edit, Archive, ArchiveRestore, RefreshCw, PlugZap } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { cn, formatCurrency } from '@/lib/utils';
 import { SkeletonTable } from '@/components/ui/Skeleton';
-import type { Job, PaginatedJobs, Printer } from '@/types';
+import type { Job, PaginatedJobs, Printer, PrinterConnectionTestResult } from '@/types';
 
 const statusClasses: Record<string, string> = {
   idle: 'bg-slate-100 text-slate-800 dark:bg-slate-800/60 dark:text-slate-200',
@@ -27,6 +27,11 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize', statusClasses[status] || 'bg-primary/10 text-primary')}>{status.replace('_', ' ')}</span>;
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) return '—';
+  return new Date(value).toLocaleString();
+}
+
 export default function PrinterDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -35,6 +40,7 @@ export default function PrinterDetailPage() {
     queryKey: ['printer', id],
     queryFn: () => api.get(`/printers/${id}`).then((response) => response.data),
     enabled: Boolean(id),
+    refetchInterval: (query) => (query.state.data?.monitor_enabled ? Math.max((query.state.data.monitor_poll_interval_seconds || 30) * 1000, 5000) : false),
   });
 
   const { data: jobs, isLoading: jobsLoading } = useQuery<PaginatedJobs>({
@@ -68,6 +74,28 @@ export default function PrinterDetailPage() {
     }
   };
 
+  const refreshNow = async () => {
+    if (!printer) return;
+    try {
+      await api.post(`/printers/${printer.id}/refresh`);
+      toast.success('Live status refreshed');
+      queryClient.invalidateQueries({ queryKey: ['printer', printer.id] });
+      queryClient.invalidateQueries({ queryKey: ['printers'] });
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Refresh failed');
+    }
+  };
+
+  const testConnection = async () => {
+    if (!printer) return;
+    try {
+      const { data } = await api.post<PrinterConnectionTestResult>(`/printers/${printer.id}/test-connection`);
+      data.ok ? toast.success(data.message || 'Connection successful') : toast.error(data.message || 'Connection failed');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Connection test failed');
+    }
+  };
+
   if (printerLoading) return <SkeletonTable rows={4} cols={4} />;
   if (!printer) return <p className="py-16 text-center text-muted-foreground">Printer not found</p>;
 
@@ -89,12 +117,27 @@ export default function PrinterDetailPage() {
               <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', printer.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400')}>
                 {printer.is_active ? 'Active' : 'Inactive'}
               </span>
+              {printer.monitor_enabled ? (
+                <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', printer.monitor_online ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-300')}>
+                  {printer.monitor_online ? 'Monitor online' : 'Monitor offline'}
+                </span>
+              ) : null}
             </div>
             <p className="text-sm text-muted-foreground font-mono">{printer.slug}</p>
             {!printer.is_active && <p className="mt-2 text-sm text-muted-foreground">This printer is inactive. Historical job assignments are still preserved.</p>}
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {printer.monitor_enabled ? (
+              <>
+                <button onClick={testConnection} className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-accent">
+                  <PlugZap className="w-4 h-4" /> Test connection
+                </button>
+                <button onClick={refreshNow} className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-accent">
+                  <RefreshCw className="w-4 h-4" /> Refresh now
+                </button>
+              </>
+            ) : null}
             <Link to={`/printers/${printer.id}/edit`} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 no-underline hover:bg-accent">
               <Edit className="w-4 h-4" /> Edit
             </Link>
@@ -148,6 +191,46 @@ export default function PrinterDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mb-6 rounded-lg border border-border bg-card p-6">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold">Live monitoring</h2>
+            <p className="text-sm text-muted-foreground">Normalized status pulled from the configured monitoring provider.</p>
+          </div>
+          {printer.monitor_enabled ? <StatusBadge status={printer.monitor_status || printer.status} /> : null}
+        </div>
+
+        {!printer.monitor_enabled ? (
+          <p className="text-sm text-muted-foreground">Monitoring is not configured for this printer yet. The printer still works as a static record.</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div><p className="text-xs text-muted-foreground">Provider</p><p className="font-semibold">{printer.monitor_provider || '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Progress</p><p className="font-semibold">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(1)}%` : '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Current print</p><p className="font-semibold">{printer.current_print_name || '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Poll interval</p><p className="font-semibold">{printer.monitor_poll_interval_seconds}s</p></div>
+            <div><p className="text-xs text-muted-foreground">Tool temp</p><p className="font-semibold">{printer.monitor_tool_temp_c != null ? `${printer.monitor_tool_temp_c.toFixed(1)} °C` : '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Bed temp</p><p className="font-semibold">{printer.monitor_bed_temp_c != null ? `${printer.monitor_bed_temp_c.toFixed(1)} °C` : '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Last seen</p><p className="font-semibold">{formatDateTime(printer.monitor_last_seen_at)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Last updated</p><p className="font-semibold">{formatDateTime(printer.monitor_last_updated_at)}</p></div>
+          </div>
+        )}
+
+        {printer.monitor_enabled ? (
+          <div className="mt-4 space-y-3">
+            <div className="rounded-lg border border-border bg-background/40 p-4">
+              <p className="text-xs text-muted-foreground mb-1">Provider message</p>
+              <p className="text-sm">{printer.monitor_last_message || '—'}</p>
+            </div>
+            {printer.monitor_last_error ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                <p className="text-xs uppercase tracking-wide">Last monitor error</p>
+                <p className="mt-1 text-sm">{printer.monitor_last_error}</p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div>

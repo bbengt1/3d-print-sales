@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import pytest
 from httpx import AsyncClient
 
@@ -24,6 +26,7 @@ async def test_create_printer(client: AsyncClient, auth_headers: dict):
     assert data["slug"] == "bambu-x1c-01"
     assert data["status"] == "idle"
     assert data["is_active"] is True
+    assert data["monitor_enabled"] is False
 
 
 @pytest.mark.asyncio
@@ -111,3 +114,110 @@ async def test_delete_printer_soft_deactivates(client: AsyncClient, auth_headers
     get_resp = await client.get(f"/api/v1/printers/{printer_id}")
     assert get_resp.status_code == 200
     assert get_resp.json()["is_active"] is False
+
+
+@pytest.mark.asyncio
+async def test_refresh_printer_monitoring_endpoint_updates_live_fields(client: AsyncClient, auth_headers: dict, monkeypatch):
+    async def fake_refresh(db, printer, force=False):
+        printer.status = "printing"
+        printer.monitor_online = True
+        printer.monitor_status = "printing"
+        printer.monitor_progress_percent = 42.5
+        printer.current_print_name = "demo.gcode"
+        printer.monitor_last_seen_at = datetime.now(timezone.utc)
+        printer.monitor_last_updated_at = datetime.now(timezone.utc)
+        return printer
+
+    monkeypatch.setattr("app.api.v1.endpoints.printers.refresh_printer_monitoring", fake_refresh)
+
+    create = await client.post(
+        "/api/v1/printers",
+        headers=auth_headers,
+        json={
+            "name": "Octo Farm 1",
+            "slug": "octo-farm-1",
+            "status": "idle",
+            "monitor_enabled": True,
+            "monitor_provider": "octoprint",
+            "monitor_base_url": "http://octoprint.local",
+            "monitor_api_key": "secret",
+        },
+    )
+    printer_id = create.json()["id"]
+
+    resp = await client.post(f"/api/v1/printers/{printer_id}/refresh", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "printing"
+    assert data["monitor_online"] is True
+    assert data["monitor_progress_percent"] == 42.5
+    assert data["current_print_name"] == "demo.gcode"
+
+
+@pytest.mark.asyncio
+async def test_test_connection_endpoint_returns_provider_result(client: AsyncClient, auth_headers: dict, monkeypatch):
+    class FakeResult:
+        ok = True
+        provider = "octoprint"
+        normalized_status = "idle"
+        online = True
+        message = "Connection successful"
+
+    async def fake_test(printer):
+        return FakeResult()
+
+    monkeypatch.setattr("app.api.v1.endpoints.printers.test_printer_connection", fake_test)
+
+    create = await client.post(
+        "/api/v1/printers",
+        headers=auth_headers,
+        json={
+            "name": "Octo Farm 2",
+            "slug": "octo-farm-2",
+            "status": "idle",
+            "monitor_enabled": True,
+            "monitor_provider": "octoprint",
+            "monitor_base_url": "http://octoprint.local",
+        },
+    )
+    printer_id = create.json()["id"]
+
+    resp = await client.post(f"/api/v1/printers/{printer_id}/test-connection", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "ok": True,
+        "provider": "octoprint",
+        "normalized_status": "idle",
+        "online": True,
+        "message": "Connection successful",
+    }
+
+
+@pytest.mark.asyncio
+async def test_disabling_monitoring_clears_live_fields(client: AsyncClient, auth_headers: dict):
+    create = await client.post(
+        "/api/v1/printers",
+        headers=auth_headers,
+        json={
+            "name": "Octo Farm 3",
+            "slug": "octo-farm-3",
+            "status": "printing",
+            "monitor_enabled": True,
+            "monitor_provider": "octoprint",
+            "monitor_base_url": "http://octoprint.local",
+            "monitor_online": True,
+        },
+    )
+    printer_id = create.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/printers/{printer_id}",
+        headers=auth_headers,
+        json={"monitor_enabled": False},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["monitor_enabled"] is False
+    assert data["monitor_online"] is None
+    assert data["monitor_status"] is None
+    assert data["monitor_progress_percent"] is None

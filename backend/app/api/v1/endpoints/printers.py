@@ -7,9 +7,29 @@ from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
 from app.models.printer import Printer
-from app.schemas.printer import PaginatedPrinters, PrinterCreate, PrinterResponse, PrinterUpdate
+from app.schemas.printer import (
+    PaginatedPrinters,
+    PrinterConnectionTestResponse,
+    PrinterCreate,
+    PrinterResponse,
+    PrinterUpdate,
+)
+from app.services.printer_monitoring import (
+    PrinterMonitoringError,
+    mark_printer_stale_if_needed,
+    refresh_printer_monitoring,
+    test_printer_connection,
+)
 
 router = APIRouter(prefix="/printers", tags=["Printers"])
+
+
+async def _get_printer_or_404(db: DB, printer_id: uuid.UUID) -> Printer:
+    result = await db.execute(select(Printer).where(Printer.id == printer_id))
+    printer = result.scalar_one_or_none()
+    if not printer:
+        raise HTTPException(status_code=404, detail="Printer not found")
+    return printer
 
 
 @router.get(
@@ -45,6 +65,9 @@ async def list_printers(
 
     result = await db.execute(base.order_by(Printer.name).offset(skip).limit(limit))
     items = result.scalars().all()
+    for printer in items:
+        mark_printer_stale_if_needed(printer)
+        await refresh_printer_monitoring(db, printer)
     return PaginatedPrinters(items=items, total=total, skip=skip, limit=limit)
 
 
@@ -55,10 +78,9 @@ async def list_printers(
     description="Retrieve a single printer record.",
 )
 async def get_printer(printer_id: uuid.UUID, db: DB):
-    result = await db.execute(select(Printer).where(Printer.id == printer_id))
-    printer = result.scalar_one_or_none()
-    if not printer:
-        raise HTTPException(status_code=404, detail="Printer not found")
+    printer = await _get_printer_or_404(db, printer_id)
+    mark_printer_stale_if_needed(printer)
+    await refresh_printer_monitoring(db, printer)
     return printer
 
 
@@ -78,6 +100,8 @@ async def create_printer(body: PrinterCreate, user: CurrentUser, db: DB):
     db.add(printer)
     await db.commit()
     await db.refresh(printer)
+    if printer.monitor_enabled:
+        await refresh_printer_monitoring(db, printer, force=True)
     return printer
 
 
@@ -88,10 +112,7 @@ async def create_printer(body: PrinterCreate, user: CurrentUser, db: DB):
     description="Update one or more fields of a printer.",
 )
 async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: CurrentUser, db: DB):
-    result = await db.execute(select(Printer).where(Printer.id == printer_id))
-    printer = result.scalar_one_or_none()
-    if not printer:
-        raise HTTPException(status_code=404, detail="Printer not found")
+    printer = await _get_printer_or_404(db, printer_id)
 
     update_data = body.model_dump(exclude_unset=True)
     if "name" in update_data or "slug" in update_data:
@@ -107,9 +128,58 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
     for field, value in update_data.items():
         setattr(printer, field, value)
 
+    if not printer.monitor_enabled:
+        printer.monitor_online = None
+        printer.monitor_status = None
+        printer.monitor_progress_percent = None
+        printer.current_print_name = None
+        printer.monitor_last_message = None
+        printer.monitor_last_error = None
+        printer.monitor_bed_temp_c = None
+        printer.monitor_tool_temp_c = None
+        printer.monitor_last_seen_at = None
+        printer.monitor_last_updated_at = None
+
     await db.commit()
     await db.refresh(printer)
+    if printer.monitor_enabled:
+        await refresh_printer_monitoring(db, printer, force=True)
     return printer
+
+
+@router.post(
+    "/{printer_id}/refresh",
+    response_model=PrinterResponse,
+    summary="Refresh live printer status",
+    description="Force a live provider refresh for a configured printer.",
+)
+async def refresh_printer(printer_id: uuid.UUID, user: CurrentUser, db: DB):
+    printer = await _get_printer_or_404(db, printer_id)
+    await refresh_printer_monitoring(db, printer, force=True)
+    return printer
+
+
+@router.post(
+    "/{printer_id}/test-connection",
+    response_model=PrinterConnectionTestResponse,
+    summary="Test printer monitoring connection",
+    description="Tests connectivity to the configured monitoring provider without changing saved live state.",
+)
+async def test_connection(printer_id: uuid.UUID, user: CurrentUser, db: DB):
+    printer = await _get_printer_or_404(db, printer_id)
+    try:
+        result = await test_printer_connection(printer)
+        return PrinterConnectionTestResponse(
+            ok=result.ok,
+            provider=result.provider,
+            normalized_status=result.normalized_status,
+            online=result.online,
+            message=result.message,
+        )
+    except PrinterMonitoringError as exc:
+        return PrinterConnectionTestResponse(ok=False, provider=printer.monitor_provider or "unconfigured", message=str(exc))
+    except Exception as exc:  # noqa: BLE001
+        return PrinterConnectionTestResponse(ok=False, provider=printer.monitor_provider or "unconfigured", message=str(exc))
 
 
 @router.delete(
@@ -119,9 +189,6 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
     description="Soft-deletes a printer by setting is_active=false.",
 )
 async def delete_printer(printer_id: uuid.UUID, user: CurrentUser, db: DB):
-    result = await db.execute(select(Printer).where(Printer.id == printer_id))
-    printer = result.scalar_one_or_none()
-    if not printer:
-        raise HTTPException(status_code=404, detail="Printer not found")
+    printer = await _get_printer_or_404(db, printer_id)
     printer.is_active = False
     await db.commit()

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, PlugZap } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
-import type { Printer } from '@/types';
+import type { Printer, PrinterConnectionTestResult } from '@/types';
 
 const STATUS_OPTIONS = ['idle', 'printing', 'paused', 'maintenance', 'offline', 'error'] as const;
+const MONITOR_PROVIDER_OPTIONS = ['octoprint'] as const;
 
 const emptyForm = {
   name: '',
@@ -18,6 +19,11 @@ const emptyForm = {
   status: 'idle',
   is_active: true,
   notes: '',
+  monitor_enabled: false,
+  monitor_provider: 'octoprint',
+  monitor_base_url: '',
+  monitor_api_key: '',
+  monitor_poll_interval_seconds: 30,
 };
 
 function slugify(value: string) {
@@ -44,6 +50,7 @@ export default function PrinterFormPage() {
   const [form, setForm] = useState(emptyForm);
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -58,6 +65,11 @@ export default function PrinterFormPage() {
       status: printer.status,
       is_active: printer.is_active,
       notes: printer.notes || '',
+      monitor_enabled: printer.monitor_enabled,
+      monitor_provider: printer.monitor_provider || 'octoprint',
+      monitor_base_url: printer.monitor_base_url || '',
+      monitor_api_key: printer.monitor_api_key || '',
+      monitor_poll_interval_seconds: printer.monitor_poll_interval_seconds || 30,
     });
     setSlugTouched(true);
   }, [printer]);
@@ -69,7 +81,7 @@ export default function PrinterFormPage() {
 
   const title = useMemo(() => (isEdit ? 'Edit Printer' : 'Add Printer'), [isEdit]);
 
-  const update = (field: string, value: string | boolean) => {
+  const update = (field: string, value: string | boolean | number) => {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: '' }));
   };
@@ -79,9 +91,25 @@ export default function PrinterFormPage() {
     if (!form.name.trim()) nextErrors.name = 'Name is required';
     if (!form.slug.trim()) nextErrors.slug = 'Slug is required';
     if (form.slug && !/^[a-z0-9-]+$/.test(form.slug)) nextErrors.slug = 'Use lowercase letters, numbers, and hyphens only';
+    if (form.monitor_enabled && !form.monitor_base_url.trim()) nextErrors.monitor_base_url = 'Base URL is required when monitoring is enabled';
+    if (form.monitor_poll_interval_seconds < 5) nextErrors.monitor_poll_interval_seconds = 'Poll interval must be at least 5 seconds';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
+
+  const buildPayload = () => ({
+    ...form,
+    name: form.name.trim(),
+    slug: form.slug.trim(),
+    manufacturer: form.manufacturer.trim() || null,
+    model: form.model.trim() || null,
+    serial_number: form.serial_number.trim() || null,
+    location: form.location.trim() || null,
+    notes: form.notes.trim() || null,
+    monitor_provider: form.monitor_enabled ? form.monitor_provider : null,
+    monitor_base_url: form.monitor_enabled ? (form.monitor_base_url.trim() || null) : null,
+    monitor_api_key: form.monitor_enabled ? (form.monitor_api_key.trim() || null) : null,
+  });
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -89,16 +117,7 @@ export default function PrinterFormPage() {
 
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        name: form.name.trim(),
-        slug: form.slug.trim(),
-        manufacturer: form.manufacturer.trim() || null,
-        model: form.model.trim() || null,
-        serial_number: form.serial_number.trim() || null,
-        location: form.location.trim() || null,
-        notes: form.notes.trim() || null,
-      };
+      const payload = buildPayload();
 
       if (isEdit) {
         await api.put(`/printers/${id}`, payload);
@@ -118,6 +137,30 @@ export default function PrinterFormPage() {
       toast.error(err.response?.data?.detail || 'Failed to save printer');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!validate()) return;
+
+    try {
+      setTestingConnection(true);
+
+      if (isEdit && id) {
+        const response = await api.post<PrinterConnectionTestResult>(`/printers/${id}/test-connection`);
+        response.data.ok ? toast.success(response.data.message || 'Connection successful') : toast.error(response.data.message || 'Connection failed');
+        return;
+      }
+
+      const draftResponse = await api.post<Printer>('/printers', buildPayload());
+      const createdPrinter = draftResponse.data;
+      const testResponse = await api.post<PrinterConnectionTestResult>(`/printers/${createdPrinter.id}/test-connection`);
+      await api.delete(`/printers/${createdPrinter.id}`);
+      testResponse.data.ok ? toast.success(testResponse.data.message || 'Connection successful') : toast.error(testResponse.data.message || 'Connection failed');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Connection test failed');
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -143,7 +186,7 @@ export default function PrinterFormPage() {
           <p className="mt-1 text-sm text-muted-foreground">Track machine details, availability, and where this printer lives.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium mb-1.5">Name *</label>
@@ -196,6 +239,57 @@ export default function PrinterFormPage() {
                 </div>
               </label>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-border p-4 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Live monitoring</h2>
+                <p className="text-sm text-muted-foreground">Optional first-pass live status via provider polling. Static printers still work fine if you leave this off.</p>
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm font-medium">
+                <input type="checkbox" checked={form.monitor_enabled} onChange={(e) => update('monitor_enabled', e.target.checked)} className="h-4 w-4" />
+                Enable
+              </label>
+            </div>
+
+            {form.monitor_enabled ? (
+              <>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Provider</label>
+                    <select value={form.monitor_provider} onChange={(e) => update('monitor_provider', e.target.value)} className={inputClass('monitor_provider')}>
+                      {MONITOR_PROVIDER_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Poll interval (seconds)</label>
+                    <input type="number" min={5} max={3600} value={form.monitor_poll_interval_seconds} onChange={(e) => update('monitor_poll_interval_seconds', Number(e.target.value) || 30)} className={inputClass('monitor_poll_interval_seconds')} />
+                    {errors.monitor_poll_interval_seconds && <p className="mt-1 text-xs text-destructive">{errors.monitor_poll_interval_seconds}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Base URL *</label>
+                  <input value={form.monitor_base_url} onChange={(e) => update('monitor_base_url', e.target.value)} className={inputClass('monitor_base_url')} placeholder="http://octoprint.local" />
+                  {errors.monitor_base_url && <p className="mt-1 text-xs text-destructive">{errors.monitor_base_url}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">API key / token</label>
+                  <input value={form.monitor_api_key} onChange={(e) => update('monitor_api_key', e.target.value)} className={inputClass('monitor_api_key')} placeholder="Optional if your provider requires auth" />
+                </div>
+
+                <div className="flex justify-end">
+                  <button type="button" onClick={handleTestConnection} disabled={testingConnection} className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-accent disabled:opacity-50">
+                    <PlugZap className="h-4 w-4" />
+                    {testingConnection ? 'Testing...' : 'Test connection'}
+                  </button>
+                </div>
+              </>
+            ) : null}
           </div>
 
           <div>
