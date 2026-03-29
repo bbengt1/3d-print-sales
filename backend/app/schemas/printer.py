@@ -71,6 +71,13 @@ class PrinterUpdate(BaseModel):
         return value.rstrip("/") or None
 
 
+class PrinterThumbnailResponse(BaseModel):
+    relative_path: str
+    width: int | None = None
+    height: int | None = None
+    size: int | None = None
+
+
 class PrinterResponse(BaseModel):
     id: uuid.UUID
     name: str
@@ -93,6 +100,9 @@ class PrinterResponse(BaseModel):
     current_print_name: str | None = None
     monitor_last_message: str | None = None
     monitor_last_error: str | None = None
+    current_print_thumbnail_path: str | None = None
+    current_print_thumbnail_url: str | None = None
+    current_print_thumbnails: list[PrinterThumbnailResponse] = Field(default_factory=list)
     monitor_bed_temp_c: float | None = None
     monitor_tool_temp_c: float | None = None
     monitor_bed_target_c: float | None = None

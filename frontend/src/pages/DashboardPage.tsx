@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award, AlertTriangle, ShoppingCart } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '@/api/client';
+import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import type { DashboardSummary, FinanceDashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert, PaginatedPrinters, Printer, SalesMetrics } from '@/types';
 
@@ -154,17 +155,28 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {printersData.items.map((printer) => (
               <Link key={printer.id} to={`/printers/${printer.id}`} className="rounded-lg border border-border bg-background/40 p-4 no-underline hover:bg-accent/50 transition-colors">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-foreground">{printer.name}</p>
-                    <p className="text-xs text-muted-foreground">{printer.monitor_provider || 'static'} · {printer.monitor_status || printer.status}</p>
+                <div className="flex gap-3">
+                  <PrinterThumbnail
+                    src={printer.current_print_thumbnail_url}
+                    alt={printer.current_print_name ? `${printer.current_print_name} thumbnail` : `${printer.name} current print thumbnail`}
+                    className="h-24 w-24 shrink-0"
+                    imgClassName="object-cover"
+                    fallbackLabel="No thumb"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-foreground">{printer.name}</p>
+                        <p className="text-xs text-muted-foreground">{printer.monitor_provider || 'static'} · {printer.monitor_status || printer.status}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-foreground">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}</span>
+                    </div>
+                    <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                      <p className="truncate">{printer.current_print_name || 'No active file'}</p>
+                      <p>Layer {formatLayer(printer)} · Remaining {formatDuration(printer.monitor_remaining_seconds)}</p>
+                      <p>{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket live' : 'Polling fallback') : 'HTTP polling / static'}</p>
+                    </div>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}</span>
-                </div>
-                <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                  <p>{printer.current_print_name || 'No active file'}</p>
-                  <p>Layer {formatLayer(printer)} · Remaining {formatDuration(printer.monitor_remaining_seconds)}</p>
-                  <p>{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket live' : 'Polling fallback') : 'HTTP polling / static'}</p>
                 </div>
               </Link>
             ))}

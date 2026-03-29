@@ -4,6 +4,7 @@ import { ArrowLeft, Edit, Archive, ArchiveRestore, RefreshCw, PlugZap } from 'lu
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { cn, formatCurrency } from '@/lib/utils';
+import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import type { Job, PaginatedJobs, Printer, PrinterConnectionTestResult } from '@/types';
 
@@ -232,7 +233,9 @@ export default function PrinterDetailPage() {
         {!printer.monitor_enabled ? (
           <p className="text-sm text-muted-foreground">Monitoring is not configured for this printer yet. The printer still works as a static record.</p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(260px,0.7fr)]">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div><p className="text-xs text-muted-foreground">Provider</p><p className="font-semibold capitalize">{printer.monitor_provider || '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Progress</p><p className="font-semibold">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(1)}%` : '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Current print</p><p className="font-semibold">{printer.current_print_name || '—'}</p></div>
@@ -247,6 +250,20 @@ export default function PrinterDetailPage() {
             <div><p className="text-xs text-muted-foreground">Last seen</p><p className="font-semibold">{formatDateTime(printer.monitor_last_seen_at)}</p></div>
             <div><p className="text-xs text-muted-foreground">Last updated</p><p className="font-semibold">{formatDateTime(printer.monitor_last_updated_at)}</p></div>
             <div><p className="text-xs text-muted-foreground">Live transport</p><p className="font-semibold">{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket streaming' : 'HTTP polling fallback') : 'HTTP polling'}</p></div>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Current print thumbnail</p>
+                  <p className="text-sm text-muted-foreground">{printer.current_print_name || 'No active file'}</p>
+                </div>
+                <PrinterThumbnail
+                  src={printer.current_print_thumbnail_url}
+                  alt={printer.current_print_name ? `${printer.current_print_name} thumbnail` : `${printer.name} current print thumbnail`}
+                  className="aspect-square min-h-[220px]"
+                  fallbackLabel={printer.current_print_name ? 'No thumbnail in G-code metadata' : 'No active print'}
+                />
+              </div>
+            </div>
           </div>
         )}
 

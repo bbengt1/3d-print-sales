@@ -6,10 +6,12 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from itertools import count
+from pathlib import PurePosixPath
 from typing import Any
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 import httpx
+import mimetypes
 import websockets
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,6 +54,21 @@ class PrinterMonitorProvider:
         raise NotImplementedError
 
 
+@dataclass
+class PrinterThumbnail:
+    relative_path: str
+    width: int | None = None
+    height: int | None = None
+    size: int | None = None
+
+
+@dataclass
+class PrinterThumbnailPayload:
+    path: str
+    content: bytes
+    media_type: str
+
+
 class HttpPrinterMonitorProvider(PrinterMonitorProvider):
     auth_header_name: str | None = None
 
@@ -73,6 +90,16 @@ class HttpPrinterMonitorProvider(PrinterMonitorProvider):
             response = await client.get(url, headers=headers)
             response.raise_for_status()
             return response.json()
+
+    async def _request_bytes(self, printer: Printer, path: str) -> tuple[bytes, str | None]:
+        timeout = httpx.Timeout(DEFAULT_TIMEOUT_SECONDS)
+        url = self._build_url(printer, path)
+        headers = self._build_headers(printer)
+        headers.setdefault("Accept", "image/*,application/octet-stream;q=0.9,*/*;q=0.1")
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            return response.content, response.headers.get("content-type")
 
 
 class OctoPrintMonitorProvider(HttpPrinterMonitorProvider):
@@ -222,10 +249,19 @@ class MoonrakerMonitorProvider(HttpPrinterMonitorProvider):
         if snapshot and _snapshot_is_fresh(snapshot):
             return dict(snapshot)
 
-        server_payload, printer_payload, objects_payload = await _gather_moonraker_payloads(self, printer)
-        updates = _build_moonraker_state_from_poll(server_payload, printer_payload, objects_payload)
+        server_payload, printer_payload, objects_payload, metadata_payload = await _gather_moonraker_payloads(self, printer)
+        updates = _build_moonraker_state_from_poll(server_payload, printer_payload, objects_payload, metadata_payload)
         snapshot = moonraker_websocket_manager.merge_polled_state(printer.id, updates)
         return dict(snapshot)
+
+    async def fetch_current_thumbnail(self, printer: Printer) -> PrinterThumbnailPayload | None:
+        state = await self.fetch_live_state(printer)
+        thumbnail_path = state.get("current_print_thumbnail_path")
+        if not thumbnail_path:
+            return None
+        content, content_type = await self._request_bytes(printer, _build_moonraker_thumbnail_file_path(thumbnail_path))
+        media_type = _normalize_media_type(content_type, thumbnail_path)
+        return PrinterThumbnailPayload(path=thumbnail_path, content=content, media_type=media_type)
 
 
 class MoonrakerWebsocketManager:
@@ -365,14 +401,19 @@ async def _gather_octoprint_payloads(provider: OctoPrintMonitorProvider, printer
 
 async def _gather_moonraker_payloads(
     provider: MoonrakerMonitorProvider, printer: Printer
-) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any] | None]:
     server_payload = await provider._request(printer, "/server/info")
     printer_payload = await provider._request(printer, "/printer/info")
     objects_payload = await provider._request(
         printer,
         "/printer/objects/query?print_stats&virtual_sdcard&extruder&heater_bed&gcode_move",
     )
-    return server_payload, printer_payload, objects_payload
+    metadata_payload = None
+    filename = _extract_moonraker_print_filename((objects_payload.get("result") or {}).get("status") or {})
+    if filename:
+        encoded_filename = quote(filename, safe="")
+        metadata_payload = await provider._request(printer, f"/server/files/metadata?filename={encoded_filename}")
+    return server_payload, printer_payload, objects_payload, metadata_payload
 
 
 def _to_float(value: Any) -> float | None:
@@ -418,6 +459,75 @@ def _extract_filename_from_path(value: Any) -> str | None:
     return normalized.rsplit("/", 1)[-1] or None
 
 
+def _extract_moonraker_print_filename(status: dict[str, Any]) -> str | None:
+    print_stats = status.get("print_stats") or {}
+    virtual_sdcard = status.get("virtual_sdcard") or {}
+    return print_stats.get("filename") or virtual_sdcard.get("file_path") or None
+
+
+def _normalize_relative_thumbnail_path(filename: str, relative_path: str) -> str | None:
+    if not filename or not relative_path:
+        return None
+    file_path = PurePosixPath(str(filename).lstrip("/"))
+    relative = PurePosixPath(str(relative_path))
+    if relative.is_absolute():
+        combined = relative.relative_to("/")
+    else:
+        combined = file_path.parent / relative
+
+    parts: list[str] = []
+    for part in combined.parts:
+        if part in {"", "."}:
+            continue
+        if part == "..":
+            if parts:
+                parts.pop()
+            continue
+        parts.append(part)
+    return "/".join(parts) or None
+
+
+def _extract_moonraker_thumbnails(metadata: dict[str, Any]) -> list[PrinterThumbnail]:
+    filename = metadata.get("filename") or metadata.get("path") or metadata.get("file")
+    thumbnails: list[PrinterThumbnail] = []
+    for entry in metadata.get("thumbnails") or []:
+        if not isinstance(entry, dict):
+            continue
+        relative_path = _normalize_relative_thumbnail_path(filename, entry.get("relative_path") or entry.get("path") or "")
+        if not relative_path:
+            continue
+        thumbnails.append(
+            PrinterThumbnail(
+                relative_path=relative_path,
+                width=_to_int(entry.get("width")),
+                height=_to_int(entry.get("height")),
+                size=_to_int(entry.get("size")),
+            )
+        )
+    return thumbnails
+
+
+def _select_best_thumbnail(thumbnails: list[PrinterThumbnail]) -> PrinterThumbnail | None:
+    if not thumbnails:
+        return None
+    return max(
+        thumbnails,
+        key=lambda thumbnail: (thumbnail.width or 0) * (thumbnail.height or 0),
+    )
+
+
+def _build_moonraker_thumbnail_file_path(relative_path: str) -> str:
+    encoded = "/".join(quote(segment, safe="") for segment in relative_path.split("/") if segment)
+    return f"/server/files/gcodes/{encoded}"
+
+
+def _normalize_media_type(content_type: str | None, path: str) -> str:
+    if content_type:
+        return content_type.split(";", 1)[0].strip()
+    guessed, _ = mimetypes.guess_type(path)
+    return guessed or "application/octet-stream"
+
+
 def _coerce_datetime(value: Any) -> datetime | None:
     if isinstance(value, datetime):
         return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
@@ -430,6 +540,7 @@ def _build_moonraker_state_from_poll(
     server_payload: dict[str, Any],
     printer_payload: dict[str, Any],
     objects_payload: dict[str, Any],
+    metadata_payload: dict[str, Any] | None,
 ) -> dict[str, Any]:
     provider = MoonrakerMonitorProvider()
     server_info = server_payload.get("result") or {}
@@ -441,6 +552,7 @@ def _build_moonraker_state_from_poll(
         printer_state=printer_info.get("state"),
         printer_state_message=printer_info.get("state_message"),
         status=status,
+        metadata=(metadata_payload or {}).get("result") or {},
         event_type="poll",
         event_time=datetime.now(timezone.utc),
         ws_connected=None,
@@ -463,6 +575,7 @@ def _extract_moonraker_updates_from_ws(payload: dict[str, Any]) -> dict[str, Any
             printer_state=None,
             printer_state_message=None,
             status=status_patch,
+            metadata={},
             event_type=method,
             event_time=event_time,
             ws_connected=True,
@@ -484,6 +597,7 @@ def _extract_moonraker_updates_from_ws(payload: dict[str, Any]) -> dict[str, Any
         printer_state=None,
         printer_state_message=None,
         status=status_patch,
+        metadata={},
         event_type=method,
         event_time=event_time,
         ws_connected=True,
@@ -498,6 +612,7 @@ def _build_moonraker_updates(
     printer_state: str | None,
     printer_state_message: str | None,
     status: dict[str, Any],
+    metadata: dict[str, Any],
     event_type: str,
     event_time: datetime,
     ws_connected: bool | None,
@@ -509,6 +624,8 @@ def _build_moonraker_updates(
     heater_bed = status.get("heater_bed") or {}
     gcode_move = status.get("gcode_move") or {}
     info = status.get("info") or {}
+    thumbnails = _extract_moonraker_thumbnails(metadata)
+    selected_thumbnail = _select_best_thumbnail(thumbnails)
 
     normalized_status, online = provider._normalize_status(
         server_state=server_state,
@@ -571,6 +688,12 @@ def _build_moonraker_updates(
         "monitor_last_seen_at": event_time,
         "monitor_last_updated_at": event_time,
         "monitor_last_error": None,
+        "current_print_thumbnail_path": selected_thumbnail.relative_path if selected_thumbnail else None,
+        "current_print_thumbnail_url": None,
+        "current_print_thumbnails": [
+            {"relative_path": thumbnail.relative_path, "width": thumbnail.width, "height": thumbnail.height, "size": thumbnail.size}
+            for thumbnail in thumbnails
+        ],
         "monitor_last_event_type": event_type,
         "monitor_last_event_at": event_time,
     }

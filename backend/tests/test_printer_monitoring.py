@@ -8,7 +8,9 @@ from datetime import datetime, timezone
 from app.services.printer_monitoring import (
     MoonrakerMonitorProvider,
     OctoPrintMonitorProvider,
+    _build_moonraker_thumbnail_file_path,
     _extract_moonraker_updates_from_ws,
+    _normalize_relative_thumbnail_path,
     get_provider,
 )
 
@@ -59,6 +61,8 @@ async def test_moonraker_fetch_live_state_normalizes_printing(monkeypatch):
                     }
                 }
             }
+        if path == "/server/files/metadata?filename=demo.gcode":
+            return {"result": {"filename": "demo.gcode", "thumbnails": []}}
         raise AssertionError(f"Unexpected path {path}")
 
     monkeypatch.setattr(provider, "_request", fake_request)
@@ -142,3 +146,87 @@ def test_extract_moonraker_updates_from_websocket_event():
     assert updates["monitor_remaining_seconds"] == 900.0
     assert updates["monitor_tool_target_c"] == 215.0
     assert updates["monitor_last_event_type"] == "notify_status_update"
+
+
+@pytest.mark.asyncio
+async def test_moonraker_fetch_live_state_includes_thumbnail_metadata(monkeypatch):
+    provider = MoonrakerMonitorProvider()
+    printer = Printer(
+        name="Unicode",
+        slug="unicode",
+        monitor_provider="moonraker",
+        monitor_base_url="http://printer.local:7125",
+    )
+
+    async def fake_request(_printer, path):
+        if path == "/server/info":
+            return {"result": {"klippy_state": "ready", "moonraker_version": "1.2.0"}}
+        if path == "/printer/info":
+            return {"result": {"state": "ready", "state_message": "Printer is ready"}}
+        if path == "/printer/objects/query?print_stats&virtual_sdcard&extruder&heater_bed&gcode_move":
+            return {
+                "result": {
+                    "status": {
+                        "print_stats": {
+                            "filename": "prints/猫 テスト.gcode",
+                            "state": "printing",
+                        },
+                        "virtual_sdcard": {"progress": 0.5, "is_active": True},
+                    }
+                }
+            }
+        if path == "/server/files/metadata?filename=prints%2F%E7%8C%AB%20%E3%83%86%E3%82%B9%E3%83%88.gcode":
+            return {
+                "result": {
+                    "filename": "prints/猫 テスト.gcode",
+                    "thumbnails": [
+                        {"relative_path": ".thumbs/猫 テスト-32x32.png", "width": 32, "height": 32, "size": 100},
+                        {"relative_path": ".thumbs/猫 テスト-300x300.png", "width": 300, "height": 300, "size": 999},
+                    ],
+                }
+            }
+        raise AssertionError(f"Unexpected path {path}")
+
+    monkeypatch.setattr(provider, "_request", fake_request)
+
+    result = await provider.fetch_live_state(printer)
+
+    assert result["current_print_thumbnail_path"] == "prints/.thumbs/猫 テスト-300x300.png"
+    assert len(result["current_print_thumbnails"]) == 2
+    assert result["current_print_thumbnails"][0]["relative_path"] == "prints/.thumbs/猫 テスト-32x32.png"
+
+
+def test_thumbnail_path_helpers_handle_relative_and_unicode_paths():
+    relative = _normalize_relative_thumbnail_path("folder/猫 テスト.gcode", ".thumbs/猫 テスト-300x300.png")
+    parent_relative = _normalize_relative_thumbnail_path("folder/sub/猫 テスト.gcode", "../.thumbs/preview.png")
+    encoded = _build_moonraker_thumbnail_file_path("folder/.thumbs/猫 テスト-300x300.png")
+
+    assert relative == "folder/.thumbs/猫 テスト-300x300.png"
+    assert parent_relative == "folder/.thumbs/preview.png"
+    assert encoded == "/server/files/gcodes/folder/.thumbs/%E7%8C%AB%20%E3%83%86%E3%82%B9%E3%83%88-300x300.png"
+
+
+@pytest.mark.asyncio
+async def test_printer_thumbnail_endpoint_proxies_moonraker_file(client, auth_headers, db_session, monkeypatch):
+    printer = Printer(
+        name="Lava",
+        slug="lava",
+        monitor_enabled=True,
+        monitor_provider="moonraker",
+        monitor_base_url="http://printer.local:7125",
+    )
+    db_session.add(printer)
+    await db_session.commit()
+    await db_session.refresh(printer)
+
+    async def fake_fetch_current_thumbnail(self, printer_arg):
+        assert printer_arg.id == printer.id
+        return type("Thumb", (), {"content": b"png-bytes", "media_type": "image/png"})()
+
+    monkeypatch.setattr(MoonrakerMonitorProvider, "fetch_current_thumbnail", fake_fetch_current_thumbnail)
+
+    response = await client.get(f"/api/v1/printers/{printer.id}/thumbnail", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.content == b"png-bytes"
+    assert response.headers["content-type"].startswith("image/png")

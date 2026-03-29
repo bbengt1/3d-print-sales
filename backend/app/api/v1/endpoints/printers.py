@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
@@ -15,6 +15,7 @@ from app.schemas.printer import (
     PrinterUpdate,
 )
 from app.services.printer_monitoring import (
+    MoonrakerMonitorProvider,
     PrinterMonitoringError,
     mark_printer_stale_if_needed,
     refresh_printer_monitoring,
@@ -22,6 +23,14 @@ from app.services.printer_monitoring import (
 )
 
 router = APIRouter(prefix="/printers", tags=["Printers"])
+
+
+def _apply_thumbnail_urls(printer: Printer) -> Printer:
+    thumbnail_path = getattr(printer, "current_print_thumbnail_path", None)
+    setattr(printer, "current_print_thumbnail_url", f"/api/v1/printers/{printer.id}/thumbnail" if thumbnail_path else None)
+    if getattr(printer, "current_print_thumbnails", None) is None:
+        setattr(printer, "current_print_thumbnails", [])
+    return printer
 
 
 async def _get_printer_or_404(db: DB, printer_id: uuid.UUID) -> Printer:
@@ -68,6 +77,7 @@ async def list_printers(
     for printer in items:
         mark_printer_stale_if_needed(printer)
         await refresh_printer_monitoring(db, printer)
+        _apply_thumbnail_urls(printer)
     return PaginatedPrinters(items=items, total=total, skip=skip, limit=limit)
 
 
@@ -81,7 +91,7 @@ async def get_printer(printer_id: uuid.UUID, db: DB):
     printer = await _get_printer_or_404(db, printer_id)
     mark_printer_stale_if_needed(printer)
     await refresh_printer_monitoring(db, printer)
-    return printer
+    return _apply_thumbnail_urls(printer)
 
 
 @router.post(
@@ -102,7 +112,7 @@ async def create_printer(body: PrinterCreate, user: CurrentUser, db: DB):
     await db.refresh(printer)
     if printer.monitor_enabled:
         await refresh_printer_monitoring(db, printer, force=True)
-    return printer
+    return _apply_thumbnail_urls(printer)
 
 
 @router.put(
@@ -133,6 +143,9 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
         printer.monitor_status = None
         printer.monitor_progress_percent = None
         printer.current_print_name = None
+        setattr(printer, "current_print_thumbnail_path", None)
+        setattr(printer, "current_print_thumbnail_url", None)
+        setattr(printer, "current_print_thumbnails", [])
         printer.monitor_last_message = None
         printer.monitor_last_error = None
         printer.monitor_bed_temp_c = None
@@ -155,7 +168,7 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
     await db.refresh(printer)
     if printer.monitor_enabled:
         await refresh_printer_monitoring(db, printer, force=True)
-    return printer
+    return _apply_thumbnail_urls(printer)
 
 
 @router.post(
@@ -167,7 +180,7 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
 async def refresh_printer(printer_id: uuid.UUID, user: CurrentUser, db: DB):
     printer = await _get_printer_or_404(db, printer_id)
     await refresh_printer_monitoring(db, printer, force=True)
-    return printer
+    return _apply_thumbnail_urls(printer)
 
 
 @router.post(
@@ -203,3 +216,25 @@ async def delete_printer(printer_id: uuid.UUID, user: CurrentUser, db: DB):
     printer = await _get_printer_or_404(db, printer_id)
     printer.is_active = False
     await db.commit()
+
+
+@router.get(
+    "/{printer_id}/thumbnail",
+    summary="Get current print thumbnail",
+    description="Fetches the active Moonraker print thumbnail through the backend to avoid frontend CORS and path encoding issues.",
+)
+async def get_printer_thumbnail(printer_id: uuid.UUID, db: DB):
+    printer = await _get_printer_or_404(db, printer_id)
+    if not printer.monitor_enabled or printer.monitor_provider != "moonraker":
+        raise HTTPException(status_code=404, detail="Printer thumbnail unavailable")
+
+    provider = MoonrakerMonitorProvider()
+    try:
+        thumbnail = await provider.fetch_current_thumbnail(printer)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    if thumbnail is None:
+        raise HTTPException(status_code=404, detail="Printer thumbnail unavailable")
+
+    return Response(content=thumbnail.content, media_type=thumbnail.media_type)
