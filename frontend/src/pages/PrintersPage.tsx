@@ -58,6 +58,21 @@ function ActiveBadge({ isActive }: { isActive: boolean }) {
   );
 }
 
+function formatDuration(seconds: number | null | undefined) {
+  if (seconds == null || Number.isNaN(seconds)) return '—';
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function formatLayer(current: number | null | undefined, total: number | null | undefined) {
+  if (current == null && total == null) return '—';
+  if (current != null && total != null) return `${current}/${total}`;
+  return String(current ?? total ?? '—');
+}
+
 type PrinterGroup = {
   key: string;
   title: string;
@@ -85,11 +100,18 @@ function PrinterAssignmentCard({ printer, currentJob }: { printer: Printer; curr
             {printer.location ? ` · ${printer.location}` : ''}
           </p>
           {printer.monitor_enabled ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Live: {printer.monitor_status || printer.status}
-              {printer.monitor_progress_percent != null ? ` · ${printer.monitor_progress_percent.toFixed(0)}%` : ''}
-              {printer.current_print_name ? ` · ${printer.current_print_name}` : ''}
-            </p>
+            <div className="mt-1 space-y-1 text-xs text-muted-foreground">
+              <p>
+                Live: {printer.monitor_status || printer.status}
+                {printer.monitor_progress_percent != null ? ` · ${printer.monitor_progress_percent.toFixed(0)}%` : ''}
+                {printer.current_print_name ? ` · ${printer.current_print_name}` : ''}
+              </p>
+              <p>
+                Layer {formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}
+                {printer.monitor_remaining_seconds != null ? ` · ETA ${formatDuration(printer.monitor_remaining_seconds)}` : ''}
+                {printer.monitor_provider === 'moonraker' ? ` · ${printer.monitor_ws_connected ? 'socket live' : 'poll fallback'}` : ''}
+              </p>
+            </div>
           ) : (
             <p className="mt-1 text-xs text-muted-foreground">Static record only</p>
           )}
@@ -434,6 +456,7 @@ export default function PrintersPage() {
                           <div>
                             <div>{printer.monitor_status || printer.status}{printer.monitor_online === false ? ' · offline' : ''}</div>
                             <div>{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}{printer.current_print_name ? ` · ${printer.current_print_name}` : ''}</div>
+                            <div>Layer {formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)} · Remaining {formatDuration(printer.monitor_remaining_seconds)}{printer.monitor_provider === 'moonraker' ? ` · ${printer.monitor_ws_connected ? 'WS' : 'poll'}` : ''}</div>
                           </div>
                         ) : (
                           'Not configured'
@@ -517,6 +540,13 @@ export default function PrintersPage() {
                       <p className="text-muted-foreground">No active job assigned.</p>
                     )}
                   </div>
+                  {printer.monitor_enabled ? (
+                    <div className="mt-3 rounded-lg border border-border bg-background/40 p-3 text-sm">
+                      <p className="text-xs text-muted-foreground">Live telemetry</p>
+                      <p className="font-medium">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'} {printer.current_print_name ? `· ${printer.current_print_name}` : ''}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Layer {formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)} · Remaining {formatDuration(printer.monitor_remaining_seconds)}</p>
+                    </div>
+                  ) : null}
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Link to={`/printers/${printer.id}`} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm no-underline hover:bg-accent">
                       <Eye className="h-4 w-4" /> View

@@ -4,7 +4,7 @@ import { BarChart3, Package, DollarSign, TrendingUp, Layers, Award, AlertTriangl
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
-import type { DashboardSummary, FinanceDashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert, SalesMetrics } from '@/types';
+import type { DashboardSummary, FinanceDashboardSummary, RevenueDataPoint, MaterialUsageDataPoint, ProfitMarginDataPoint, InventoryAlert, PaginatedPrinters, Printer, SalesMetrics } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
@@ -14,6 +14,19 @@ const formatTooltipCurrency = (value: string | number | readonly (string | numbe
 const formatTooltipPercent = (value: string | number | readonly (string | number)[] | undefined) => {
   const normalized = Array.isArray(value) ? value[0] : value;
   return `${Number(normalized ?? 0).toFixed(1)}%`;
+};
+const formatDuration = (seconds: number | null | undefined) => {
+  if (seconds == null || Number.isNaN(seconds)) return '—';
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+};
+const formatLayer = (printer: Printer) => {
+  if (printer.monitor_current_layer == null && printer.monitor_total_layers == null) return '—';
+  if (printer.monitor_current_layer != null && printer.monitor_total_layers != null) return `${printer.monitor_current_layer}/${printer.monitor_total_layers}`;
+  return String(printer.monitor_current_layer ?? printer.monitor_total_layers ?? '—');
 };
 
 function StatCard({ icon: Icon, label, value, sub }: {
@@ -69,6 +82,12 @@ export default function DashboardPage() {
     queryFn: () => api.get('/sales/metrics').then((r) => r.data),
   });
 
+  const { data: printersData } = useQuery<PaginatedPrinters>({
+    queryKey: ['dashboard', 'printers-live'],
+    queryFn: () => api.get('/printers', { params: { is_active: true, limit: 6 } }).then((r) => r.data),
+    refetchInterval: 10000,
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -122,6 +141,36 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {printersData?.items?.length ? (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold">Printer live board</h2>
+              <p className="text-sm text-muted-foreground">Quick view of monitored printers, progress, layers, ETA, and Moonraker socket freshness.</p>
+            </div>
+            <Link to="/printers" className="text-sm text-primary no-underline hover:underline">Open printers</Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+            {printersData.items.map((printer) => (
+              <Link key={printer.id} to={`/printers/${printer.id}`} className="rounded-lg border border-border bg-background/40 p-4 no-underline hover:bg-accent/50 transition-colors">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-foreground">{printer.name}</p>
+                    <p className="text-xs text-muted-foreground">{printer.monitor_provider || 'static'} · {printer.monitor_status || printer.status}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}</span>
+                </div>
+                <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                  <p>{printer.current_print_name || 'No active file'}</p>
+                  <p>Layer {formatLayer(printer)} · Remaining {formatDuration(printer.monitor_remaining_seconds)}</p>
+                  <p>{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket live' : 'Polling fallback') : 'HTTP polling / static'}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* Finance Metrics */}
       {financeData && (

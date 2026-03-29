@@ -221,3 +221,7 @@ async def test_disabling_monitoring_clears_live_fields(client: AsyncClient, auth
     assert data["monitor_online"] is None
     assert data["monitor_status"] is None
     assert data["monitor_progress_percent"] is None
+    assert data["monitor_current_layer"] is None
+    assert data["monitor_total_layers"] is None
+    assert data["monitor_remaining_seconds"] is None
+    assert data["monitor_ws_connected"] is None
