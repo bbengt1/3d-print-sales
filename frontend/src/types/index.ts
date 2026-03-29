@@ -36,6 +36,13 @@ export interface Customer {
   job_count: number;
 }
 
+export interface PrinterThumbnailInfo {
+  relative_path: string;
+  width: number | null;
+  height: number | null;
+  size: number | null;
+}
+
 export interface Printer {
   id: string;
   name: string;
@@ -58,6 +65,9 @@ export interface Printer {
   current_print_name: string | null;
   monitor_last_message: string | null;
   monitor_last_error: string | null;
+  current_print_thumbnail_path: string | null;
+  current_print_thumbnail_url: string | null;
+  current_print_thumbnails: PrinterThumbnailInfo[];
   monitor_bed_temp_c: number | null;
   monitor_tool_temp_c: number | null;
   monitor_bed_target_c: number | null;
