@@ -18,6 +18,7 @@ class PrinterStatus(str, Enum):
 
 class PrinterMonitorProvider(str, Enum):
     octoprint = "octoprint"
+    moonraker = "moonraker"
 
 
 class PrinterCreate(BaseModel):

@@ -7,7 +7,10 @@ import api from '@/api/client';
 import type { Printer, PrinterConnectionTestResult } from '@/types';
 
 const STATUS_OPTIONS = ['idle', 'printing', 'paused', 'maintenance', 'offline', 'error'] as const;
-const MONITOR_PROVIDER_OPTIONS = ['octoprint'] as const;
+const MONITOR_PROVIDER_OPTIONS = [
+  { value: 'octoprint', label: 'OctoPrint', placeholder: 'http://octoprint.local', authHint: 'Optional API key if your OctoPrint instance requires one.' },
+  { value: 'moonraker', label: 'Moonraker / Fluidd / Mainsail', placeholder: 'http://printer.local:7125', authHint: 'Usually no API key on LAN, but you can supply one if your Moonraker setup requires it.' },
+] as const;
 
 const emptyForm = {
   name: '',
@@ -80,6 +83,10 @@ export default function PrinterFormPage() {
   }, [form.name, slugTouched]);
 
   const title = useMemo(() => (isEdit ? 'Edit Printer' : 'Add Printer'), [isEdit]);
+  const selectedProvider = useMemo(
+    () => MONITOR_PROVIDER_OPTIONS.find((option) => option.value === form.monitor_provider) ?? MONITOR_PROVIDER_OPTIONS[0],
+    [form.monitor_provider],
+  );
 
   const update = (field: string, value: string | boolean | number) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -260,7 +267,7 @@ export default function PrinterFormPage() {
                     <label className="block text-sm font-medium mb-1.5">Provider</label>
                     <select value={form.monitor_provider} onChange={(e) => update('monitor_provider', e.target.value)} className={inputClass('monitor_provider')}>
                       {MONITOR_PROVIDER_OPTIONS.map((option) => (
-                        <option key={option} value={option}>{option}</option>
+                        <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
                   </div>
@@ -273,13 +280,17 @@ export default function PrinterFormPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Base URL *</label>
-                  <input value={form.monitor_base_url} onChange={(e) => update('monitor_base_url', e.target.value)} className={inputClass('monitor_base_url')} placeholder="http://octoprint.local" />
+                  <input value={form.monitor_base_url} onChange={(e) => update('monitor_base_url', e.target.value)} className={inputClass('monitor_base_url')} placeholder={selectedProvider.placeholder} />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {form.monitor_provider === 'moonraker' ? 'Use the Moonraker API URL, typically port 7125.' : 'Use the OctoPrint base URL hosting the API.'}
+                  </p>
                   {errors.monitor_base_url && <p className="mt-1 text-xs text-destructive">{errors.monitor_base_url}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1.5">API key / token</label>
                   <input value={form.monitor_api_key} onChange={(e) => update('monitor_api_key', e.target.value)} className={inputClass('monitor_api_key')} placeholder="Optional if your provider requires auth" />
+                  <p className="mt-1 text-xs text-muted-foreground">{selectedProvider.authHint}</p>
                 </div>
 
                 <div className="flex justify-end">
