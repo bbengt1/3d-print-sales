@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PrinterStatus(str, Enum):
@@ -78,6 +78,21 @@ class PrinterThumbnailResponse(BaseModel):
     size: int | None = None
 
 
+class PrinterHistoryEventResponse(BaseModel):
+    id: uuid.UUID
+    printer_id: uuid.UUID
+    job_id: uuid.UUID | None = None
+    actor_user_id: uuid.UUID | None = None
+    actor_name: str | None = None
+    event_type: str
+    title: str
+    description: str | None = None
+    metadata: dict | None = Field(None, validation_alias="event_metadata")
+    created_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PrinterResponse(BaseModel):
     id: uuid.UUID
     name: str
@@ -103,6 +118,7 @@ class PrinterResponse(BaseModel):
     current_print_thumbnail_path: str | None = None
     current_print_thumbnail_url: str | None = None
     current_print_thumbnails: list[PrinterThumbnailResponse] = Field(default_factory=list)
+    history_events: list[PrinterHistoryEventResponse] = Field(default_factory=list)
     monitor_bed_temp_c: float | None = None
     monitor_tool_temp_c: float | None = None
     monitor_bed_target_c: float | None = None

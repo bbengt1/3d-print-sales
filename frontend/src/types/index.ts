@@ -43,6 +43,19 @@ export interface PrinterThumbnailInfo {
   size: number | null;
 }
 
+export interface PrinterHistoryEvent {
+  id: string;
+  printer_id: string;
+  job_id: string | null;
+  actor_user_id: string | null;
+  actor_name: string | null;
+  event_type: string;
+  title: string;
+  description: string | null;
+  metadata: Record<string, any> | null;
+  created_at: string | null;
+}
+
 export interface Printer {
   id: string;
   name: string;
@@ -68,6 +81,7 @@ export interface Printer {
   current_print_thumbnail_path: string | null;
   current_print_thumbnail_url: string | null;
   current_print_thumbnails: PrinterThumbnailInfo[];
+  history_events: PrinterHistoryEvent[];
   monitor_bed_temp_c: number | null;
   monitor_tool_temp_c: number | null;
   monitor_bed_target_c: number | null;

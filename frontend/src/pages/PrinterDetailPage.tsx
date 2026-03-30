@@ -55,6 +55,11 @@ function formatLayer(current: number | null | undefined, total: number | null | 
   return String(current ?? total ?? '—');
 }
 
+function formatEventMetaValue(value: unknown) {
+  if (value == null || value === '') return null;
+  return String(value);
+}
+
 export default function PrinterDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -288,6 +293,49 @@ export default function PrinterDetailPage() {
             ) : null}
           </div>
         ) : null}
+      </div>
+
+      <div className="mb-6 rounded-lg border border-border bg-card p-6">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold">Recent Activity</h2>
+            <p className="text-sm text-muted-foreground">Status changes and printer assignment events for this machine.</p>
+          </div>
+          <span className="rounded-full bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground">{printer.history_events.length} events</span>
+        </div>
+
+        {!printer.history_events.length ? (
+          <div className="rounded-lg border border-border bg-background/40 p-6 text-sm text-muted-foreground">No printer activity has been recorded yet.</div>
+        ) : (
+          <div className="space-y-3">
+            {printer.history_events.map((event) => {
+              const jobNumber = formatEventMetaValue(event.metadata?.job_number);
+              const fromStatus = formatEventMetaValue(event.metadata?.from_status);
+              const toStatus = formatEventMetaValue(event.metadata?.to_status);
+              const fromPrinter = formatEventMetaValue(event.metadata?.from_printer_name);
+              const toPrinter = formatEventMetaValue(event.metadata?.to_printer_name);
+              return (
+                <div key={event.id} className="rounded-lg border border-border bg-background/40 p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-medium text-foreground">{event.title}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{event.description || '—'}</p>
+                    </div>
+                    <div className="text-xs text-muted-foreground sm:text-right">
+                      <p>{formatDateTime(event.created_at)}</p>
+                      <p>{event.actor_name || 'System'}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {jobNumber ? <span className="rounded-full bg-card px-2.5 py-1">Job {jobNumber}</span> : null}
+                    {fromStatus || toStatus ? <span className="rounded-full bg-card px-2.5 py-1">{fromStatus || '—'} → {toStatus || '—'}</span> : null}
+                    {fromPrinter || toPrinter ? <span className="rounded-full bg-card px-2.5 py-1">{fromPrinter || 'Unassigned'} → {toPrinter || 'Unassigned'}</span> : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div>
