@@ -19,6 +19,7 @@ from app.models.customer import Customer  # noqa
 from app.models.job import Job  # noqa
 from app.models.user import User  # noqa
 from app.models.printer import Printer  # noqa
+from app.models.printer_history_event import PrinterHistoryEvent  # noqa
 from app.models.product import Product  # noqa
 from app.models.inventory_transaction import InventoryTransaction  # noqa
 from app.models.sales_channel import SalesChannel  # noqa

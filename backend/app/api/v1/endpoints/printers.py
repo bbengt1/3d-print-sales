@@ -14,6 +14,7 @@ from app.schemas.printer import (
     PrinterResponse,
     PrinterUpdate,
 )
+from app.services.printer_history_service import list_printer_history_events, record_printer_status_change
 from app.services.printer_monitoring import (
     MoonrakerMonitorProvider,
     PrinterMonitoringError,
@@ -91,6 +92,10 @@ async def get_printer(printer_id: uuid.UUID, db: DB):
     printer = await _get_printer_or_404(db, printer_id)
     mark_printer_stale_if_needed(printer)
     await refresh_printer_monitoring(db, printer)
+    history_events = await list_printer_history_events(db, printer.id, limit=25)
+    for event in history_events:
+        setattr(event, "actor_name", event.actor.full_name if getattr(event, "actor", None) else None)
+    setattr(printer, "history_events", history_events)
     return _apply_thumbnail_urls(printer)
 
 
@@ -124,6 +129,7 @@ async def create_printer(body: PrinterCreate, user: CurrentUser, db: DB):
 async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: CurrentUser, db: DB):
     printer = await _get_printer_or_404(db, printer_id)
 
+    old_status = printer.status
     update_data = body.model_dump(exclude_unset=True)
     if "name" in update_data or "slug" in update_data:
         existing = await db.execute(
@@ -164,6 +170,7 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
         printer.monitor_last_seen_at = None
         printer.monitor_last_updated_at = None
 
+    await record_printer_status_change(db, printer=printer, old_status=old_status, new_status=printer.status, actor_user_id=user.id)
     await db.commit()
     await db.refresh(printer)
     if printer.monitor_enabled:

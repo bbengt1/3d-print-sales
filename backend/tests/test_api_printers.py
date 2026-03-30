@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import uuid
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+
+from app.models.printer_history_event import PrinterHistoryEvent
 
 
 @pytest.mark.asyncio
@@ -225,3 +229,34 @@ async def test_disabling_monitoring_clears_live_fields(client: AsyncClient, auth
     assert data["monitor_total_layers"] is None
     assert data["monitor_remaining_seconds"] is None
     assert data["monitor_ws_connected"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_printer_status_records_history_event(client: AsyncClient, auth_headers: dict, db_session):
+    create = await client.post(
+        "/api/v1/printers",
+        headers=auth_headers,
+        json={"name": "History Printer", "slug": "history-printer", "status": "idle"},
+    )
+    printer_id = create.json()["id"]
+
+    update = await client.put(
+        f"/api/v1/printers/{printer_id}",
+        headers=auth_headers,
+        json={"status": "printing"},
+    )
+    assert update.status_code == 200
+    assert update.json()["history_events"] == []
+
+    events = (await db_session.execute(select(PrinterHistoryEvent).where(PrinterHistoryEvent.printer_id == uuid.UUID(printer_id)))).scalars().all()
+    assert len(events) == 1
+    assert events[0].event_type == "status_changed"
+    assert events[0].event_metadata["from_status"] == "idle"
+    assert events[0].event_metadata["to_status"] == "printing"
+
+    detail = await client.get(f"/api/v1/printers/{printer_id}")
+    assert detail.status_code == 200
+    history = detail.json()["history_events"]
+    assert len(history) == 1
+    assert history[0]["event_type"] == "status_changed"
+    assert history[0]["actor_name"]

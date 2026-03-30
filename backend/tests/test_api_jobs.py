@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from app.models.inventory_transaction import InventoryTransaction
+from app.models.printer_history_event import PrinterHistoryEvent
 
 
 @pytest.mark.asyncio

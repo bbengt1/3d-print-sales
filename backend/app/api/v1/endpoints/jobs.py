@@ -119,9 +119,11 @@ async def get_job(job_id: uuid.UUID, db: DB):
 async def create_job(body: JobCreate, user: CurrentUser, db: DB):
     job_number = body.job_number or await generate_job_number(db, body.date)
 
+    assigned_printer = None
     if body.printer_id:
-        printer_exists = await db.execute(select(Printer.id).where(Printer.id == body.printer_id))
-        if not printer_exists.scalar_one_or_none():
+        printer_exists = await db.execute(select(Printer).where(Printer.id == body.printer_id))
+        assigned_printer = printer_exists.scalar_one_or_none()
+        if not assigned_printer:
             raise HTTPException(status_code=404, detail="Printer not found")
 
     # Check for duplicate job number
