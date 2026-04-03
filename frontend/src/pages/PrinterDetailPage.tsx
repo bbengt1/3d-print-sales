@@ -241,25 +241,25 @@ export default function PrinterDetailPage() {
           <div className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(260px,0.7fr)]">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div><p className="text-xs text-muted-foreground">Provider</p><p className="font-semibold capitalize">{printer.monitor_provider || '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Progress</p><p className="font-semibold">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(1)}%` : '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Current print</p><p className="font-semibold">{printer.current_print_name || '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Poll interval</p><p className="font-semibold">{printer.monitor_poll_interval_seconds}s</p></div>
-            <div><p className="text-xs text-muted-foreground">Tool temp / target</p><p className="font-semibold">{formatTemperature(printer.monitor_tool_temp_c, printer.monitor_tool_target_c)}</p></div>
-            <div><p className="text-xs text-muted-foreground">Bed temp / target</p><p className="font-semibold">{formatTemperature(printer.monitor_bed_temp_c, printer.monitor_bed_target_c)}</p></div>
-            <div><p className="text-xs text-muted-foreground">Layer</p><p className="font-semibold">{formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}</p></div>
-            <div><p className="text-xs text-muted-foreground">Elapsed / remaining</p><p className="font-semibold">{formatDuration(printer.monitor_elapsed_seconds)} / {formatDuration(printer.monitor_remaining_seconds)}</p></div>
-            <div><p className="text-xs text-muted-foreground">ETA</p><p className="font-semibold">{formatDateTime(printer.monitor_eta_at)}</p></div>
-            <div><p className="text-xs text-muted-foreground">Last event</p><p className="font-semibold">{printer.monitor_last_event_type ? printer.monitor_last_event_type.replace('notify_', '').replaceAll('_', ' ') : '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Last event at</p><p className="font-semibold">{formatDateTime(printer.monitor_last_event_at)}</p></div>
-            <div><p className="text-xs text-muted-foreground">Last seen</p><p className="font-semibold">{formatDateTime(printer.monitor_last_seen_at)}</p></div>
-            <div><p className="text-xs text-muted-foreground">Last updated</p><p className="font-semibold">{formatDateTime(printer.monitor_last_updated_at)}</p></div>
-            <div><p className="text-xs text-muted-foreground">Live transport</p><p className="font-semibold">{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket streaming' : 'HTTP polling fallback') : 'HTTP polling'}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Provider</p><p className="truncate font-semibold capitalize" title={printer.monitor_provider || '—'}>{printer.monitor_provider || '—'}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Progress</p><p className="truncate font-semibold">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(1)}%` : '—'}</p></div>
+            <div className="min-w-0 md:col-span-2 xl:col-span-2"><p className="text-xs text-muted-foreground">Current print</p><p className="truncate font-semibold" title={printer.current_print_name || '—'}>{printer.current_print_name || '—'}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Poll interval</p><p className="truncate font-semibold">{printer.monitor_poll_interval_seconds}s</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Tool temp / target</p><p className="truncate font-semibold" title={formatTemperature(printer.monitor_tool_temp_c, printer.monitor_tool_target_c)}>{formatTemperature(printer.monitor_tool_temp_c, printer.monitor_tool_target_c)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Bed temp / target</p><p className="truncate font-semibold" title={formatTemperature(printer.monitor_bed_temp_c, printer.monitor_bed_target_c)}>{formatTemperature(printer.monitor_bed_temp_c, printer.monitor_bed_target_c)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Layer</p><p className="truncate font-semibold">{formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Elapsed / remaining</p><p className="truncate font-semibold" title={`${formatDuration(printer.monitor_elapsed_seconds)} / ${formatDuration(printer.monitor_remaining_seconds)}`}>{formatDuration(printer.monitor_elapsed_seconds)} / {formatDuration(printer.monitor_remaining_seconds)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">ETA</p><p className="truncate font-semibold" title={formatDateTime(printer.monitor_eta_at)}>{formatDateTime(printer.monitor_eta_at)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Last event</p><p className="truncate font-semibold" title={printer.monitor_last_event_type ? printer.monitor_last_event_type.replace('notify_', '').replaceAll('_', ' ') : '—'}>{printer.monitor_last_event_type ? printer.monitor_last_event_type.replace('notify_', '').replaceAll('_', ' ') : '—'}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Last event at</p><p className="truncate font-semibold" title={formatDateTime(printer.monitor_last_event_at)}>{formatDateTime(printer.monitor_last_event_at)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Last seen</p><p className="truncate font-semibold" title={formatDateTime(printer.monitor_last_seen_at)}>{formatDateTime(printer.monitor_last_seen_at)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Last updated</p><p className="truncate font-semibold" title={formatDateTime(printer.monitor_last_updated_at)}>{formatDateTime(printer.monitor_last_updated_at)}</p></div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Live transport</p><p className="truncate font-semibold" title={printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket streaming' : 'HTTP polling fallback') : 'HTTP polling'}>{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket streaming' : 'HTTP polling fallback') : 'HTTP polling'}</p></div>
               </div>
               <div className="space-y-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Current print thumbnail</p>
-                  <p className="text-sm text-muted-foreground">{printer.current_print_name || 'No active file'}</p>
+                  <p className="truncate text-sm text-muted-foreground" title={printer.current_print_name || 'No active file'}>{printer.current_print_name || 'No active file'}</p>
                 </div>
                 <PrinterThumbnail
                   src={printer.current_print_thumbnail_url}
@@ -281,7 +281,7 @@ export default function PrinterDetailPage() {
             {printer.monitor_provider === 'moonraker' ? (
               <div className="rounded-lg border border-border bg-background/40 p-4">
                 <p className="text-xs text-muted-foreground mb-1">Moonraker live channel</p>
-                <p className="text-sm">{printer.monitor_ws_connected ? 'WebSocket connected and receiving live status events.' : 'WebSocket not fresh right now — using polling fallback.'}</p>
+                <p className="text-sm break-words">{printer.monitor_ws_connected ? 'WebSocket connected and receiving live status events.' : 'WebSocket not fresh right now — using polling fallback.'}</p>
                 {printer.monitor_ws_last_error ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">Last socket issue: {printer.monitor_ws_last_error}</p> : null}
               </div>
             ) : null}
