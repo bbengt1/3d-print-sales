@@ -167,14 +167,14 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-foreground">{printer.name}</p>
-                        <p className="text-xs text-muted-foreground">{printer.monitor_provider || 'static'} · {printer.monitor_status || printer.status}</p>
+                        <p className="truncate text-xs text-muted-foreground" title={`${printer.monitor_provider || 'static'} · ${printer.monitor_status || printer.status}`}>{printer.monitor_provider || 'static'} · {printer.monitor_status || printer.status}</p>
                       </div>
                       <span className="text-sm font-semibold text-foreground">{printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}</span>
                     </div>
                     <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                      <p className="truncate">{printer.current_print_name || 'No active file'}</p>
-                      <p>Layer {formatLayer(printer)} · Remaining {formatDuration(printer.monitor_remaining_seconds)}</p>
-                      <p>{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket live' : 'Polling fallback') : 'HTTP polling / static'}</p>
+                      <p className="truncate" title={printer.current_print_name || 'No active file'}>{printer.current_print_name || 'No active file'}</p>
+                      <p className="truncate" title={`Layer ${formatLayer(printer)} · Remaining ${formatDuration(printer.monitor_remaining_seconds)}`}>Layer {formatLayer(printer)} · Remaining {formatDuration(printer.monitor_remaining_seconds)}</p>
+                      <p className="truncate" title={printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket live' : 'Polling fallback') : 'HTTP polling / static'}>{printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'WebSocket live' : 'Polling fallback') : 'HTTP polling / static'}</p>
                     </div>
                   </div>
                 </div>

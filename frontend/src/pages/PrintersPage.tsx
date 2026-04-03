@@ -101,12 +101,12 @@ function PrinterAssignmentCard({ printer, currentJob }: { printer: Printer; curr
           </p>
           {printer.monitor_enabled ? (
             <div className="mt-1 space-y-1 text-xs text-muted-foreground">
-              <p>
+              <p className="truncate" title={[printer.monitor_status || printer.status, printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : null, printer.current_print_name].filter(Boolean).join(' · ')}>
                 Live: {printer.monitor_status || printer.status}
                 {printer.monitor_progress_percent != null ? ` · ${printer.monitor_progress_percent.toFixed(0)}%` : ''}
                 {printer.current_print_name ? ` · ${printer.current_print_name}` : ''}
               </p>
-              <p>
+              <p className="truncate" title={[`Layer ${formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}`, printer.monitor_remaining_seconds != null ? `ETA ${formatDuration(printer.monitor_remaining_seconds)}` : null, printer.monitor_provider === 'moonraker' ? (printer.monitor_ws_connected ? 'socket live' : 'poll fallback') : null].filter(Boolean).join(' · ')}>
                 Layer {formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}
                 {printer.monitor_remaining_seconds != null ? ` · ETA ${formatDuration(printer.monitor_remaining_seconds)}` : ''}
                 {printer.monitor_provider === 'moonraker' ? ` · ${printer.monitor_ws_connected ? 'socket live' : 'poll fallback'}` : ''}
@@ -130,7 +130,7 @@ function PrinterAssignmentCard({ printer, currentJob }: { printer: Printer; curr
                 <Link to={`/jobs/${currentJob.id}`} className="mt-1 block font-medium text-primary no-underline hover:underline">
                   {currentJob.job_number}
                 </Link>
-                <p className="text-sm text-muted-foreground">{currentJob.product_name}</p>
+                <p className="truncate text-sm text-muted-foreground" title={currentJob.product_name}>{currentJob.product_name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{currentJob.total_pieces} pcs · {currentJob.date}</p>
               </>
             ) : (
