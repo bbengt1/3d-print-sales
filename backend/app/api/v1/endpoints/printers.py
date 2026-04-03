@@ -28,7 +28,15 @@ router = APIRouter(prefix="/printers", tags=["Printers"])
 
 def _apply_thumbnail_urls(printer: Printer) -> Printer:
     thumbnail_path = getattr(printer, "current_print_thumbnail_path", None)
-    setattr(printer, "current_print_thumbnail_url", f"/api/v1/printers/{printer.id}/thumbnail" if thumbnail_path else None)
+    has_active_print = bool(getattr(printer, "current_print_name", None))
+    # Provide thumbnail URL when we have a known thumbnail path OR an active
+    # print (the endpoint will attempt embedded gcode thumbnail extraction as
+    # a fallback when metadata thumbnails are unavailable).
+    setattr(
+        printer,
+        "current_print_thumbnail_url",
+        f"/api/v1/printers/{printer.id}/thumbnail" if (thumbnail_path or has_active_print) else None,
+    )
     if getattr(printer, "current_print_thumbnails", None) is None:
         setattr(printer, "current_print_thumbnails", [])
     return printer
