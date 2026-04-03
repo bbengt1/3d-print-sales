@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.customer import Customer
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.sales_channel import SalesChannel
@@ -24,6 +25,122 @@ async def generate_sale_number(db: AsyncSession) -> str:
     )
     count = result.scalar() or 0
     return f"{prefix}{count + 1:04d}"
+
+
+async def get_or_create_sales_channel(
+    db: AsyncSession,
+    *,
+    name: str,
+    platform_fee_pct: Decimal = Decimal(0),
+    fixed_fee: Decimal = Decimal(0),
+) -> SalesChannel:
+    result = await db.execute(select(SalesChannel).where(SalesChannel.name == name))
+    channel = result.scalar_one_or_none()
+    if channel:
+        return channel
+
+    channel = SalesChannel(
+        name=name,
+        platform_fee_pct=platform_fee_pct,
+        fixed_fee=fixed_fee,
+    )
+    db.add(channel)
+    await db.flush()
+    return channel
+
+
+async def resolve_sale_customer(
+    db: AsyncSession,
+    *,
+    customer_id: uuid.UUID | None,
+    customer_name: str | None,
+) -> tuple[uuid.UUID | None, str | None]:
+    if not customer_id:
+        return None, customer_name
+
+    result = await db.execute(select(Customer).where(Customer.id == customer_id))
+    customer = result.scalar_one_or_none()
+    if not customer:
+        raise ValueError("Customer not found")
+
+    return customer.id, customer_name or customer.name
+
+
+async def create_sale_with_items(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID | None,
+    date,
+    customer_id: uuid.UUID | None,
+    customer_name: str | None,
+    channel_id: uuid.UUID | None,
+    tax_profile_id: uuid.UUID | None,
+    tax_treatment: str,
+    shipping_charged: Decimal,
+    shipping_cost: Decimal,
+    tax_collected: Decimal,
+    payment_method: str | None,
+    tracking_number: str | None,
+    notes: str | None,
+    status: str,
+    items: list,
+) -> Sale:
+    resolved_customer_id, resolved_customer_name = await resolve_sale_customer(
+        db,
+        customer_id=customer_id,
+        customer_name=customer_name,
+    )
+
+    sale_number = await generate_sale_number(db)
+    items_data = [i.model_dump() if hasattr(i, "model_dump") else i for i in items]
+    totals = await compute_sale_totals(
+        db=db,
+        items=items_data,
+        channel_id=channel_id,
+        shipping_charged=shipping_charged,
+        shipping_cost=shipping_cost,
+        tax_collected=tax_collected,
+    )
+
+    sale = Sale(
+        sale_number=sale_number,
+        date=date,
+        customer_id=resolved_customer_id,
+        customer_name=resolved_customer_name,
+        channel_id=channel_id,
+        tax_profile_id=tax_profile_id,
+        tax_treatment=tax_treatment,
+        status=status,
+        shipping_charged=shipping_charged,
+        shipping_cost=shipping_cost,
+        tax_collected=tax_collected,
+        payment_method=payment_method,
+        tracking_number=tracking_number,
+        notes=notes,
+        created_by=user_id,
+        **totals,
+    )
+    db.add(sale)
+    await db.flush()
+
+    sale_items = []
+    for item_data in items:
+        sale_item = SaleItem(
+            sale_id=sale.id,
+            product_id=item_data.product_id,
+            job_id=item_data.job_id,
+            description=item_data.description,
+            quantity=item_data.quantity,
+            unit_price=item_data.unit_price,
+            line_total=item_data.unit_price * item_data.quantity,
+            unit_cost=item_data.unit_cost,
+        )
+        db.add(sale_item)
+        sale_items.append(sale_item)
+
+    await deduct_inventory_for_sale(db, sale.id, sale_items, user_id)
+    await db.flush()
+    return sale
 
 
 async def compute_sale_totals(

@@ -80,6 +80,7 @@ async def run_seed():
                 SalesChannel(name="Amazon Handmade", platform_fee_pct=Decimal("15"), fixed_fee=Decimal("0")),
                 SalesChannel(name="Direct Sale", platform_fee_pct=Decimal("0"), fixed_fee=Decimal("0")),
                 SalesChannel(name="Craft Fair", platform_fee_pct=Decimal("0"), fixed_fee=Decimal("0")),
+                SalesChannel(name="POS", platform_fee_pct=Decimal("0"), fixed_fee=Decimal("0")),
             ]
             for ch in channels:
                 db.add(ch)

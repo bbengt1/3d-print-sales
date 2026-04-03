@@ -17,6 +17,7 @@ from app.models.sales_channel import SalesChannel
 from app.models.tax_profile import TaxProfile
 from app.schemas.approval import RefundRequestBody
 from app.schemas.sale import (
+    POSCheckoutCreate,
     PaginatedSales,
     SaleCreate,
     SaleListResponse,
@@ -29,6 +30,7 @@ from app.services.accounting_service import AccountingValidationError, assert_fi
 from app.services.audit_service import create_audit_log, snapshot_model
 from app.services.sales_service import (
     compute_sale_totals,
+    create_sale_with_items,
     deduct_inventory_for_sale,
     generate_sale_number,
     restore_inventory_for_refund,
@@ -251,57 +253,27 @@ async def get_sale(sale_id: uuid.UUID, db: DB):
     description="Create a sale with line items. Platform fees are auto-computed from channel. Inventory is deducted for product items.",
 )
 async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
-    sale_number = await generate_sale_number(db)
-
-    items_data = [i.model_dump() for i in body.items]
-    totals = await compute_sale_totals(
-        db=db,
-        items=items_data,
-        channel_id=body.channel_id,
-        shipping_charged=body.shipping_charged,
-        shipping_cost=body.shipping_cost,
-        tax_collected=body.tax_collected,
-    )
-
-    sale = Sale(
-        sale_number=sale_number,
-        date=body.date,
-        customer_id=body.customer_id,
-        customer_name=body.customer_name,
-        channel_id=body.channel_id,
-        tax_profile_id=body.tax_profile_id,
-        tax_treatment=body.tax_treatment,
-        status=body.status.value,
-        shipping_charged=body.shipping_charged,
-        shipping_cost=body.shipping_cost,
-        tax_collected=body.tax_collected,
-        payment_method=body.payment_method,
-        tracking_number=body.tracking_number,
-        notes=body.notes,
-        created_by=user.id,
-        **totals,
-    )
-    db.add(sale)
-    await db.flush()
-
-    # Create line items
-    sale_items = []
-    for item_data in body.items:
-        sale_item = SaleItem(
-            sale_id=sale.id,
-            product_id=item_data.product_id,
-            job_id=item_data.job_id,
-            description=item_data.description,
-            quantity=item_data.quantity,
-            unit_price=item_data.unit_price,
-            line_total=item_data.unit_price * item_data.quantity,
-            unit_cost=item_data.unit_cost,
+    try:
+        sale = await create_sale_with_items(
+            db,
+            user_id=user.id,
+            date=body.date,
+            customer_id=body.customer_id,
+            customer_name=body.customer_name,
+            channel_id=body.channel_id,
+            tax_profile_id=body.tax_profile_id,
+            tax_treatment=body.tax_treatment,
+            shipping_charged=body.shipping_charged,
+            shipping_cost=body.shipping_cost,
+            tax_collected=body.tax_collected,
+            payment_method=body.payment_method,
+            tracking_number=body.tracking_number,
+            notes=body.notes,
+            status=body.status.value,
+            items=body.items,
         )
-        db.add(sale_item)
-        sale_items.append(sale_item)
-
-    # Deduct inventory
-    await deduct_inventory_for_sale(db, sale.id, sale_items, user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     await create_audit_log(
         db,
