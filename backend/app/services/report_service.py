@@ -6,6 +6,7 @@ import io
 from datetime import date
 from decimal import Decimal
 from typing import Sequence
+import uuid
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -146,6 +147,8 @@ async def generate_sales_report(
     date_from: date | None,
     date_to: date | None,
     period: str = "monthly",
+    channel_id: uuid.UUID | None = None,
+    payment_method: str | None = None,
 ):
     """Sales over time, top products, channel breakdown."""
     base = select(Sale).where(Sale.is_deleted == False)
@@ -153,6 +156,10 @@ async def generate_sales_report(
         base = base.where(Sale.date >= date_from)
     if date_to:
         base = base.where(Sale.date <= date_to)
+    if channel_id:
+        base = base.where(Sale.channel_id == channel_id)
+    if payment_method:
+        base = base.where(Sale.payment_method == payment_method)
 
     result = await db.execute(base.options(selectinload(Sale.items)).order_by(Sale.date))
     sales = result.scalars().all()
@@ -258,6 +265,26 @@ async def generate_sales_report(
 
     channel_breakdown = sorted(ch_map.values(), key=lambda x: x["gross_sales"], reverse=True)
 
+    pay_map: dict[str, dict] = {}
+    for s in completed:
+        payment_key = (s.payment_method or "unknown").strip() or "unknown"
+        bucket = pay_map.setdefault(
+            payment_key,
+            {
+                "payment_method": payment_key,
+                "order_count": 0,
+                "gross_sales": 0.0,
+                "contribution_margin": 0.0,
+            },
+        )
+        bucket["order_count"] += 1
+        bucket["gross_sales"] += float(s.total)
+        bucket["contribution_margin"] += float(s.net_revenue)
+
+    payment_method_breakdown = sorted(
+        pay_map.values(), key=lambda x: x["gross_sales"], reverse=True
+    )
+
     gross_sales = sum(float(s.total) for s in completed)
     item_cogs = sum(sum(float(i.unit_cost) * i.quantity for i in s.items) for s in completed)
     platform_fees = sum(float(s.platform_fees) for s in completed)
@@ -268,6 +295,7 @@ async def generate_sales_report(
         "period_data": period_data,
         "top_products": top_products,
         "channel_breakdown": channel_breakdown,
+        "payment_method_breakdown": payment_method_breakdown,
         "total_orders": len(completed),
         "gross_sales": round(gross_sales, 2),
         "item_cogs": round(item_cogs, 2),

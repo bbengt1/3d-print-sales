@@ -323,6 +323,7 @@ export interface Sale {
   customer_id: string | null;
   customer_name: string | null;
   channel_id: string | null;
+  channel_name: string | null;
   status: string;
   subtotal: number;
   shipping_charged: number;
@@ -347,6 +348,8 @@ export interface SaleListItem {
   date: string;
   customer_name: string | null;
   channel_id: string | null;
+  channel_name: string | null;
+  payment_method: string | null;
   status: string;
   total: number;
   gross_profit: number;
@@ -385,6 +388,12 @@ export interface SalesMetrics {
     shipping_costs: number;
     contribution_margin: number;
     order_count: number;
+  }[];
+  payment_method_breakdown: {
+    payment_method: string;
+    order_count: number;
+    gross_sales: number;
+    contribution_margin: number;
   }[];
 }
 
@@ -448,6 +457,12 @@ export interface SalesReport {
   period_data: SalesReportRow[];
   top_products: ProductRanking[];
   channel_breakdown: ChannelBreakdown[];
+  payment_method_breakdown: {
+    payment_method: string;
+    order_count: number;
+    gross_sales: number;
+    contribution_margin: number;
+  }[];
   total_orders: number;
   gross_sales: number;
   item_cogs: number;

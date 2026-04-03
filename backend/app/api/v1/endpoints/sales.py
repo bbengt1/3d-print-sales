@@ -42,6 +42,7 @@ router = APIRouter(prefix="/sales", tags=["Sales"])
 def _to_sale_response(sale: Sale) -> SaleResponse:
     item_cogs = sum((item.unit_cost or Decimal(0)) * item.quantity for item in sale.items)
     gross_profit = sale.total - item_cogs
+    channel = getattr(sale, "channel", None)
     return SaleResponse(
         id=sale.id,
         sale_number=sale.sale_number,
@@ -49,6 +50,7 @@ def _to_sale_response(sale: Sale) -> SaleResponse:
         customer_id=sale.customer_id,
         customer_name=sale.customer_name,
         channel_id=sale.channel_id,
+        channel_name=channel.name if channel else ("Direct" if sale.channel_id is None else None),
         tax_profile_id=sale.tax_profile_id,
         tax_treatment=sale.tax_treatment,
         status=sale.status,
@@ -80,6 +82,7 @@ async def list_sales(
     db: DB,
     status: SaleStatus | None = Query(None, description="Filter by status"),
     channel_id: uuid.UUID | None = Query(None, description="Filter by channel"),
+    payment_method: str | None = Query(None, description="Filter by payment method"),
     customer_id: uuid.UUID | None = Query(None, description="Filter by customer"),
     date_from: datetime.date | None = Query(None, description="Start date"),
     date_to: datetime.date | None = Query(None, description="End date"),
@@ -87,11 +90,15 @@ async def list_sales(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
-    base = select(Sale).where(Sale.is_deleted == False)
+    base = select(Sale, SalesChannel.name.label("channel_name")).outerjoin(
+        SalesChannel, SalesChannel.id == Sale.channel_id
+    ).where(Sale.is_deleted == False)
     if status:
         base = base.where(Sale.status == status.value)
     if channel_id:
         base = base.where(Sale.channel_id == channel_id)
+    if payment_method:
+        base = base.where(Sale.payment_method == payment_method)
     if customer_id:
         base = base.where(Sale.customer_id == customer_id)
     if date_from:
@@ -108,28 +115,30 @@ async def list_sales(
     total = (await db.execute(count_stmt)).scalar() or 0
 
     result = await db.execute(
-        base.options(selectinload(Sale.items))
+        base.options(selectinload(Sale.items), selectinload(Sale.channel))
         .order_by(Sale.date.desc())
         .offset(skip)
         .limit(limit)
     )
-    sales = result.scalars().all()
+    sales = result.all()
 
     items = [
         SaleListResponse(
-            id=s.id,
-            sale_number=s.sale_number,
-            date=s.date,
-            customer_name=s.customer_name,
-            channel_id=s.channel_id,
-            status=s.status,
-            total=s.total,
-            gross_profit=s.total - sum((item.unit_cost or Decimal(0)) * item.quantity for item in s.items),
-            contribution_margin=s.net_revenue,
-            item_count=len(s.items),
-            created_at=s.created_at,
+            id=row.Sale.id,
+            sale_number=row.Sale.sale_number,
+            date=row.Sale.date,
+            customer_name=row.Sale.customer_name,
+            channel_id=row.Sale.channel_id,
+            channel_name=row.channel_name or ("Direct" if row.Sale.channel_id is None else None),
+            payment_method=row.Sale.payment_method,
+            status=row.Sale.status,
+            total=row.Sale.total,
+            gross_profit=row.Sale.total - sum((item.unit_cost or Decimal(0)) * item.quantity for item in row.Sale.items),
+            contribution_margin=row.Sale.net_revenue,
+            item_count=len(row.Sale.items),
+            created_at=row.Sale.created_at,
         )
-        for s in sales
+        for row in sales
     ]
 
     return PaginatedSales(items=items, total=total, skip=skip, limit=limit)
@@ -145,12 +154,18 @@ async def get_metrics(
     db: DB,
     date_from: datetime.date | None = Query(None),
     date_to: datetime.date | None = Query(None),
+    channel_id: uuid.UUID | None = Query(None),
+    payment_method: str | None = Query(None),
 ):
     base = select(Sale).where(Sale.is_deleted == False)
     if date_from:
         base = base.where(Sale.date >= date_from)
     if date_to:
         base = base.where(Sale.date <= date_to)
+    if channel_id:
+        base = base.where(Sale.channel_id == channel_id)
+    if payment_method:
+        base = base.where(Sale.payment_method == payment_method)
 
     result = await db.execute(base.options(selectinload(Sale.items)))
     sales = result.scalars().all()
@@ -210,6 +225,22 @@ async def get_metrics(
         for cid, values in channel_rev.items()
     ]
 
+    payment_method_map: dict[str, dict[str, float | int | str]] = {}
+    for s in completed:
+        key = (s.payment_method or "unknown").strip() or "unknown"
+        bucket = payment_method_map.setdefault(
+            key,
+            {
+                "payment_method": key,
+                "order_count": 0,
+                "gross_sales": 0.0,
+                "contribution_margin": 0.0,
+            },
+        )
+        bucket["order_count"] += 1
+        bucket["gross_sales"] += float(s.total)
+        bucket["contribution_margin"] += float(s.net_revenue)
+
     return SalesMetrics(
         total_sales=total_sales,
         gross_sales=total_revenue,
@@ -224,6 +255,11 @@ async def get_metrics(
         refund_count=len(refunded),
         refund_rate=len(refunded) / len(sales) * 100 if sales else 0,
         revenue_by_channel=revenue_by_channel,
+        payment_method_breakdown=sorted(
+            payment_method_map.values(),
+            key=lambda item: float(item["gross_sales"]),
+            reverse=True,
+        ),
     )
 
 
@@ -236,7 +272,7 @@ async def get_metrics(
 async def get_sale(sale_id: uuid.UUID, db: DB):
     result = await db.execute(
         select(Sale)
-        .options(selectinload(Sale.items))
+        .options(selectinload(Sale.items), selectinload(Sale.channel))
         .where(Sale.id == sale_id, Sale.is_deleted == False)
     )
     sale = result.scalar_one_or_none()
@@ -294,7 +330,7 @@ async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
 
     # Re-fetch with items
     result = await db.execute(
-        select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
+        select(Sale).options(selectinload(Sale.items), selectinload(Sale.channel)).where(Sale.id == sale.id)
     )
     return _to_sale_response(result.scalar_one())
 
@@ -348,7 +384,7 @@ async def update_sale(sale_id: uuid.UUID, body: SaleUpdate, user: CurrentUser, d
     await db.refresh(sale)
 
     result = await db.execute(
-        select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
+        select(Sale).options(selectinload(Sale.items), selectinload(Sale.channel)).where(Sale.id == sale.id)
     )
     return _to_sale_response(result.scalar_one())
 
@@ -383,7 +419,7 @@ async def delete_sale(sale_id: uuid.UUID, user: CurrentUser, db: DB):
 async def refund_sale(sale_id: uuid.UUID, body: RefundRequestBody = Body(...), user: CurrentUser = None, db: DB = None):
     result = await db.execute(
         select(Sale)
-        .options(selectinload(Sale.items))
+        .options(selectinload(Sale.items), selectinload(Sale.channel))
         .where(Sale.id == sale_id, Sale.is_deleted == False)
     )
     sale = result.scalar_one_or_none()

@@ -79,6 +79,7 @@ async def seed_report_data(db_session: AsyncSession, seed_material: Material):
         date=date(2026, 3, 18),
         customer_name="Test Customer",
         channel_id=channel.id,
+        payment_method="card",
         status="paid",
         subtotal=Decimal("20.00"),
         shipping_charged=Decimal("5.00"),
@@ -157,6 +158,7 @@ async def test_sales_report(client: AsyncClient, seed_report_data):
     assert len(data["period_data"]) >= 1
     assert len(data["top_products"]) >= 1
     assert len(data["channel_breakdown"]) >= 1
+    assert len(data["payment_method_breakdown"]) >= 1
 
 
 @pytest.mark.asyncio
@@ -183,6 +185,20 @@ async def test_sales_report_date_filter(client: AsyncClient, seed_report_data):
     resp = await client.get("/api/v1/reports/sales", params={"date_from": "2030-01-01"})
     data = resp.json()
     assert data["total_orders"] == 0
+
+
+@pytest.mark.asyncio
+async def test_sales_report_supports_channel_and_payment_method_filters(client: AsyncClient, seed_report_data):
+    channel_id = seed_report_data["channel"].id
+    resp = await client.get(
+        "/api/v1/reports/sales",
+        params={"channel_id": str(channel_id), "payment_method": "card"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_orders"] == 1
+    assert data["channel_breakdown"][0]["channel_name"] == "Etsy"
+    assert data["payment_method_breakdown"][0]["payment_method"] == "card"
 
 
 # ── P&L Report ───────────────────────────────────────────────────

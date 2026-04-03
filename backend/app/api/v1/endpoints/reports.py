@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import uuid
 
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
@@ -94,9 +95,11 @@ async def sales_report(
     db: DB,
     date_from: datetime.date | None = Query(None),
     date_to: datetime.date | None = Query(None),
+    channel_id: uuid.UUID | None = Query(None),
+    payment_method: str | None = Query(None),
     period: str = Query("monthly", enum=["daily", "weekly", "monthly", "yearly"]),
 ):
-    return await generate_sales_report(db, date_from, date_to, period)
+    return await generate_sales_report(db, date_from, date_to, period, channel_id, payment_method)
 
 
 @router.get(
@@ -108,9 +111,11 @@ async def sales_csv(
     db: DB,
     date_from: datetime.date | None = Query(None),
     date_to: datetime.date | None = Query(None),
+    channel_id: uuid.UUID | None = Query(None),
+    payment_method: str | None = Query(None),
     period: str = Query("monthly", enum=["daily", "weekly", "monthly", "yearly"]),
 ):
-    data = await generate_sales_report(db, date_from, date_to, period)
+    data = await generate_sales_report(db, date_from, date_to, period, channel_id, payment_method)
     csv_content = export_to_csv(
         data["period_data"],
         ["period", "order_count", "gross_sales", "item_cogs", "gross_profit", "platform_fees", "shipping_costs", "contribution_margin"],

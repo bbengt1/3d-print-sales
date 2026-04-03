@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.material import Material
@@ -151,12 +152,47 @@ async def test_list_sales_filter_status(client: AsyncClient, auth_headers: dict)
 
 
 @pytest.mark.asyncio
+async def test_list_sales_exposes_channel_name_and_payment_method_for_pos_sales(
+    client: AsyncClient, auth_headers: dict, db_session: AsyncSession, seed_product: Product
+):
+    payload = {
+        "date": "2026-04-03",
+        "payment_method": "cash",
+        "items": [
+            {
+                "product_id": str(seed_product.id),
+                "description": "Phone Stand",
+                "quantity": 1,
+                "unit_price": 8.99,
+                "unit_cost": 3.50,
+            }
+        ],
+    }
+    create_resp = await client.post("/api/v1/pos/checkout", headers=auth_headers, json=payload)
+    assert create_resp.status_code == 201
+
+    pos_channel = (
+        await db_session.execute(select(SalesChannel).where(SalesChannel.name == "POS"))
+    ).scalar_one()
+    resp = await client.get(
+        "/api/v1/sales",
+        params={"channel_id": str(pos_channel.id), "payment_method": "cash"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["items"][0]["channel_name"] == "POS"
+    assert data["items"][0]["payment_method"] == "cash"
+
+
+@pytest.mark.asyncio
 async def test_get_sale(client: AsyncClient, auth_headers: dict):
     create_resp = await client.post("/api/v1/sales", headers=auth_headers, json=_sale_payload())
     sale_id = create_resp.json()["id"]
     resp = await client.get(f"/api/v1/sales/{sale_id}")
     assert resp.status_code == 200
     assert resp.json()["id"] == sale_id
+    assert resp.json()["channel_name"] == "Direct"
     assert len(resp.json()["items"]) == 1
 
 
@@ -244,7 +280,49 @@ async def test_sale_metrics(client: AsyncClient, auth_headers: dict):
     assert "platform_fees" in data
     assert "shipping_costs" in data
     assert "contribution_margin" in data
+    assert "payment_method_breakdown" in data
     assert data["net_profit"] is None
+
+
+@pytest.mark.asyncio
+async def test_sale_metrics_can_filter_by_payment_method_and_channel(
+    client: AsyncClient, auth_headers: dict, db_session: AsyncSession, seed_product: Product
+):
+    pos_payload = {
+        "date": "2026-04-03",
+        "payment_method": "cash",
+        "items": [
+            {
+                "product_id": str(seed_product.id),
+                "description": "Phone Stand",
+                "quantity": 1,
+                "unit_price": 8.99,
+                "unit_cost": 3.50,
+            }
+        ],
+    }
+    pos_resp = await client.post("/api/v1/pos/checkout", headers=auth_headers, json=pos_payload)
+    assert pos_resp.status_code == 201
+
+    await client.post(
+        "/api/v1/sales",
+        headers=auth_headers,
+        json={**_sale_payload(product_id=seed_product.id), "payment_method": "card"},
+    )
+
+    pos_channel = (
+        await db_session.execute(select(SalesChannel).where(SalesChannel.name == "POS"))
+    ).scalar_one()
+
+    resp = await client.get(
+        "/api/v1/sales/metrics",
+        params={"channel_id": str(pos_channel.id), "payment_method": "cash"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_sales"] == 1
+    assert data["revenue_by_channel"][0]["channel_name"] == "POS"
+    assert data["payment_method_breakdown"][0]["payment_method"] == "cash"
 
 
 @pytest.mark.asyncio

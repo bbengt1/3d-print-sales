@@ -17,15 +17,18 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
+const defaultPaymentMethods = ['cash', 'card', 'other'];
+
 export default function SalesPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [channelId, setChannelId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [page, setPage] = useState(0);
   const limit = 25;
 
   const { data, isLoading } = useQuery<PaginatedSales>({
-    queryKey: ['sales', search, status, channelId, page],
+    queryKey: ['sales', search, status, channelId, paymentMethod, page],
     queryFn: () =>
       api
         .get('/sales', {
@@ -33,22 +36,26 @@ export default function SalesPage() {
             search: search || undefined,
             status: status || undefined,
             channel_id: channelId || undefined,
+            payment_method: paymentMethod || undefined,
             skip: page * limit,
             limit,
           },
         })
         .then((r) => r.data),
   });
-
   const { data: channels } = useQuery<SalesChannel[]>({
     queryKey: ['sales-channels'],
     queryFn: () => api.get('/sales/channels').then((r) => r.data),
   });
-
-  const channelMap = new Map(channels?.map((c) => [c.id, c.name]) || []);
   const sales = data?.items || [];
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / limit);
+  const paymentMethods = Array.from(
+    new Set([
+      ...defaultPaymentMethods,
+      ...sales.map((sale) => sale.payment_method).filter(Boolean),
+    ])
+  ) as string[];
 
   return (
     <div>
@@ -97,9 +104,24 @@ export default function SalesPage() {
           className="px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">All channels</option>
-          {channels?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
+          {channels?.map((channel) => (
+            <option key={channel.id} value={channel.id}>
+              {channel.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={paymentMethod}
+          onChange={(e) => {
+            setPaymentMethod(e.target.value);
+            setPage(0);
+          }}
+          className="px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">All payment methods</option>
+          {paymentMethods.map((method) => (
+            <option key={method} value={method}>
+              {method}
             </option>
           ))}
         </select>
@@ -132,6 +154,7 @@ export default function SalesPage() {
                   <th className="px-4 py-3 font-medium">Date</th>
                   <th className="px-4 py-3 font-medium">Customer</th>
                   <th className="px-4 py-3 font-medium">Channel</th>
+                  <th className="px-4 py-3 font-medium">Payment</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium text-right">Total</th>
                   <th className="px-4 py-3 font-medium text-right">Contribution Margin</th>
@@ -144,7 +167,8 @@ export default function SalesPage() {
                     <td className="px-4 py-3 font-mono text-xs">{s.sale_number}</td>
                     <td className="px-4 py-3">{s.date}</td>
                     <td className="px-4 py-3">{s.customer_name || '—'}</td>
-                    <td className="px-4 py-3">{s.channel_id ? channelMap.get(s.channel_id) || '—' : 'Direct'}</td>
+                    <td className="px-4 py-3">{s.channel_name || 'Direct'}</td>
+                    <td className="px-4 py-3 capitalize">{s.payment_method || '—'}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[s.status] || statusColors.pending}`}
@@ -194,10 +218,11 @@ export default function SalesPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Items</p>
-                    <p>{s.item_count}</p>
+                    <p className="text-xs text-muted-foreground">Payment</p>
+                    <p className="capitalize">{s.payment_method || '—'}</p>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-3">{s.channel_name || 'Direct'} &middot; {s.item_count} items</p>
               </Link>
             ))}
           </div>

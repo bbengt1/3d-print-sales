@@ -81,6 +81,7 @@ class SaleResponse(BaseModel):
     customer_id: uuid.UUID | None = None
     customer_name: str | None = None
     channel_id: uuid.UUID | None = None
+    channel_name: str | None = None
     tax_profile_id: uuid.UUID | None = None
     tax_treatment: str
     status: str
@@ -125,6 +126,8 @@ class SaleListResponse(BaseModel):
     date: datetime.date
     customer_name: str | None = None
     channel_id: uuid.UUID | None = None
+    channel_name: str | None = None
+    payment_method: str | None = None
     tax_profile_id: uuid.UUID | None = None
     tax_treatment: str | None = None
     status: str
@@ -156,3 +159,4 @@ class SalesMetrics(BaseModel):
     refund_count: int
     refund_rate: float
     revenue_by_channel: list[dict]
+    payment_method_breakdown: list[dict]

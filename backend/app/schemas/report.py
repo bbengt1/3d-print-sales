@@ -67,10 +67,18 @@ class ChannelBreakdown(BaseModel):
     contribution_margin: float
 
 
+class PaymentMethodBreakdown(BaseModel):
+    payment_method: str
+    order_count: int
+    gross_sales: float
+    contribution_margin: float
+
+
 class SalesReportResponse(BaseModel):
     period_data: list[SalesReportRow]
     top_products: list[ProductRanking]
     channel_breakdown: list[ChannelBreakdown]
+    payment_method_breakdown: list[PaymentMethodBreakdown]
     total_orders: int
     gross_sales: float
     item_cogs: float

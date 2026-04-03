@@ -70,6 +70,6 @@ async def pos_checkout(body: POSCheckoutCreate, user: CurrentUser, db: DB):
     await db.commit()
 
     result = await db.execute(
-        select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
+        select(Sale).options(selectinload(Sale.items), selectinload(Sale.channel)).where(Sale.id == sale.id)
     )
     return _to_sale_response(result.scalar_one())
