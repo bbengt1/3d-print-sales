@@ -195,7 +195,11 @@ async def test_delete_sale(client: AsyncClient, auth_headers: dict):
 async def test_refund_sale(client: AsyncClient, auth_headers: dict):
     create_resp = await client.post("/api/v1/sales", headers=auth_headers, json=_sale_payload())
     sale_id = create_resp.json()["id"]
-    resp = await client.post(f"/api/v1/sales/{sale_id}/refund", headers=auth_headers)
+    resp = await client.post(
+        f"/api/v1/sales/{sale_id}/refund",
+        headers=auth_headers,
+        json={"reason": "Customer returned item"},
+    )
     assert resp.status_code == 200
     assert resp.json()["status"] == "refunded"
 
@@ -204,8 +208,16 @@ async def test_refund_sale(client: AsyncClient, auth_headers: dict):
 async def test_refund_already_refunded(client: AsyncClient, auth_headers: dict):
     create_resp = await client.post("/api/v1/sales", headers=auth_headers, json=_sale_payload())
     sale_id = create_resp.json()["id"]
-    await client.post(f"/api/v1/sales/{sale_id}/refund", headers=auth_headers)
-    resp = await client.post(f"/api/v1/sales/{sale_id}/refund", headers=auth_headers)
+    await client.post(
+        f"/api/v1/sales/{sale_id}/refund",
+        headers=auth_headers,
+        json={"reason": "Customer returned item"},
+    )
+    resp = await client.post(
+        f"/api/v1/sales/{sale_id}/refund",
+        headers=auth_headers,
+        json={"reason": "Duplicate refund attempt"},
+    )
     assert resp.status_code == 400
 
 

@@ -100,6 +100,23 @@ class SaleResponse(BaseModel):
     created_at: datetime.datetime | None = None
     updated_at: datetime.datetime | None = None
 
+    model_config = {"from_attributes": True}
+
+
+class POSCheckoutCreate(BaseModel):
+    date: datetime.date = Field(..., examples=["2026-03-20"])
+    customer_id: uuid.UUID | None = None
+    customer_name: str | None = Field(None, max_length=200, examples=["Walk-up Customer"])
+    tax_profile_id: uuid.UUID | None = None
+    tax_treatment: str = Field(
+        "seller_collected",
+        pattern="^(seller_collected|marketplace_facilitated|non_taxable)$",
+    )
+    tax_collected: Decimal = Field(Decimal(0), ge=0, examples=[0])
+    payment_method: str = Field(..., min_length=1, max_length=50, examples=["cash"])
+    notes: str | None = Field(None, max_length=1000)
+    items: list[SaleItemCreate] = Field(..., min_length=1)
+
 
 class SaleListResponse(BaseModel):
     """Lightweight sale for list views (no items)."""
