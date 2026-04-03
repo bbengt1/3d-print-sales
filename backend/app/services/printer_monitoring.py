@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -100,6 +102,19 @@ class HttpPrinterMonitorProvider(PrinterMonitorProvider):
             response = await client.get(url, headers=headers)
             response.raise_for_status()
             return response.content, response.headers.get("content-type")
+
+    async def _request_partial_text(self, printer: Printer, path: str, max_bytes: int) -> str:
+        """Fetch up to *max_bytes* from the beginning of a file (best-effort Range)."""
+        timeout = httpx.Timeout(DEFAULT_TIMEOUT_SECONDS)
+        url = self._build_url(printer, path)
+        headers = self._build_headers(printer)
+        headers["Range"] = f"bytes=0-{max_bytes - 1}"
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url, headers=headers)
+            # Accept both 200 (full file) and 206 (partial content)
+            if response.status_code not in {200, 206}:
+                response.raise_for_status()
+            return response.text[:max_bytes]
 
 
 class OctoPrintMonitorProvider(HttpPrinterMonitorProvider):
@@ -257,11 +272,33 @@ class MoonrakerMonitorProvider(HttpPrinterMonitorProvider):
     async def fetch_current_thumbnail(self, printer: Printer) -> PrinterThumbnailPayload | None:
         state = await self.fetch_live_state(printer)
         thumbnail_path = state.get("current_print_thumbnail_path")
-        if not thumbnail_path:
+        if thumbnail_path:
+            content, content_type = await self._request_bytes(printer, _build_moonraker_thumbnail_file_path(thumbnail_path))
+            media_type = _normalize_media_type(content_type, thumbnail_path)
+            return PrinterThumbnailPayload(path=thumbnail_path, content=content, media_type=media_type)
+
+        # Fallback: extract embedded thumbnail from gcode header
+        return await self._fetch_embedded_gcode_thumbnail(printer, state)
+
+    async def _fetch_embedded_gcode_thumbnail(
+        self, printer: Printer, state: dict[str, Any]
+    ) -> PrinterThumbnailPayload | None:
+        filename = state.get("current_print_name")
+        if not filename:
             return None
-        content, content_type = await self._request_bytes(printer, _build_moonraker_thumbnail_file_path(thumbnail_path))
-        media_type = _normalize_media_type(content_type, thumbnail_path)
-        return PrinterThumbnailPayload(path=thumbnail_path, content=content, media_type=media_type)
+        gcode_path = _build_moonraker_thumbnail_file_path(filename)
+        try:
+            header_text = await self._request_partial_text(printer, gcode_path, GCODE_HEADER_MAX_BYTES)
+        except Exception:  # noqa: BLE001
+            return None
+        thumbnails = _parse_gcode_embedded_thumbnails(header_text)
+        best = _select_best_embedded_thumbnail(thumbnails)
+        if not best or not best.data:
+            return None
+        media_type = _detect_embedded_media_type(best.data)
+        return PrinterThumbnailPayload(
+            path=f"embedded://{filename}", content=best.data, media_type=media_type,
+        )
 
 
 class MoonrakerWebsocketManager:
@@ -526,6 +563,76 @@ def _normalize_media_type(content_type: str | None, path: str) -> str:
         return content_type.split(";", 1)[0].strip()
     guessed, _ = mimetypes.guess_type(path)
     return guessed or "application/octet-stream"
+
+
+GCODE_HEADER_MAX_BYTES = 512 * 1024  # 512 KB – enough for embedded thumbnails
+
+_THUMBNAIL_BEGIN_RE = re.compile(
+    r"^;\s*thumbnail\s+begin\s+(\d+)x(\d+)\s+\d+",
+    re.IGNORECASE,
+)
+_THUMBNAIL_END_RE = re.compile(r"^;\s*thumbnail\s+end", re.IGNORECASE)
+
+
+@dataclass
+class _EmbeddedThumbnail:
+    width: int
+    height: int
+    data: bytes
+
+
+def _parse_gcode_embedded_thumbnails(text: str) -> list[_EmbeddedThumbnail]:
+    """Parse ``; thumbnail begin WxH SIZE`` blocks from gcode header text."""
+    thumbnails: list[_EmbeddedThumbnail] = []
+    width = height = 0
+    b64_lines: list[str] = []
+    inside = False
+
+    for line in text.splitlines():
+        if not inside:
+            m = _THUMBNAIL_BEGIN_RE.match(line)
+            if m:
+                width, height = int(m.group(1)), int(m.group(2))
+                b64_lines = []
+                inside = True
+            continue
+
+        if _THUMBNAIL_END_RE.match(line):
+            try:
+                raw = base64.b64decode("".join(b64_lines))
+                thumbnails.append(_EmbeddedThumbnail(width=width, height=height, data=raw))
+            except Exception:  # noqa: BLE001
+                pass
+            inside = False
+            continue
+
+        # Strip the leading "; " comment prefix and collect base64 payload
+        stripped = line.lstrip(";").strip()
+        if stripped:
+            b64_lines.append(stripped)
+
+    return thumbnails
+
+
+def _select_best_embedded_thumbnail(thumbnails: list[_EmbeddedThumbnail]) -> _EmbeddedThumbnail | None:
+    if not thumbnails:
+        return None
+    return max(thumbnails, key=lambda t: t.width * t.height)
+
+
+def _detect_embedded_media_type(data: bytes) -> str:
+    """Sniff image type from magic bytes."""
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if data[:2] == b"\xff\xd8":
+        return "image/jpeg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[:3] == b"GIF":
+        return "image/gif"
+    if data[:4] == b"<svg" or data[:5] == b"<?xml":
+        return "image/svg+xml"
+    return "image/png"
 
 
 def _coerce_datetime(value: Any) -> datetime | None:
