@@ -65,7 +65,12 @@ Standard sales surfaces should expose POS metadata without requiring special-cas
 
 POS is intended to be a cashier workflow, so it should not silently oversell stock.
 
-The POS inventory behavior and no-oversell rule are tracked separately in issue `#68`.
+Current POS inventory rule:
+- product-backed POS checkout is blocked when requested quantity exceeds available `stock_qty`
+- the checkout should fail before any sale or inventory transaction is committed
+- multi-line POS checkout should behave all-or-nothing when any product-backed line is short on stock
+
+This rule keeps POS operationally predictable and avoids silently recording stock movement that the system could not actually fulfill.
 
 ## Related Areas
 

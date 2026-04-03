@@ -9,7 +9,11 @@ from app.api.v1.endpoints.sales import _to_sale_response
 from app.models.sale import Sale
 from app.schemas.sale import POSCheckoutCreate, SaleResponse
 from app.services.audit_service import create_audit_log
-from app.services.sales_service import create_sale_with_items, get_or_create_sales_channel
+from app.services.sales_service import (
+    InsufficientStockError,
+    create_sale_with_items,
+    get_or_create_sales_channel,
+)
 
 POS_CHANNEL_NAME = "POS"
 
@@ -47,7 +51,10 @@ async def pos_checkout(body: POSCheckoutCreate, user: CurrentUser, db: DB):
             notes=body.notes,
             status="paid",
             items=body.items,
+            enforce_stock_availability=True,
         )
+    except InsufficientStockError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

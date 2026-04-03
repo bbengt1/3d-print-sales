@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 import uuid
 from decimal import Decimal
 
@@ -13,6 +14,10 @@ from app.models.sales_channel import SalesChannel
 from app.models.product import Product
 from app.models.inventory_transaction import InventoryTransaction
 from app.services.inventory_accounting_service import post_cogs_for_sale
+
+
+class InsufficientStockError(Exception):
+    """Raised when a sale should be blocked because stock is insufficient."""
 
 
 async def generate_sale_number(db: AsyncSession) -> str:
@@ -66,6 +71,41 @@ async def resolve_sale_customer(
     return customer.id, customer_name or customer.name
 
 
+async def validate_stock_availability_for_sale(
+    db: AsyncSession,
+    *,
+    items: list,
+) -> None:
+    requested_by_product: dict[uuid.UUID, int] = defaultdict(int)
+    for item in items:
+        item_data = item.model_dump() if hasattr(item, "model_dump") else item
+        product_id = item_data.get("product_id")
+        quantity = item_data.get("quantity", 0)
+        if product_id:
+            requested_by_product[product_id] += quantity
+
+    if not requested_by_product:
+        return
+
+    result = await db.execute(select(Product).where(Product.id.in_(requested_by_product.keys())))
+    products = {product.id: product for product in result.scalars().all()}
+
+    missing_product_ids = [product_id for product_id in requested_by_product if product_id not in products]
+    if missing_product_ids:
+        raise ValueError("Product not found")
+
+    insufficient: list[str] = []
+    for product_id, requested_qty in requested_by_product.items():
+        product = products[product_id]
+        if product.stock_qty < requested_qty:
+            insufficient.append(
+                f"{product.name} only has {product.stock_qty} in stock; requested {requested_qty}"
+            )
+
+    if insufficient:
+        raise InsufficientStockError("Insufficient stock for POS checkout: " + "; ".join(insufficient))
+
+
 async def create_sale_with_items(
     db: AsyncSession,
     *,
@@ -84,12 +124,16 @@ async def create_sale_with_items(
     notes: str | None,
     status: str,
     items: list,
+    enforce_stock_availability: bool = False,
 ) -> Sale:
     resolved_customer_id, resolved_customer_name = await resolve_sale_customer(
         db,
         customer_id=customer_id,
         customer_name=customer_name,
     )
+
+    if enforce_stock_availability:
+        await validate_stock_availability_for_sale(db, items=items)
 
     sale_number = await generate_sale_number(db)
     items_data = [i.model_dump() if hasattr(i, "model_dump") else i for i in items]
