@@ -280,43 +280,43 @@ export default function POSPage() {
                       outOfStock ? 'opacity-70' : 'hover:border-primary/40'
                     )}
                   >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex items-start gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">{product.sku}</p>
-                        <h3 className="mt-2 break-words text-lg font-semibold leading-tight">{product.name}</h3>
-                        {product.description && (
-                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 lg:min-w-56 lg:grid-cols-2">
-                        <div className="rounded-2xl bg-background px-3 py-2 text-sm">
-                          <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Stock</p>
-                          <p className={cn('mt-1 font-semibold', product.stock_qty <= product.reorder_point && 'text-amber-600')}>
-                            {product.stock_qty}
+                        <div className="flex min-w-0 items-center gap-3">
+                          <p className="shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                            {product.sku}
                           </p>
-                        </div>
-                        <div className="rounded-2xl bg-background px-3 py-2 text-sm">
-                          <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">In cart</p>
-                          <p className="mt-1 font-semibold">{cartQty}</p>
+                          <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-tight">
+                            {product.name}
+                          </h3>
                         </div>
                       </div>
+                      <div className="inline-flex shrink-0 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground">
+                        {formatCurrency(product.unit_price)}
+                      </div>
+                    </div>
 
-                      <div className="flex flex-col gap-3 lg:min-w-52 lg:items-end">
-                        <div className="inline-flex w-fit max-w-full self-start rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground lg:self-end">
-                          {formatCurrency(product.unit_price)}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleAddProduct(product)}
-                          disabled={outOfStock}
-                          aria-label={`Add ${product.name} to cart`}
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground lg:w-52"
-                        >
-                          <Plus className="h-4 w-4" />
-                          {outOfStock ? 'Stock maxed in cart' : 'Add to cart'}
-                        </button>
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <div className="inline-flex items-center gap-2 rounded-2xl bg-background px-3 py-2 text-sm">
+                        <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Stock</span>
+                        <span className={cn('font-semibold', product.stock_qty <= product.reorder_point && 'text-amber-600')}>
+                          {product.stock_qty}
+                        </span>
                       </div>
+                      <div className="inline-flex items-center gap-2 rounded-2xl bg-background px-3 py-2 text-sm">
+                        <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">In cart</span>
+                        <span className="font-semibold">{cartQty}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddProduct(product)}
+                        disabled={outOfStock}
+                        aria-label={`Add ${product.name} to cart`}
+                        className="ml-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2.5 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {outOfStock ? 'Stock maxed in cart' : 'Add to cart'}
+                      </button>
                     </div>
                   </article>
                 );
