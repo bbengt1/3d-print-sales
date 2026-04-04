@@ -214,6 +214,7 @@ Notes:
 - TypeScript path aliasing for `@/*` is configured in both `vite.config.ts` and `tsconfig.app.json`.
 - `npm run build` is the expected baseline validation step for frontend changes.
 - `npm test` runs the Vitest frontend suite, including POS cashier workflow coverage.
+- Frontend routes are lazy-loaded and chart-heavy dependencies are split into separate build chunks to keep the initial bundle healthier.
 
 ```bash
 # Rebuild after dependency changes
