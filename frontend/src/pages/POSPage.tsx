@@ -19,6 +19,7 @@ import {
 import type { Customer, PaginatedProducts, Product, Sale } from '@/types';
 
 const today = new Date().toISOString().split('T')[0];
+const POS_PRODUCT_PAGE_SIZE = 100;
 
 function getErrorDetail(error: unknown): string {
   if (
@@ -74,7 +75,32 @@ export default function POSPage() {
 
   const { data: productsData, isLoading: productsLoading, isError: productsError } = useQuery<PaginatedProducts>({
     queryKey: ['products', 'pos'],
-    queryFn: () => api.get('/products', { params: { limit: 200, is_active: true } }).then((r) => r.data),
+    queryFn: async () => {
+      const items: Product[] = [];
+      let skip = 0;
+      let total = 0;
+
+      do {
+        const response = await api.get<PaginatedProducts>('/products', {
+          params: {
+            limit: POS_PRODUCT_PAGE_SIZE,
+            skip,
+            is_active: true,
+          },
+        });
+        const page = response.data;
+        items.push(...page.items);
+        total = page.total;
+        skip += page.items.length;
+      } while (skip < total);
+
+      return {
+        items,
+        total,
+        skip: 0,
+        limit: items.length || POS_PRODUCT_PAGE_SIZE,
+      };
+    },
   });
 
   const { data: customers = [] } = useQuery<Customer[]>({
