@@ -215,6 +215,7 @@ Notes:
 - `npm run build` is the expected baseline validation step for frontend changes.
 - `npm test` runs the Vitest frontend suite, including POS cashier workflow coverage.
 - Frontend routes are lazy-loaded and chart-heavy dependencies are split into separate build chunks to keep the initial bundle healthier.
+- `frontend/package.json` may use `overrides` to pin patched transitive dependencies when upstream toolchain ranges lag behind published security fixes.
 
 ```bash
 # Rebuild after dependency changes
