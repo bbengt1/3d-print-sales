@@ -156,6 +156,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
 - **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, gross profit + contribution margin breakdown, status management, refund
 - **Sales** — Sales list with search, status/channel/payment-method filters, pagination; sale detail with line items, payment method, gross profit + contribution margin breakdown, status management, refund
+- **POS** — Dedicated `/pos` cashier page with searchable product catalog, touch-friendly cart controls, guest or attached customer checkout, tax entry, and success reset flow
 - **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
 - **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
 - **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export
@@ -206,11 +207,13 @@ python -m pytest backend/tests/ -v
 cd frontend
 npm install
 npm run build
+npm test
 ```
 
 Notes:
 - TypeScript path aliasing for `@/*` is configured in both `vite.config.ts` and `tsconfig.app.json`.
 - `npm run build` is the expected baseline validation step for frontend changes.
+- `npm test` runs the Vitest frontend suite, including POS cashier workflow coverage.
 
 ```bash
 # Rebuild after dependency changes

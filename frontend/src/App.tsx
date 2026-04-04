@@ -22,6 +22,7 @@ import SalesPage from '@/pages/SalesPage';
 import SaleDetailPage from '@/pages/SaleDetailPage';
 import SaleFormPage from '@/pages/SaleFormPage';
 import SalesChannelsPage from '@/pages/SalesChannelsPage';
+import POSPage from '@/pages/POSPage';
 import CalculatorPage from '@/pages/CalculatorPage';
 import ReportsLayout from '@/pages/reports/ReportsLayout';
 import InventoryReportPage from '@/pages/reports/InventoryReportPage';
@@ -65,6 +66,7 @@ export default function App() {
               <Route path="/printers/:id/edit" element={<PrinterFormPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/sales" element={<SalesPage />} />
+              <Route path="/pos" element={<POSPage />} />
               <Route path="/sales/new" element={<SaleFormPage />} />
               <Route path="/sales/channels" element={<SalesChannelsPage />} />
               <Route path="/sales/:id" element={<SaleDetailPage />} />

@@ -316,6 +316,24 @@ export interface SaleItem {
   created_at: string | null;
 }
 
+export interface POSCheckoutItemInput {
+  product_id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  unit_cost: number;
+}
+
+export interface POSCheckoutPayload {
+  date: string;
+  customer_id: string | null;
+  customer_name: string | null;
+  tax_collected: number;
+  payment_method: string;
+  notes: string | null;
+  items: POSCheckoutItemInput[];
+}
+
 export interface Sale {
   id: string;
   sale_number: string;

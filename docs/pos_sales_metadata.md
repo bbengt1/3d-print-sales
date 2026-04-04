@@ -72,8 +72,26 @@ Current POS inventory rule:
 
 This rule keeps POS operationally predictable and avoids silently recording stock movement that the system could not actually fulfill.
 
+## Frontend Cashier Workflow
+
+The frontend POS entry point is the dedicated `/pos` route.
+
+That screen is intended for fast counter use and should provide:
+- searchable product-first cart building
+- guest checkout by default
+- optional customer attachment
+- payment method selection
+- tax entry
+- immediate success feedback and cart reset after checkout
+
+The frontend should submit directly to:
+- `POST /api/v1/pos/checkout`
+
+It should not route cashier users through the general `/sales/new` form for normal point-of-sale transactions.
+
 ## Related Areas
 
 - POS backend checkout foundation: issue `#65`
 - POS metadata/reporting contract: issue `#67`
 - POS inventory enforcement: issue `#68`
+- POS frontend cashier workflow: issue `#66`
