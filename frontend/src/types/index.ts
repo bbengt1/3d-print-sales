@@ -70,7 +70,7 @@ export interface Printer {
   monitor_enabled: boolean;
   monitor_provider: string | null;
   monitor_base_url: string | null;
-  monitor_api_key: string | null;
+  monitor_api_key_configured: boolean;
   monitor_poll_interval_seconds: number;
   monitor_online: boolean | null;
   monitor_status: string | null;

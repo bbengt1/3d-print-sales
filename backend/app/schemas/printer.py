@@ -60,6 +60,7 @@ class PrinterUpdate(BaseModel):
     monitor_provider: PrinterMonitorProvider | None = None
     monitor_base_url: str | None = Field(None, max_length=500)
     monitor_api_key: str | None = Field(None, max_length=255)
+    clear_monitor_api_key: bool = False
     monitor_poll_interval_seconds: int | None = Field(None, ge=5, le=3600)
 
     @field_validator("monitor_base_url")
@@ -107,7 +108,7 @@ class PrinterResponse(BaseModel):
     monitor_enabled: bool
     monitor_provider: str | None = None
     monitor_base_url: str | None = None
-    monitor_api_key: str | None = None
+    monitor_api_key_configured: bool = False
     monitor_poll_interval_seconds: int
     monitor_online: bool | None = None
     monitor_status: str | None = None

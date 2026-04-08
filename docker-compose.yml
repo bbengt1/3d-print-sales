@@ -2,9 +2,9 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: printuser
-      POSTGRES_PASSWORD: printpass
-      POSTGRES_DB: printsales
+      POSTGRES_USER: ${DB_USER:-printuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-replace-with-local-db-password}
+      POSTGRES_DB: ${DB_NAME:-printsales}
     ports:
       - "5432:5432"
     volumes:
@@ -22,12 +22,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://printuser:printpass@db:5432/printsales
-      SECRET_KEY: dev-secret-key-change-in-prod
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://printuser:replace-with-local-db-password@db:5432/printsales}
+      SECRET_KEY: ${SECRET_KEY:-replace-with-local-dev-secret-key}
       ENVIRONMENT: development
       BACKEND_CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
-      ADMIN_EMAIL: admin@example.com
-      ADMIN_PASSWORD: admin123
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-replace-with-local-admin-password}
       RATE_LIMIT_PER_MINUTE: "120"
       RATE_LIMIT_BURST: "30"
     depends_on:

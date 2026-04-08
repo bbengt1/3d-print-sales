@@ -42,6 +42,11 @@ def _apply_thumbnail_urls(printer: Printer) -> Printer:
     return printer
 
 
+def _prepare_printer_response(printer: Printer) -> Printer:
+    setattr(printer, "monitor_api_key_configured", bool(getattr(printer, "monitor_api_key", None)))
+    return _apply_thumbnail_urls(printer)
+
+
 async def _get_printer_or_404(db: DB, printer_id: uuid.UUID) -> Printer:
     result = await db.execute(select(Printer).where(Printer.id == printer_id))
     printer = result.scalar_one_or_none()
@@ -86,7 +91,7 @@ async def list_printers(
     for printer in items:
         mark_printer_stale_if_needed(printer)
         await refresh_printer_monitoring(db, printer)
-        _apply_thumbnail_urls(printer)
+        _prepare_printer_response(printer)
     return PaginatedPrinters(items=items, total=total, skip=skip, limit=limit)
 
 
@@ -104,7 +109,7 @@ async def get_printer(printer_id: uuid.UUID, db: DB):
     for event in history_events:
         setattr(event, "actor_name", event.actor.full_name if getattr(event, "actor", None) else None)
     setattr(printer, "history_events", history_events)
-    return _apply_thumbnail_urls(printer)
+    return _prepare_printer_response(printer)
 
 
 @router.post(
@@ -119,13 +124,17 @@ async def create_printer(body: PrinterCreate, user: CurrentUser, db: DB):
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Printer name or slug already exists")
 
-    printer = Printer(**body.model_dump())
+    create_data = body.model_dump()
+    if not create_data.get("monitor_enabled"):
+        create_data["monitor_api_key"] = None
+
+    printer = Printer(**create_data)
     db.add(printer)
     await db.commit()
     await db.refresh(printer)
     if printer.monitor_enabled:
         await refresh_printer_monitoring(db, printer, force=True)
-    return _apply_thumbnail_urls(printer)
+    return _prepare_printer_response(printer)
 
 
 @router.put(
@@ -139,6 +148,7 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
 
     old_status = printer.status
     update_data = body.model_dump(exclude_unset=True)
+    clear_monitor_api_key = update_data.pop("clear_monitor_api_key", False)
     if "name" in update_data or "slug" in update_data:
         existing = await db.execute(
             select(Printer.id).where(
@@ -152,7 +162,11 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
     for field, value in update_data.items():
         setattr(printer, field, value)
 
+    if clear_monitor_api_key:
+        printer.monitor_api_key = None
+
     if not printer.monitor_enabled:
+        printer.monitor_api_key = None
         printer.monitor_online = None
         printer.monitor_status = None
         printer.monitor_progress_percent = None
@@ -183,7 +197,7 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
     await db.refresh(printer)
     if printer.monitor_enabled:
         await refresh_printer_monitoring(db, printer, force=True)
-    return _apply_thumbnail_urls(printer)
+    return _prepare_printer_response(printer)
 
 
 @router.post(
@@ -195,7 +209,7 @@ async def update_printer(printer_id: uuid.UUID, body: PrinterUpdate, user: Curre
 async def refresh_printer(printer_id: uuid.UUID, user: CurrentUser, db: DB):
     printer = await _get_printer_or_404(db, printer_id)
     await refresh_printer_monitoring(db, printer, force=True)
-    return _apply_thumbnail_urls(printer)
+    return _prepare_printer_response(printer)
 
 
 @router.post(

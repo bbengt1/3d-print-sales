@@ -7,6 +7,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
+from app.models.printer import Printer
 from app.models.printer_history_event import PrinterHistoryEvent
 
 
@@ -156,6 +157,103 @@ async def test_refresh_printer_monitoring_endpoint_updates_live_fields(client: A
     assert data["monitor_online"] is True
     assert data["monitor_progress_percent"] == 42.5
     assert data["current_print_name"] == "demo.gcode"
+    assert "monitor_api_key" not in data
+    assert data["monitor_api_key_configured"] is True
+
+
+@pytest.mark.asyncio
+async def test_printer_responses_do_not_expose_monitor_api_key(client: AsyncClient, auth_headers: dict, monkeypatch):
+    async def fake_refresh(db, printer, force=False):
+        return printer
+
+    monkeypatch.setattr("app.api.v1.endpoints.printers.refresh_printer_monitoring", fake_refresh)
+
+    create = await client.post(
+        "/api/v1/printers",
+        headers=auth_headers,
+        json={
+            "name": "Secret Safe Printer",
+            "slug": "secret-safe-printer",
+            "status": "idle",
+            "monitor_enabled": True,
+            "monitor_provider": "octoprint",
+            "monitor_base_url": "http://octoprint.local",
+            "monitor_api_key": "super-secret-key",
+        },
+    )
+    assert create.status_code == 201
+    created = create.json()
+    assert "monitor_api_key" not in created
+    assert created["monitor_api_key_configured"] is True
+
+    printer_id = created["id"]
+    detail = await client.get(f"/api/v1/printers/{printer_id}")
+    assert detail.status_code == 200
+    detail_data = detail.json()
+    assert "monitor_api_key" not in detail_data
+    assert detail_data["monitor_api_key_configured"] is True
+
+
+@pytest.mark.asyncio
+async def test_update_printer_can_clear_saved_monitor_api_key(client: AsyncClient, auth_headers: dict, db_session):
+    create = await client.post(
+        "/api/v1/printers",
+        headers=auth_headers,
+        json={
+            "name": "Clearable Secret Printer",
+            "slug": "clearable-secret-printer",
+            "status": "idle",
+            "monitor_enabled": True,
+            "monitor_provider": "octoprint",
+            "monitor_base_url": "http://octoprint.local",
+            "monitor_api_key": "super-secret-key",
+        },
+    )
+    printer_id = create.json()["id"]
+
+    clear = await client.put(
+        f"/api/v1/printers/{printer_id}",
+        headers=auth_headers,
+        json={"clear_monitor_api_key": True},
+    )
+    assert clear.status_code == 200
+    data = clear.json()
+    assert "monitor_api_key" not in data
+    assert data["monitor_api_key_configured"] is False
+    stored = await db_session.scalar(select(Printer).where(Printer.id == uuid.UUID(printer_id)))
+    assert stored is not None
+    assert stored.monitor_api_key is None
+
+
+@pytest.mark.asyncio
+async def test_disabling_monitoring_clears_saved_monitor_api_key(client: AsyncClient, auth_headers: dict, db_session):
+    create = await client.post(
+        "/api/v1/printers",
+        headers=auth_headers,
+        json={
+            "name": "Disable Monitoring Secret Printer",
+            "slug": "disable-monitoring-secret-printer",
+            "status": "printing",
+            "monitor_enabled": True,
+            "monitor_provider": "octoprint",
+            "monitor_base_url": "http://octoprint.local",
+            "monitor_api_key": "super-secret-key",
+        },
+    )
+    printer_id = create.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/printers/{printer_id}",
+        headers=auth_headers,
+        json={"monitor_enabled": False},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["monitor_enabled"] is False
+    assert data["monitor_api_key_configured"] is False
+    stored = await db_session.scalar(select(Printer).where(Printer.id == uuid.UUID(printer_id)))
+    assert stored is not None
+    assert stored.monitor_api_key is None
 
 
 @pytest.mark.asyncio

@@ -14,7 +14,7 @@ class UserRole(str, Enum):
 
 class LoginRequest(BaseModel):
     email: EmailStr = Field(..., examples=["admin@example.com"])
-    password: str = Field(..., min_length=1, examples=["admin123"])
+    password: str = Field(..., min_length=1, examples=["replace-with-your-password"])
 
 
 class TokenResponse(BaseModel):

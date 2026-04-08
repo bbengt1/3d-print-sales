@@ -18,6 +18,8 @@ Full-stack web application for managing a 3D printing business — job costing, 
 # Clone and start (development)
 git clone <repo-url>
 cd 3d-print-sales
+cp .env.example .env
+# Replace placeholder secrets before first run
 docker compose up -d
 
 # Services
@@ -36,12 +38,9 @@ docker compose -f docker-compose.prod.yml up -d --build
 # Access at http://localhost
 ```
 
-### Default Admin Login
+### Admin Seed Login
 
-```
-Email:    admin@example.com
-Password: admin123
-```
+The backend seeds an admin user from `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Set those values in your local `.env` before first run instead of relying on a committed default password.
 
 ## Project Structure
 
@@ -240,12 +239,14 @@ See `.env.example` for all configuration options. Key variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | `postgresql+asyncpg://...` | PostgreSQL connection string |
-| `SECRET_KEY` | `change-me...` | JWT signing key |
+| `SECRET_KEY` | `replace-with-...` | JWT signing key |
 | `ENVIRONMENT` | `development` | `development` / `staging` / `production` |
 | `ADMIN_EMAIL` | `admin@example.com` | Seed admin email |
-| `ADMIN_PASSWORD` | `admin123` | Seed admin password |
+| `ADMIN_PASSWORD` | `replace-with-...` | Seed admin password |
 | `RATE_LIMIT_PER_MINUTE` | `120` | API rate limit per IP |
 | `RATE_LIMIT_BURST` | `30` | Rate limit burst capacity |
+
+Generate distinct local development secrets for database and auth settings before using the app. Placeholder values in tracked files are intentionally non-production and should be replaced in your local environment.
 
 ## Finance Metric Naming
 

@@ -10,16 +10,16 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"  # development | staging | production
     TESTING: bool = False
 
-    DATABASE_URL: str = "postgresql+asyncpg://printuser:printpass@db:5432/printsales"
+    DATABASE_URL: str = "postgresql+asyncpg://printuser:replace-with-local-db-password@db:5432/printsales"
     DB_USER: str = "printuser"
-    DB_PASSWORD: str = "printpass"
+    DB_PASSWORD: str = "replace-with-local-db-password"
     DB_NAME: str = "printsales"
     DB_HOST: str = "db"
     DB_PORT: int = 5432
 
     AUTO_CREATE_SCHEMA: bool = True
 
-    SECRET_KEY: str = "change-me-in-production"
+    SECRET_KEY: str = "replace-with-local-dev-secret-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ]
 
     ADMIN_EMAIL: str = "admin@example.com"
-    ADMIN_PASSWORD: str = "admin123"
+    ADMIN_PASSWORD: str = "replace-with-local-admin-password"
 
     # Rate limiting
     RATE_LIMIT_PER_MINUTE: int = 120
@@ -39,8 +39,8 @@ class Settings(BaseSettings):
 
     def model_post_init(self, __context) -> None:
         placeholder_markers = (
+            "replace-with-local-db-password",
             "replace-with-strong-db-password",
-            "printpass",
         )
         if (
             not self.DATABASE_URL

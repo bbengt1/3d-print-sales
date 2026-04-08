@@ -26,6 +26,7 @@ const emptyForm = {
   monitor_provider: 'octoprint',
   monitor_base_url: '',
   monitor_api_key: '',
+  clear_monitor_api_key: false,
   monitor_poll_interval_seconds: 30,
 };
 
@@ -71,7 +72,8 @@ export default function PrinterFormPage() {
       monitor_enabled: printer.monitor_enabled,
       monitor_provider: printer.monitor_provider || 'octoprint',
       monitor_base_url: printer.monitor_base_url || '',
-      monitor_api_key: printer.monitor_api_key || '',
+      monitor_api_key: '',
+      clear_monitor_api_key: false,
       monitor_poll_interval_seconds: printer.monitor_poll_interval_seconds || 30,
     });
     setSlugTouched(true);
@@ -115,7 +117,8 @@ export default function PrinterFormPage() {
     notes: form.notes.trim() || null,
     monitor_provider: form.monitor_enabled ? form.monitor_provider : null,
     monitor_base_url: form.monitor_enabled ? (form.monitor_base_url.trim() || null) : null,
-    monitor_api_key: form.monitor_enabled ? (form.monitor_api_key.trim() || null) : null,
+    monitor_api_key: form.monitor_enabled && form.monitor_api_key.trim() ? form.monitor_api_key.trim() : undefined,
+    clear_monitor_api_key: form.monitor_enabled ? form.clear_monitor_api_key : true,
   });
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -289,8 +292,35 @@ export default function PrinterFormPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1.5">API key / token</label>
-                  <input value={form.monitor_api_key} onChange={(e) => update('monitor_api_key', e.target.value)} className={inputClass('monitor_api_key')} placeholder="Optional if your provider requires auth" />
-                  <p className="mt-1 text-xs text-muted-foreground">{selectedProvider.authHint}</p>
+                  <input
+                    type="password"
+                    value={form.monitor_api_key}
+                    onChange={(e) => {
+                      update('monitor_api_key', e.target.value);
+                      if (e.target.value) update('clear_monitor_api_key', false);
+                    }}
+                    className={inputClass('monitor_api_key')}
+                    placeholder={isEdit ? 'Enter a new key to replace the saved value' : 'Optional if your provider requires auth'}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {printer?.monitor_api_key_configured && isEdit
+                      ? 'A monitor key is already stored. Leave this blank to keep it, enter a new key to replace it, or clear the saved key below.'
+                      : selectedProvider.authHint}
+                  </p>
+                  {isEdit && printer?.monitor_api_key_configured ? (
+                    <label className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={form.clear_monitor_api_key}
+                        onChange={(e) => {
+                          update('clear_monitor_api_key', e.target.checked);
+                          if (e.target.checked) update('monitor_api_key', '');
+                        }}
+                        className="h-4 w-4"
+                      />
+                      Clear the saved API key on save
+                    </label>
+                  ) : null}
                 </div>
 
                 <div className="flex justify-end">

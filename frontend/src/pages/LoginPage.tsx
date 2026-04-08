@@ -130,7 +130,7 @@ export default function LoginPage() {
           </form>
         </div>
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Default: admin@example.com / admin123
+          Sign in with the admin credentials configured for this environment.
         </p>
       </div>
     </div>
