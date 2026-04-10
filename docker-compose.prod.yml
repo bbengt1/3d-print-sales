@@ -6,7 +6,7 @@ services:
     container_name: 3d-print-sales-db
     environment:
       POSTGRES_USER: ${DB_USER:-printuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-replace-with-strong-db-password}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-production-db-password}
       POSTGRES_DB: ${DB_NAME:-printsales}
     volumes:
       - postgres_data:/var/lib/postgresql/data

@@ -40,7 +40,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ### Admin Seed Login
 
-The backend seeds an admin user from `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Set those values in your local `.env` before first run instead of relying on a committed default password.
+The backend seeds an admin user from `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Set those values in your local `.env` before first run. The backend now refuses to start while tracked placeholder secrets remain in place.
 
 ## Project Structure
 
@@ -239,14 +239,24 @@ See `.env.example` for all configuration options. Key variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | `postgresql+asyncpg://...` | PostgreSQL connection string |
-| `SECRET_KEY` | `replace-with-...` | JWT signing key |
+| `SECRET_KEY` | `generate-a-random-...` | JWT signing key |
 | `ENVIRONMENT` | `development` | `development` / `staging` / `production` |
 | `ADMIN_EMAIL` | `admin@example.com` | Seed admin email |
-| `ADMIN_PASSWORD` | `replace-with-...` | Seed admin password |
+| `ADMIN_PASSWORD` | `change-me-...` | Seed admin password |
 | `RATE_LIMIT_PER_MINUTE` | `120` | API rate limit per IP |
 | `RATE_LIMIT_BURST` | `30` | Rate limit burst capacity |
 
-Generate distinct local development secrets for database and auth settings before using the app. Placeholder values in tracked files are intentionally non-production and should be replaced in your local environment.
+Generate distinct local development secrets for database and auth settings before using the app. Placeholder values in tracked files are intentionally unusable, and the backend will exit until `DATABASE_URL` or `DB_PASSWORD`, `SECRET_KEY`, and `ADMIN_PASSWORD` are replaced with real values.
+
+## Secret Scanning
+
+The repository includes a GitHub Actions secret scan in [`.github/workflows/secret-scan.yml`](./.github/workflows/secret-scan.yml) using `gitleaks`.
+
+Run the same check locally before publishing or opening large refactors:
+
+```bash
+gitleaks git --redact --verbose --no-banner
+```
 
 ## Finance Metric Naming
 

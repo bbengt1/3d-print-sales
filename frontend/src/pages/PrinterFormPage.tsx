@@ -304,8 +304,8 @@ export default function PrinterFormPage() {
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
                     {printer?.monitor_api_key_configured && isEdit
-                      ? 'A monitor key is already stored. Leave this blank to keep it, enter a new key to replace it, or clear the saved key below.'
-                      : selectedProvider.authHint}
+                      ? 'A monitor key is already stored as a write-only secret. Leave this blank to keep it, enter a new key to replace it, or clear the saved key below.'
+                      : `${selectedProvider.authHint} Stored keys are write-only and are never returned to the browser.`}
                   </p>
                   {isEdit && printer?.monitor_api_key_configured ? (
                     <label className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">

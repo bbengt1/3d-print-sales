@@ -61,6 +61,7 @@ If a dedicated deployment user is introduced later, ownership should be adjusted
 ## Required Secret / Config Values
 
 These values must be set with real production-safe values before deployment.
+The backend refuses to start if tracked placeholder secrets are still present.
 
 ### Database
 - `DB_USER`
