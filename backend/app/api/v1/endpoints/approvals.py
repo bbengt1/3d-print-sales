@@ -65,7 +65,12 @@ async def approve_request(approval_id: uuid.UUID, body: ApprovalDecisionBody, ad
             reason=request.reason,
         )
     elif request.action_type == "sale_refund":
-        sale = (await db.execute(select(Sale).options(selectinload(Sale.items)).where(Sale.id == request.request_payload["sale_id"]))).scalar_one_or_none()
+        sale_id = request.request_payload.get("sale_id")
+        try:
+            sale_uuid = uuid.UUID(str(sale_id))
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="Approval request contains an invalid sale reference") from exc
+        sale = (await db.execute(select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale_uuid))).scalar_one_or_none()
         if not sale:
             raise HTTPException(status_code=404, detail="Sale not found for approval execution")
         if sale.status != "refunded":

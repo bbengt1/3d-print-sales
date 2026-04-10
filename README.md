@@ -175,6 +175,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - Use **Python 3.13** for local backend development and test execution.
 - A repo-level `.python-version` file is included to make the expected interpreter explicit.
 - Backend tests run with `TESTING=true`, which disables request rate limiting middleware so the suite does not fail with unrelated `429 Too Many Requests` responses.
+- GitHub Actions CI mirrors the repo baseline with `python -m pytest backend/tests -q`, `cd frontend && npm test`, and `cd frontend && npm run build`.
 
 ```bash
 # Run all backend tests
@@ -231,6 +232,17 @@ docker compose down
 docker compose down -v
 docker compose up -d
 ```
+
+## CI
+
+Baseline repository CI now lives in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
+It runs on pull requests and pushes to `main` with separate jobs for:
+- backend tests via `python -m pytest backend/tests -q`
+- frontend tests via `cd frontend && npm test`
+- frontend build validation via `cd frontend && npm run build`
+
+Keep local validation aligned with those commands before opening or updating a PR.
 
 ## Environment Variables
 

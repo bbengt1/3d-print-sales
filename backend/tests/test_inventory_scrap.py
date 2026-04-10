@@ -16,6 +16,7 @@ from app.services.inventory_service import record_scrap_inventory
 async def scrap_material(db_session: AsyncSession) -> Material:
     material = Material(
         name="PLA Gray",
+        brand="Generic",
         cost_per_g=Decimal("0.025"),
         spool_weight_g=1000,
         spool_price=Decimal("25.00"),
