@@ -7,8 +7,10 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import DB, CurrentUser
 from app.api.v1.endpoints.sales import _to_sale_response
 from app.models.sale import Sale
+from app.schemas.product import POSProductScanRequest, ProductResponse
 from app.schemas.sale import POSCheckoutCreate, SaleResponse
 from app.services.audit_service import create_audit_log
+from app.services.pos_service import POSBarcodeResolutionError, resolve_pos_barcode_scan
 from app.services.sales_service import (
     InsufficientStockError,
     create_sale_with_items,
@@ -18,6 +20,25 @@ from app.services.sales_service import (
 POS_CHANNEL_NAME = "POS"
 
 router = APIRouter(prefix="/pos", tags=["Sales"])
+
+
+@router.post(
+    "/scan/resolve",
+    response_model=ProductResponse,
+    summary="Resolve a barcode scan for POS",
+    description=(
+        "Resolves an exact UPC/barcode match into a sellable active product for keyboard-wedge POS scanners. "
+        "Returns a conflict for duplicates, inactive products, or out-of-stock products."
+    ),
+)
+async def resolve_scan(body: POSProductScanRequest, user: CurrentUser, db: DB):
+    try:
+        result = await resolve_pos_barcode_scan(db, code=body.code)
+    except POSBarcodeResolutionError as exc:
+        detail = str(exc)
+        status_code = 404 if detail.startswith("No active product matches") else 409
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+    return result.product
 
 
 @router.post(

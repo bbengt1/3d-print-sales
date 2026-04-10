@@ -50,6 +50,10 @@ class ProductResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class POSProductScanRequest(BaseModel):
+    code: str = Field(..., min_length=1, max_length=64, examples=["012345678901"])
+
+
 class PaginatedProducts(BaseModel):
     items: list[ProductResponse]
     total: int

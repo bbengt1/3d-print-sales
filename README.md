@@ -91,7 +91,7 @@ All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 | **Products** | Full CRUD at `/products` | `?is_active`, `?material_id`, `?low_stock`, `?search`, pagination |
 | **Inventory** | `GET/POST /inventory/transactions`, `GET /inventory/alerts` | `?product_id`, `?type`, pagination |
 | **Sales Channels** | Full CRUD at `/sales/channels` | `?is_active` |
-| **Sales** | Full CRUD at `/sales`, `GET /sales/metrics`, `POST /sales/{id}/refund`, `POST /pos/checkout` | `?status`, `?channel_id`, `?payment_method`, `?customer_id`, `?date_from`, `?date_to`, `?search`, pagination |
+| **Sales** | Full CRUD at `/sales`, `GET /sales/metrics`, `POST /sales/{id}/refund`, `POST /pos/checkout`, `POST /pos/scan/resolve` | `?status`, `?channel_id`, `?payment_method`, `?customer_id`, `?date_from`, `?date_to`, `?search`, pagination |
 | **Reports** | `GET /reports/inventory`, `/reports/sales`, `/reports/pl` + CSV variants | `?date_from`, `?date_to`, `?channel_id`, `?payment_method`, `?period` (daily/weekly/monthly/yearly) |
 | **Dashboard** | `GET /dashboard/summary`, `/charts/revenue`, `/charts/materials`, `/charts/profit-margins` | `?date_from`, `?date_to` |
 
@@ -155,7 +155,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
 - **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, gross profit + contribution margin breakdown, status management, refund
 - **Sales** — Sales list with search, status/channel/payment-method filters, pagination; sale detail with line items, payment method, gross profit + contribution margin breakdown, status management, refund
-- **POS** — Dedicated `/pos` cashier page with searchable product catalog, touch-friendly cart controls, guest or attached customer checkout, tax entry, and success reset flow
+- **POS** — Dedicated `/pos` cashier page with searchable product catalog, keyboard-wedge barcode scanning by product UPC, touch-friendly cart controls, guest or attached customer checkout, tax entry, and success reset flow
 - **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
 - **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
 - **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export
@@ -216,6 +216,7 @@ Notes:
 - `npm test` runs the Vitest frontend suite, including POS cashier workflow coverage.
 - Frontend routes are lazy-loaded and chart-heavy dependencies are split into separate build chunks to keep the initial bundle healthier.
 - `frontend/package.json` may use `overrides` to pin patched transitive dependencies when upstream toolchain ranges lag behind published security fixes.
+- Barcode scanning for POS is documented in [docs/pos_barcode_scanning.md](docs/pos_barcode_scanning.md).
 
 ```bash
 # Rebuild after dependency changes

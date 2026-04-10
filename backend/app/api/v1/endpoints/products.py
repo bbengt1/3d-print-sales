@@ -29,7 +29,7 @@ async def list_products(
     is_active: bool | None = Query(None, description="Filter by active status"),
     material_id: uuid.UUID | None = Query(None, description="Filter by material ID"),
     low_stock: bool | None = Query(None, description="Filter products below reorder point"),
-    search: str | None = Query(None, description="Search by name or SKU"),
+    search: str | None = Query(None, description="Search by name, SKU, or UPC"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(50, ge=1, le=100, description="Max records to return"),
 ):
@@ -43,7 +43,7 @@ async def list_products(
     if search:
         pattern = f"%{search}%"
         base = base.where(
-            Product.name.ilike(pattern) | Product.sku.ilike(pattern)
+            Product.name.ilike(pattern) | Product.sku.ilike(pattern) | Product.upc.ilike(pattern)
         )
 
     count_stmt = select(func.count()).select_from(base.subquery())
@@ -77,6 +77,10 @@ async def get_product(product_id: uuid.UUID, db: DB):
     description="Create a new product in the catalog. SKU is auto-generated in format PRD-{MATERIAL}-{NNNN}.",
 )
 async def create_product(body: ProductCreate, user: CurrentUser, db: DB):
+    if body.upc:
+        existing_upc = await db.execute(select(Product.id).where(Product.upc == body.upc))
+        if existing_upc.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail=f"UPC '{body.upc}' is already assigned to another product")
     sku = await generate_sku(db, body.material_id)
     product = Product(**body.model_dump(), sku=sku)
     db.add(product)
@@ -98,6 +102,13 @@ async def update_product(product_id: uuid.UUID, body: ProductUpdate, user: Curre
         raise HTTPException(status_code=404, detail="Product not found")
 
     update_data = body.model_dump(exclude_unset=True)
+
+    if "upc" in update_data and update_data["upc"]:
+        existing_upc = await db.execute(
+            select(Product.id).where(Product.id != product_id, Product.upc == update_data["upc"])
+        )
+        if existing_upc.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail=f"UPC '{update_data['upc']}' is already assigned to another product")
 
     # If material changed, regenerate SKU
     if "material_id" in update_data and update_data["material_id"] != product.material_id:

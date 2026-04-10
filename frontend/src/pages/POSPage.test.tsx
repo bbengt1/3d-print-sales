@@ -199,4 +199,44 @@ describe('POSPage', () => {
       'Insufficient stock for POS checkout: Desk Dragon only has 1 available'
     );
   });
+
+  it('adds a product from the barcode scan lane', async () => {
+    const user = userEvent.setup();
+    apiPost.mockImplementation((url: string, payload?: unknown) => {
+      if (url === '/pos/scan/resolve') {
+        expect(payload).toEqual({ code: '012345678901' });
+        return Promise.resolve({ data: productsResponse.items[0] });
+      }
+      return Promise.reject(new Error(`Unexpected POST ${url}`));
+    });
+
+    renderPOSPage();
+
+    await screen.findByText('Desk Dragon');
+    await user.type(screen.getByLabelText('Scan barcode'), '012345678901{enter}');
+
+    expect(await screen.findByText('Scanned Desk Dragon (POS-DRAGON-001)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Desk Dragon quantity')).toHaveTextContent('1');
+    expect(toastSuccess).toHaveBeenCalledWith('Scanned Desk Dragon');
+  });
+
+  it('shows barcode scan errors without mutating the cart', async () => {
+    const user = userEvent.setup();
+    apiPost.mockRejectedValue({
+      response: {
+        data: {
+          detail: "No active product matches barcode '000000000000'",
+        },
+      },
+    });
+
+    renderPOSPage();
+
+    await screen.findByText('Desk Dragon');
+    await user.type(screen.getByLabelText('Scan barcode'), '000000000000{enter}');
+
+    expect(await screen.findByText("No active product matches barcode '000000000000'")).toBeInTheDocument();
+    expect(screen.getByText('Cart is empty')).toBeInTheDocument();
+    expect(toastError).toHaveBeenCalledWith("No active product matches barcode '000000000000'");
+  });
 });
