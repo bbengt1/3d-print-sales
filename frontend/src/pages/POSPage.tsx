@@ -1,4 +1,4 @@
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Minus, Plus, Receipt, Search, ShoppingBasket, Trash2, UserRound, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -71,7 +71,11 @@ export default function POSPage() {
   const [saving, setSaving] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [scanCode, setScanCode] = useState('');
+  const [scanStatus, setScanStatus] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
+  const scanBufferRef = useRef('');
+  const scanTimeoutRef = useRef<number | null>(null);
 
   const { data: productsData, isLoading: productsLoading, isError: productsError } = useQuery<PaginatedProducts>({
     queryKey: ['products', 'pos'],
@@ -133,8 +137,79 @@ export default function POSPage() {
   const handleAddProduct = (product: Product) => {
     setSuccessMessage(null);
     setCheckoutError(null);
+    setScanStatus(null);
     setCart((prev) => addProductToCart(prev, product));
   };
+
+  const handleResolveScan = async (code: string) => {
+    const normalizedCode = code.trim();
+    if (!normalizedCode) return;
+
+    setCheckoutError(null);
+    setSuccessMessage(null);
+    setScanStatus(null);
+
+    try {
+      const response = await api.post<Product>('/pos/scan/resolve', { code: normalizedCode });
+      const product = response.data;
+      setCart((prev) => addProductToCart(prev, product));
+      setScanStatus(`Scanned ${product.name} (${product.sku})`);
+      toast.success(`Scanned ${product.name}`);
+      setScanCode('');
+    } catch (error: unknown) {
+      const detail = getErrorDetail(error);
+      setScanStatus(detail);
+      toast.error(detail);
+    }
+  };
+
+  useEffect(() => {
+    const clearBuffer = () => {
+      scanBufferRef.current = '';
+      if (scanTimeoutRef.current) {
+        window.clearTimeout(scanTimeoutRef.current);
+        scanTimeoutRef.current = null;
+      }
+    };
+
+    const isEditableTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return;
+
+      if (event.key === 'Enter') {
+        if (scanBufferRef.current.length >= 8) {
+          event.preventDefault();
+          void handleResolveScan(scanBufferRef.current);
+        }
+        clearBuffer();
+        return;
+      }
+
+      if (event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      scanBufferRef.current += event.key;
+      if (scanTimeoutRef.current) {
+        window.clearTimeout(scanTimeoutRef.current);
+      }
+      scanTimeoutRef.current = window.setTimeout(() => {
+        clearBuffer();
+      }, 150);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearBuffer();
+    };
+  }, []);
 
   const handleCheckout = async () => {
     if (!cart.length) {
@@ -230,7 +305,7 @@ export default function POSPage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-xl font-semibold">Product Catalog</h2>
-                <p className="text-sm text-muted-foreground">Search by name, SKU, or UPC and tap products into the cart.</p>
+                <p className="text-sm text-muted-foreground">Search by name, SKU, or UPC and keep scanner traffic in the dedicated scan lane below.</p>
               </div>
               <div className="relative w-full md:max-w-sm">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -243,6 +318,48 @@ export default function POSPage() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Barcode Scan</h2>
+                <p className="text-sm text-muted-foreground">
+                  Supports keyboard-wedge scanners using the product UPC field. Scan into this field or scan while focus is outside form inputs.
+                </p>
+              </div>
+              <div className="w-full md:max-w-sm">
+                <label className="mb-1 block text-sm font-medium" htmlFor="pos-scan-code">
+                  Scan barcode
+                </label>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleResolveScan(scanCode);
+                  }}
+                >
+                  <input
+                    id="pos-scan-code"
+                    value={scanCode}
+                    onChange={(e) => setScanCode(e.target.value)}
+                    placeholder="Scan UPC and press Enter"
+                    aria-label="Scan barcode"
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </form>
+              </div>
+            </div>
+
+            {scanStatus ? (
+              <div className={cn(
+                'mt-4 rounded-2xl border px-4 py-3 text-sm',
+                scanStatus.startsWith('Scanned ')
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                  : 'border-amber-300 bg-amber-50 text-amber-900'
+              )}>
+                {scanStatus}
+              </div>
+            ) : null}
           </div>
 
           {productsLoading ? (
@@ -286,6 +403,11 @@ export default function POSPage() {
                           <p className="shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
                             {product.sku}
                           </p>
+                          {product.upc ? (
+                            <p className="shrink-0 text-xs uppercase tracking-[0.15em] text-muted-foreground">
+                              UPC {product.upc}
+                            </p>
+                          ) : null}
                           <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-tight">
                             {product.name}
                           </h3>

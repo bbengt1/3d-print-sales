@@ -72,6 +72,18 @@ async def test_list_products_search(client: AsyncClient, auth_headers: dict, see
 
 
 @pytest.mark.asyncio
+async def test_list_products_search_matches_upc(client: AsyncClient, auth_headers: dict, seed_material: Material):
+    await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Scannable Widget", "material_id": str(seed_material.id), "upc": "012345678901"},
+    )
+    resp = await client.get("/api/v1/products", params={"search": "012345678901"})
+    assert resp.status_code == 200
+    assert resp.json()["total"] == 1
+
+
+@pytest.mark.asyncio
 async def test_get_product(client: AsyncClient, auth_headers: dict, seed_material: Material):
     create_resp = await client.post(
         "/api/v1/products",
@@ -106,6 +118,42 @@ async def test_update_product(client: AsyncClient, auth_headers: dict, seed_mate
     assert resp.status_code == 200
     assert resp.json()["name"] == "Updated Name"
     assert float(resp.json()["unit_price"]) == 12.50
+
+
+@pytest.mark.asyncio
+async def test_create_product_rejects_duplicate_upc(client: AsyncClient, auth_headers: dict, seed_material: Material):
+    payload = {"name": "Barcode Product A", "material_id": str(seed_material.id), "upc": "012345678901"}
+    first = await client.post("/api/v1/products", headers=auth_headers, json=payload)
+    assert first.status_code == 201
+
+    dup = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Barcode Product B", "material_id": str(seed_material.id), "upc": "012345678901"},
+    )
+    assert dup.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_update_product_rejects_duplicate_upc(client: AsyncClient, auth_headers: dict, seed_material: Material):
+    first = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Barcode Product A", "material_id": str(seed_material.id), "upc": "012345678901"},
+    )
+    second = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Barcode Product B", "material_id": str(seed_material.id), "upc": "999999999999"},
+    )
+    product_id = second.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/products/{product_id}",
+        headers=auth_headers,
+        json={"upc": "012345678901"},
+    )
+    assert resp.status_code == 409
 
 
 @pytest.mark.asyncio

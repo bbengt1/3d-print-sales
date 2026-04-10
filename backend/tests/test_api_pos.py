@@ -76,6 +76,33 @@ def _payload(product_id, **overrides):
     return payload
 
 
+async def _create_scannable_product(
+    db_session: AsyncSession,
+    *,
+    material_id,
+    sku: str,
+    name: str,
+    upc: str,
+    stock_qty: int = 5,
+    is_active: bool = True,
+) -> Product:
+    product = Product(
+        sku=sku,
+        name=name,
+        material_id=material_id,
+        unit_price=10,
+        unit_cost=4,
+        stock_qty=stock_qty,
+        reorder_point=1,
+        is_active=is_active,
+        upc=upc,
+    )
+    db_session.add(product)
+    await db_session.commit()
+    await db_session.refresh(product)
+    return product
+
+
 @pytest.mark.asyncio
 async def test_pos_checkout_guest_sale_uses_pos_channel_and_deducts_inventory(
     client: AsyncClient,
@@ -248,3 +275,57 @@ async def test_pos_refund_restores_inventory_for_pos_sale(
     product_resp = await client.get(f"/api/v1/products/{seed_pos_product.id}")
     assert product_resp.status_code == 200
     assert product_resp.json()["stock_qty"] == 5
+
+
+@pytest.mark.asyncio
+async def test_pos_scan_resolves_active_product(client: AsyncClient, auth_headers: dict, db_session: AsyncSession, seed_material):
+    product = await _create_scannable_product(
+        db_session,
+        material_id=seed_material.id,
+        sku="PRD-PLA-9001",
+        name="Desk Dragon",
+        upc="012345678901",
+    )
+
+    resp = await client.post("/api/v1/pos/scan/resolve", headers=auth_headers, json={"code": "012345678901"})
+    assert resp.status_code == 200
+    assert resp.json()["id"] == str(product.id)
+    assert resp.json()["name"] == "Desk Dragon"
+
+
+@pytest.mark.asyncio
+async def test_pos_scan_rejects_unknown_barcode(client: AsyncClient, auth_headers: dict):
+    resp = await client.post("/api/v1/pos/scan/resolve", headers=auth_headers, json={"code": "000000000000"})
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_pos_scan_rejects_inactive_product(client: AsyncClient, auth_headers: dict, db_session: AsyncSession, seed_material):
+    await _create_scannable_product(
+        db_session,
+        material_id=seed_material.id,
+        sku="PRD-PLA-9002",
+        name="Inactive Dragon",
+        upc="123450000000",
+        is_active=False,
+    )
+
+    resp = await client.post("/api/v1/pos/scan/resolve", headers=auth_headers, json={"code": "123450000000"})
+    assert resp.status_code == 409
+    assert "inactive product" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_pos_scan_rejects_out_of_stock_product(client: AsyncClient, auth_headers: dict, db_session: AsyncSession, seed_material):
+    await _create_scannable_product(
+        db_session,
+        material_id=seed_material.id,
+        sku="PRD-PLA-9003",
+        name="Sold Out Dragon",
+        upc="999990000000",
+        stock_qty=0,
+    )
+
+    resp = await client.post("/api/v1/pos/scan/resolve", headers=auth_headers, json={"code": "999990000000"})
+    assert resp.status_code == 409
+    assert "out of stock" in resp.json()["detail"].lower()
