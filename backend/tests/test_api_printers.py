@@ -193,6 +193,12 @@ async def test_printer_responses_do_not_expose_monitor_api_key(client: AsyncClie
     assert "monitor_api_key" not in detail_data
     assert detail_data["monitor_api_key_configured"] is True
 
+    listing = await client.get("/api/v1/printers")
+    assert listing.status_code == 200
+    list_item = next(item for item in listing.json()["items"] if item["id"] == printer_id)
+    assert "monitor_api_key" not in list_item
+    assert list_item["monitor_api_key_configured"] is True
+
 
 @pytest.mark.asyncio
 async def test_update_printer_can_clear_saved_monitor_api_key(client: AsyncClient, auth_headers: dict, db_session):

@@ -3,6 +3,21 @@ from urllib.parse import quote
 from pydantic_settings import BaseSettings
 
 
+PLACEHOLDER_MARKERS = (
+    "replace-with",
+    "change-me",
+    "generate-a-random",
+    "generate-a-long-random",
+)
+
+
+def _contains_placeholder(value: str | None) -> bool:
+    if not value:
+        return False
+    normalized = value.strip().lower()
+    return any(marker in normalized for marker in PLACEHOLDER_MARKERS)
+
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "3D Print Sales API"
     VERSION: str = "1.0.0"
@@ -10,16 +25,16 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"  # development | staging | production
     TESTING: bool = False
 
-    DATABASE_URL: str = "postgresql+asyncpg://printuser:replace-with-local-db-password@db:5432/printsales"
+    DATABASE_URL: str = "postgresql+asyncpg://printuser:change-me-local-db-password@db:5432/printsales"
     DB_USER: str = "printuser"
-    DB_PASSWORD: str = "replace-with-local-db-password"
+    DB_PASSWORD: str = "change-me-local-db-password"
     DB_NAME: str = "printsales"
     DB_HOST: str = "db"
     DB_PORT: int = 5432
 
     AUTO_CREATE_SCHEMA: bool = True
 
-    SECRET_KEY: str = "replace-with-local-dev-secret-key"
+    SECRET_KEY: str = "generate-a-random-local-secret-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
@@ -29,7 +44,7 @@ class Settings(BaseSettings):
     ]
 
     ADMIN_EMAIL: str = "admin@example.com"
-    ADMIN_PASSWORD: str = "replace-with-local-admin-password"
+    ADMIN_PASSWORD: str = "change-me-local-admin-password"
 
     # Rate limiting
     RATE_LIMIT_PER_MINUTE: int = 120
@@ -37,14 +52,17 @@ class Settings(BaseSettings):
 
     model_config = {"env_file": ".env", "case_sensitive": True}
 
+    def _require_real_value(self, field_name: str, value: str) -> None:
+        if _contains_placeholder(value):
+            raise ValueError(
+                f"{field_name} still contains a tracked placeholder value. "
+                "Replace it with a real secret before starting the app."
+            )
+
     def model_post_init(self, __context) -> None:
-        placeholder_markers = (
-            "replace-with-local-db-password",
-            "replace-with-strong-db-password",
-        )
         if (
             not self.DATABASE_URL
-            or any(marker in self.DATABASE_URL for marker in placeholder_markers)
+            or _contains_placeholder(self.DATABASE_URL)
         ):
             encoded_password = quote(self.DB_PASSWORD, safe="")
             self.DATABASE_URL = (
@@ -53,6 +71,11 @@ class Settings(BaseSettings):
 
         if self.ENVIRONMENT == "production" and not self.TESTING:
             self.AUTO_CREATE_SCHEMA = False
+
+        if not self.TESTING:
+            self._require_real_value("DATABASE_URL", self.DATABASE_URL)
+            self._require_real_value("SECRET_KEY", self.SECRET_KEY)
+            self._require_real_value("ADMIN_PASSWORD", self.ADMIN_PASSWORD)
 
 
 settings = Settings()
