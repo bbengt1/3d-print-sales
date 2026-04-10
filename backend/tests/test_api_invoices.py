@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import pytest
 
 
@@ -13,10 +15,12 @@ async def _seed_customer(client, auth_headers):
 
 
 def _invoice_payload(customer_id: str | None = None):
+    issue_date = date.today() + timedelta(days=1)
+    due_date = issue_date + timedelta(days=7)
     payload = {
         "invoice_number": "INV-2026-0001",
-        "issue_date": "2026-03-23",
-        "due_date": "2026-03-30",
+        "issue_date": issue_date.isoformat(),
+        "due_date": due_date.isoformat(),
         "customer_name": "Wholesale Buyer",
         "tax_amount": "5.00",
         "shipping_amount": "10.00",
@@ -34,8 +38,8 @@ def _invoice_payload(customer_id: str | None = None):
 def _quote_payload(material_id: str, customer_id: str | None = None):
     payload = {
         "quote_number": "Q-INV-0001",
-        "date": "2026-03-23",
-        "valid_until": "2026-04-06",
+        "date": date.today().isoformat(),
+        "valid_until": (date.today() + timedelta(days=14)).isoformat(),
         "customer_name": "Wholesale Buyer",
         "product_name": "Custom Bracket",
         "qty_per_plate": 2,
@@ -68,7 +72,7 @@ async def test_create_invoice_and_apply_partial_then_full_payment(client, auth_h
     partial = await client.post(
         f"/api/v1/invoices/{invoice['id']}/apply-payment",
         headers=auth_headers,
-        json={"amount": "40.00", "paid_at": "2026-03-24"},
+        json={"amount": "40.00", "paid_at": (date.today() + timedelta(days=2)).isoformat()},
     )
     assert partial.status_code == 200
     assert partial.json()["status"] == "partially_paid"
@@ -77,7 +81,7 @@ async def test_create_invoice_and_apply_partial_then_full_payment(client, auth_h
     full = await client.post(
         f"/api/v1/invoices/{invoice['id']}/apply-payment",
         headers=auth_headers,
-        json={"amount": "100.00", "paid_at": "2026-03-25"},
+        json={"amount": "100.00", "paid_at": (date.today() + timedelta(days=3)).isoformat()},
     )
     assert full.status_code == 200
     assert full.json()["status"] == "paid"
@@ -96,7 +100,7 @@ async def test_apply_credit_and_mark_invoice_paid(client, auth_headers):
         json={
             "customer_id": customer["id"],
             "invoice_id": invoice["id"],
-            "credit_date": "2026-03-24",
+            "credit_date": (date.today() + timedelta(days=2)).isoformat(),
             "amount": "15.00",
             "reason": "Adjustment",
         },
@@ -137,8 +141,8 @@ async def test_create_invoice_from_accepted_quote(client, auth_headers, seed_set
         headers=auth_headers,
         json={
             "invoice_number": "INV-QUOTE-0001",
-            "issue_date": "2026-03-23",
-            "due_date": "2026-03-31",
+            "issue_date": (date.today() + timedelta(days=1)).isoformat(),
+            "due_date": (date.today() + timedelta(days=8)).isoformat(),
             "tax_amount": "4.00",
             "status": "sent",
         },
