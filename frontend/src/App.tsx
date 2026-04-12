@@ -37,6 +37,8 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
 const DataPage = lazy(() => import('@/pages/admin/DataPage'));
+const CamerasPage = lazy(() => import('@/pages/admin/CamerasPage'));
+const PrinterMonitorPage = lazy(() => import('@/pages/PrinterMonitorPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +71,14 @@ export default function App() {
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/print-floor/monitor/:id"
+                element={
+                  <ProtectedRoute>
+                    <PrinterMonitorPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 element={
                   <ProtectedRoute>
@@ -149,6 +159,7 @@ export default function App() {
                   <Route index element={<Navigate to="/admin/settings" replace />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="users" element={<UsersPage />} />
+                  <Route path="cameras" element={<CamerasPage />} />
                   <Route path="data" element={<DataPage />} />
                 </Route>
               </Route>

@@ -6,6 +6,7 @@ import {
   Archive,
   ArchiveRestore,
   Edit,
+  Expand,
   Gauge,
   Layers3,
   PlugZap,
@@ -16,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { cn, formatCurrency } from '@/lib/utils';
+import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import type { Job, PaginatedJobs, Printer, PrinterConnectionTestResult } from '@/types';
@@ -398,19 +400,39 @@ export default function PrinterDetailPage() {
         </section>
 
         <section className="rounded-[1.8rem] border border-border bg-card/85 p-5 shadow-[0_16px_40px_rgba(8,17,31,0.06)]">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-foreground">Visual console</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Current print thumbnail plus the most relevant assignment and machine details.
-            </p>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Visual console</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {printer.camera_id ? `Live feed from ${printer.camera_name}` : 'Current print thumbnail plus the most relevant assignment and machine details.'}
+              </p>
+            </div>
+            {printer.camera_id && (
+              <Link
+                to={`/print-floor/monitor/${printer.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                <Expand className="h-3.5 w-3.5" />
+                Monitor
+              </Link>
+            )}
           </div>
 
-          <PrinterThumbnail
-            src={printer.current_print_thumbnail_url}
-            alt={printer.current_print_name ? `${printer.current_print_name} thumbnail` : `${printer.name} current print thumbnail`}
-            className="min-h-[280px] rounded-[1.4rem]"
-            fallbackLabel={printer.current_print_name ? 'No thumbnail in G-code metadata' : 'No active print'}
-          />
+          {printer.camera_mse_ws_url || printer.camera_snapshot_url ? (
+            <CameraFeed
+              mseWsUrl={printer.camera_mse_ws_url}
+              snapshotUrl={printer.camera_snapshot_url}
+              alt={`${printer.name} camera feed`}
+              className="min-h-[280px] rounded-[1.4rem]"
+            />
+          ) : (
+            <PrinterThumbnail
+              src={printer.current_print_thumbnail_url}
+              alt={printer.current_print_name ? `${printer.current_print_name} thumbnail` : `${printer.name} current print thumbnail`}
+              className="min-h-[280px] rounded-[1.4rem]"
+              fallbackLabel={printer.current_print_name ? 'No thumbnail in G-code metadata' : 'No active print'}
+            />
+          )}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-[1.25rem] border border-border bg-background/60 p-4">

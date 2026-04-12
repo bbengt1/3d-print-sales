@@ -1,11 +1,12 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
-import { Settings, Users, Download } from 'lucide-react';
+import { Settings, Users, Download, Camera } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 
 const adminLinks = [
   { to: '/admin/settings', label: 'Settings', icon: Settings },
   { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/cameras', label: 'Cameras', icon: Camera },
   { to: '/admin/data', label: 'Data Export', icon: Download },
 ];
 

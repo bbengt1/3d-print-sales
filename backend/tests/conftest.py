@@ -24,6 +24,7 @@ from app.models.material_receipt import MaterialReceipt
 from app.models.rate import Rate
 from app.models.setting import Setting
 from app.models.user import User
+from app.models.camera import Camera  # noqa: F401
 from app.models.printer_history_event import PrinterHistoryEvent  # noqa: F401
 from app.services.accounting_service import seed_chart_of_accounts
 
