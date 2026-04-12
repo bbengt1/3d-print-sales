@@ -23,6 +23,8 @@ export default function CamerasPage() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [snapshotPreview, setSnapshotPreview] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const { data: camerasData, isLoading } = useQuery<PaginatedCameras>({
     queryKey: ['cameras'],
@@ -88,7 +90,10 @@ export default function CamerasPage() {
     setEditId(null);
     setForm(emptyForm);
     setErrors({});
+    if (snapshotPreview) URL.revokeObjectURL(snapshotPreview);
     setSnapshotPreview(null);
+    setPreviewLoading(false);
+    setPreviewError(null);
   };
 
   const openCreate = () => {
@@ -133,14 +138,41 @@ export default function CamerasPage() {
     setForm((f) => ({ ...f, name, slug }));
   };
 
-  // Preview snapshot when URL + stream name are filled
-  useEffect(() => {
-    if (form.go2rtc_base_url.trim() && form.stream_name.trim()) {
-      const url = `${form.go2rtc_base_url.trim().replace(/\/+$/, '')}/api/frame.jpeg?src=${encodeURIComponent(form.stream_name.trim())}`;
+  // Fetch snapshot preview through backend proxy to avoid CORS/mixed-content issues
+  const fetchPreview = async () => {
+    const baseUrl = form.go2rtc_base_url.trim().replace(/\/+$/, '');
+    const stream = form.stream_name.trim();
+    if (!baseUrl || !stream) return;
+
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setSnapshotPreview(null);
+    try {
+      const resp = await api.post('/cameras/test-snapshot', {
+        go2rtc_base_url: baseUrl,
+        stream_name: stream,
+      }, { responseType: 'blob' });
+      const url = URL.createObjectURL(resp.data);
       setSnapshotPreview(url);
-    } else {
-      setSnapshotPreview(null);
+    } catch {
+      setPreviewError('Could not reach camera. Verify the go2rtc URL and stream name.');
+    } finally {
+      setPreviewLoading(false);
     }
+  };
+
+  // Auto-preview when both fields are filled (debounced)
+  useEffect(() => {
+    const baseUrl = form.go2rtc_base_url.trim();
+    const stream = form.stream_name.trim();
+    if (!baseUrl || !stream) {
+      setSnapshotPreview(null);
+      setPreviewError(null);
+      return;
+    }
+    const timer = setTimeout(fetchPreview, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.go2rtc_base_url, form.stream_name]);
 
   return (
@@ -317,22 +349,46 @@ export default function CamerasPage() {
               </div>
 
               {/* Snapshot Preview */}
-              {snapshotPreview && (
+              {(form.go2rtc_base_url.trim() && form.stream_name.trim()) && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Preview</label>
-                  <div className="rounded-lg overflow-hidden border border-border bg-black aspect-video">
-                    <img
-                      src={snapshotPreview}
-                      alt="Camera preview"
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium">Preview</label>
+                    <button
+                      type="button"
+                      onClick={fetchPreview}
+                      disabled={previewLoading}
+                      className="text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                    >
+                      {previewLoading ? 'Loading...' : 'Refresh'}
+                    </button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Live snapshot from go2rtc. If blank, verify the URL and stream name.
-                  </p>
+                  <div className="rounded-lg overflow-hidden border border-border bg-black aspect-video flex items-center justify-center">
+                    {previewLoading && (
+                      <div className="text-muted-foreground text-sm animate-pulse">Fetching snapshot...</div>
+                    )}
+                    {!previewLoading && previewError && (
+                      <div className="text-center px-4">
+                        <p className="text-danger text-sm">{previewError}</p>
+                        <button
+                          type="button"
+                          onClick={fetchPreview}
+                          className="text-xs text-primary mt-2 hover:underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    )}
+                    {!previewLoading && !previewError && snapshotPreview && (
+                      <img
+                        src={snapshotPreview}
+                        alt="Camera preview"
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                    {!previewLoading && !previewError && !snapshotPreview && (
+                      <div className="text-muted-foreground text-xs">Waiting for snapshot...</div>
+                    )}
+                  </div>
                 </div>
               )}
 
