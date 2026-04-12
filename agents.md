@@ -67,10 +67,74 @@
 
 ## Collaboration Notes
 
-- Friendly, clear communication is preferred; light humor is fine when it does not get in the way.
-- Thoroughness matters more than brevity for task execution, issue definition, validation, and documentation.
-- Skills may be installed and used when they materially improve execution.
-- Sub-agents may be used for implementation, research, or parallel investigation when helpful.
+## Working Style
+- Work is tracked and driven through GitHub issues. Prefer starting from an issue, implementing against that issue, and closing the loop in the issue or linked PR instead of treating chat alone as the source of truth.
+- When creating or refining issues, use Plan mode and write a detailed, actionable user story. The body should include the user problem, scope, acceptance criteria, and concrete implementation guidance with examples across code, UI, data, and testing.
+- Default to test-driven development when practical: outline the expected behavior first, add or update tests close to the change, then implement until the tests pass. If strict TDD is not practical for a slice, still add validation coverage before calling the work done.
+- Every completed task should include explicit validation. Run the relevant commands, smoke tests, or manual verification steps and capture what was validated.
+- Before marking work complete, update any impacted repository documentation so it stays accurate, detailed, and current. This includes `README.md`, `docs/`, runbooks, deployment notes, env docs, and feature-specific documentation whenever behavior or workflows change.
+- Sub-agents may be used when they improve quality or speed, especially for bounded research, implementation, or testing work. Use them deliberately, keep scopes narrow, and integrate the results rather than duplicating effort.
+- Collaboration tone should stay friendly, calm, and thorough. A little humor is welcome when it helps, but the work product should still be crisp, complete, and dependable.
+
+## UX Laws For Frontend Work
+- Treat UX laws as strong heuristics, not rigid commandments. When laws conflict, prioritize task clarity, accessibility, and operational speed.
+- Aesthetic-Usability Effect: visual polish matters because users perceive polished interfaces as easier to use, but do not let attractive styling hide weak information architecture or broken flows.
+- Doherty Threshold: acknowledge user actions within roughly `400ms` when practical. If real work will take longer, show immediate feedback with optimistic state changes, skeletons, spinners, or progress indicators.
+- Fitts's Law: keep primary and frequent actions large, close, and easy to hit. Avoid tiny icon-only controls, especially in dense operational tables and mobile layouts.
+- Hick's Law: reduce the number and complexity of choices shown at once. Prefer progressive disclosure, sensible defaults, recommended actions, and chunked workflows over dumping every option on screen.
+- Jakob's Law: default to familiar interface patterns unless there is a strong product reason not to. Novel UI is acceptable only when it meaningfully improves the task and still provides clear cues.
+- Law of Common Region, Law of Proximity, Law of Similarity, and Law of Uniform Connectedness: use spacing, containers, repeated styling, and visible connections to make relationships obvious. Do not rely on color alone to imply grouping.
+- Law of Prägnanz: simplify layouts until the intended structure is obvious at a glance. Favor clean hierarchy, clear grouping, and low visual noise over decorative complexity.
+- Miller's Law: chunk information so users do not have to hold too much in working memory. Do not treat `7 +/- 2` as a hard UI limit or as an excuse for arbitrary navigation/menu rules.
+- Occam's Razor: prefer the simplest interaction model that still solves the real problem. Every new control, panel, filter, or modal should justify its existence.
+- Pareto Principle: optimize the highest-frequency workflows and the biggest pain points first. The most used `20%` of the interface usually deserves the most design, testing, and polish attention.
+- When proposing or reviewing frontend changes, name the relevant law or tradeoff when it helps explain why a design decision is better, faster, or easier to learn.
+- Reviewed for this repo on `2026-04-08` against the Laws of UX reference set and related articles, including:
+  - `https://lawsofux.com/laws/`
+  - `https://lawsofux.com/doherty-threshold/`
+  - `https://lawsofux.com/jakobs-law/`
+  - `https://lawsofux.com/law-of-common-region/`
+  - `https://lawsofux.com/law-of-pr%C3%A4gnanz/`
+  - `https://lawsofux.com/law-of-proximity/`
+  - `https://lawsofux.com/law-of-similarity/`
+  - `https://lawsofux.com/law-of-uniform-connectedness/`
+  - `https://lawsofux.com/millers-law/`
+  - `https://lawsofux.com/pareto-principle/`
+  - `https://lawsofux.com/articles/2018/the-psychology-of-design/`
+
+## Documentation UX And Freshness
+- Treat documentation as a product surface. Docs should help readers orient quickly, build the right mental model, and find the authoritative answer without hunting through overlapping files.
+- Keep the documentation entry points aligned:
+  - `README.md` is the repo-root orientation layer.
+  - `docs/index.md` is the main audience and task-based documentation hub.
+  - `docs/reference/index.md` is the authoritative technical reference map tied to the current codebase.
+  - `docs/README.md` is only a compatibility pointer for older links and should not become a competing hub.
+- Apply the UX laws to documentation structure:
+  - Hick's Law: reduce competing entry points and avoid too many equal-weight navigation choices.
+  - Jakob's Law: use familiar documentation patterns such as overview, quick start, architecture, workflows, troubleshooting, and reference.
+  - Law of Prägnanz plus Common Region / Proximity / Similarity / Uniform Connectedness: make structure obvious with clean sections, grouped links, tables, and clear document families.
+  - Miller's Law: chunk long explanations into short sections, diagrams, tables, and step-by-step flows.
+  - Occam's Razor and Pareto Principle: optimize the docs for the most common questions first and do not add extra prose when a diagram, table, or shorter explanation would be clearer.
+- Prefer editable visuals for relationship-heavy concepts:
+  - use `mermaid` directly in markdown when practical
+  - use source-controlled SVG assets in `docs/assets/` when more layout control is needed
+  - avoid non-editable screenshots unless a real UI capture is the point
+- When behavior changes affect architecture, request flow, auth/session flow, deployment topology, feature-area maps, or workflow understanding, update the related diagrams and visual assets in the same change.
+- Mark source-of-truth status clearly. If a document is historical, contextual, or legacy-oriented, label it so readers do not mistake it for the maintained reference path.
+- Keep major docs structurally consistent when practical:
+  - purpose / audience
+  - quick summary or start-here guidance
+  - main content
+  - validation / verification or troubleshooting when relevant
+  - related docs
+- Before calling documentation work complete, validate the documentation itself:
+  - verify internal markdown links and asset references
+  - review diagrams for accuracy against the current codebase
+  - make sure updated docs still align with the intended docs information architecture and source-of-truth model
+
+  ## Commit & Pull Request Guidelines
+- Commits: concise, present-tense summaries (e.g., `feat: add incident filter`, `fix: tighten auth middleware`). Group related changes.
+- PRs: include context, linked ticket, and key commands run. Note API contract, route, feature-flag, or schema changes and update OpenAPI, docs, and UI consumers together. Attach screenshots or sample JSON for UI/endpoint changes; list env vars or workflow inputs touched. If documentation changed as part of the work, call that out explicitly in the PR summary.
 
 ## Deployment Notes
 

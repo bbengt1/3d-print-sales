@@ -1,7 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Moon, Sun, Printer, LogOut, Menu, Settings, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Moon, Sun, Printer, LogOut, Menu, User } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/hooks/useTheme';
+import { getWorkspaceForPath } from './workspaces';
 
 interface HeaderProps {
   onOpenMobileNav?: () => void;
@@ -11,6 +12,8 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
   const { dark, toggle } = useTheme();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const workspace = getWorkspaceForPath(location.pathname);
 
   const handleLogout = () => {
     logout();
@@ -18,50 +21,56 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
   };
 
   return (
-    <header className="border-b border-border bg-card/95 backdrop-blur sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
-          <div className="flex items-center gap-3 min-w-0">
+    <header className="sticky top-0 z-40 border-b border-border bg-[color:var(--color-shell)] backdrop-blur-xl">
+      <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8">
+        <div className="flex min-h-18 items-center justify-between gap-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={onOpenMobileNav}
-              className="md:hidden p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground"
+              className="rounded-xl border border-border bg-card/70 p-2 text-muted-foreground transition-colors hover:text-foreground md:hidden"
               aria-label="Open navigation menu"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link to="/" className="flex items-center gap-2 text-primary font-bold text-xl no-underline min-w-0">
-              <Printer className="w-6 h-6 shrink-0" />
-              <span className="truncate">3D Print Sales</span>
+            <Link to="/control-center" className="flex min-w-0 items-center gap-3 no-underline">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/30 bg-primary text-primary-foreground shadow-[0_14px_40px_rgba(34,197,94,0.28)]">
+                <Printer className="h-5 w-5 shrink-0" />
+              </div>
+              <div className="min-w-0">
+                <span className="block truncate font-display text-lg font-semibold text-foreground">
+                  3D Print Sales
+                </span>
+                <span className="block truncate text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                  {workspace.label}
+                </span>
+              </div>
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {user?.role === 'admin' && (
-              <Link
-                to="/admin/settings"
-                className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium no-underline text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              >
-                <Settings className="w-4 h-4" />
-                Admin
-              </Link>
-            )}
-
+          <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={toggle}
-              className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground"
+              className="rounded-xl border border-border bg-card/70 p-2 text-muted-foreground transition-colors hover:text-foreground"
               aria-label="Toggle theme"
             >
               {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
             {user && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground border-l border-border pl-3 ml-1 min-w-0 max-w-[220px]">
-                <User className="w-4 h-4 shrink-0" />
-                <span className="truncate">{user.full_name}</span>
+              <div className="hidden min-w-0 max-w-[280px] items-center gap-3 rounded-2xl border border-border bg-card/70 px-3 py-2 text-sm text-muted-foreground sm:flex">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background/80 text-foreground">
+                  <User className="h-4 w-4 shrink-0" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block truncate font-medium text-foreground">{user.full_name}</span>
+                  <span className="block truncate text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    {user.role}
+                  </span>
+                </div>
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-destructive"
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
                   aria-label="Logout"
                   title="Sign out"
                 >
@@ -73,7 +82,7 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
             {user && (
               <button
                 onClick={handleLogout}
-                className="sm:hidden p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground"
+                className="rounded-xl border border-border bg-card/70 p-2 text-muted-foreground transition-colors hover:text-destructive sm:hidden"
                 aria-label="Logout"
                 title="Sign out"
               >

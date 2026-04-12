@@ -13,7 +13,7 @@ export default function AdminLayout() {
   const { user } = useAuthStore();
 
   if (user?.role !== 'admin') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/control-center" replace />;
   }
 
   return (

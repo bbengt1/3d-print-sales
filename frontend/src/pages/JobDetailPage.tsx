@@ -32,7 +32,7 @@ export default function JobDetailPage() {
     try {
       await api.delete(`/jobs/${id}`);
       toast.success('Job deleted');
-      navigate('/jobs');
+      navigate('/orders/jobs');
     } catch {
       toast.error('Failed to delete job');
     }
@@ -44,7 +44,7 @@ export default function JobDetailPage() {
       const { data } = await api.post(`/jobs/${id}/duplicate`);
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       toast.success('Job copied to draft successfully');
-      navigate(`/jobs/${data.id}`);
+      navigate(`/orders/jobs/${data.id}`);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to copy job');
     } finally {
@@ -66,7 +66,7 @@ export default function JobDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/jobs" className="p-2 rounded-md hover:bg-accent text-muted-foreground no-underline">
+          <Link to="/orders/jobs" className="p-2 rounded-md hover:bg-accent text-muted-foreground no-underline">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
@@ -81,7 +81,7 @@ export default function JobDetailPage() {
           <button onClick={handleDuplicate} disabled={duplicating} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 cursor-pointer">
             <Copy className="w-4 h-4" /> {duplicating ? 'Copying...' : 'Copy to New Job'}
           </button>
-          <Link to={`/jobs/${id}/edit`} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors no-underline">
+          <Link to={`/orders/jobs/${id}/edit`} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors no-underline">
             <Edit className="w-4 h-4" /> Edit
           </Link>
           <button onClick={handleDelete} className="px-4 py-2 border border-destructive/30 text-destructive rounded-lg text-sm font-medium hover:bg-destructive/10 transition-colors">
