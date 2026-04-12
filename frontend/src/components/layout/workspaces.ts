@@ -141,6 +141,7 @@ export const workspaces: WorkspaceDefinition[] = [
     localLinks: [
       { to: '/admin/settings', label: 'Settings', matchPrefixes: ['/admin/settings'] },
       { to: '/admin/users', label: 'Users', matchPrefixes: ['/admin/users'] },
+      { to: '/admin/cameras', label: 'Cameras', matchPrefixes: ['/admin/cameras'] },
       { to: '/admin/data', label: 'Data Export', matchPrefixes: ['/admin/data'] },
     ],
   },

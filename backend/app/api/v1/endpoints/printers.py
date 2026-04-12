@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
+from app.models.camera import Camera
 from app.models.printer import Printer
 from app.schemas.printer import (
     PaginatedPrinters,
@@ -42,8 +43,27 @@ def _apply_thumbnail_urls(printer: Printer) -> Printer:
     return printer
 
 
-def _prepare_printer_response(printer: Printer) -> Printer:
+def _attach_camera_fields(printer: Printer, camera_map: dict | None = None) -> Printer:
+    """Attach camera display fields from a pre-built lookup or leave defaults."""
+    cam = (camera_map or {}).get(printer.id)
+    if cam:
+        setattr(printer, "camera_id", cam["id"])
+        setattr(printer, "camera_name", cam["name"])
+        setattr(printer, "camera_snapshot_url", f"/api/v1/cameras/{cam['id']}/snapshot")
+        from urllib.parse import quote
+        ws_base = cam["go2rtc_base_url"].replace("https://", "wss://").replace("http://", "ws://")
+        setattr(printer, "camera_mse_ws_url", f"{ws_base}/api/ws?src={quote(cam['stream_name'], safe='')}")
+    else:
+        setattr(printer, "camera_id", None)
+        setattr(printer, "camera_name", None)
+        setattr(printer, "camera_snapshot_url", None)
+        setattr(printer, "camera_mse_ws_url", None)
+    return printer
+
+
+def _prepare_printer_response(printer: Printer, camera_map: dict | None = None) -> Printer:
     setattr(printer, "monitor_api_key_configured", bool(getattr(printer, "monitor_api_key", None)))
+    _attach_camera_fields(printer, camera_map)
     return _apply_thumbnail_urls(printer)
 
 
@@ -88,10 +108,26 @@ async def list_printers(
 
     result = await db.execute(base.order_by(Printer.name).offset(skip).limit(limit))
     items = result.scalars().all()
+
+    # Bulk-fetch camera assignments to avoid N+1
+    printer_ids = [p.id for p in items]
+    camera_map: dict = {}
+    if printer_ids:
+        cam_rows = await db.execute(
+            select(Camera.id, Camera.name, Camera.printer_id, Camera.go2rtc_base_url, Camera.stream_name).where(
+                Camera.printer_id.in_(printer_ids), Camera.is_active.is_(True)
+            )
+        )
+        for row in cam_rows:
+            camera_map[row.printer_id] = {
+                "id": row.id, "name": row.name,
+                "go2rtc_base_url": row.go2rtc_base_url, "stream_name": row.stream_name,
+            }
+
     for printer in items:
         mark_printer_stale_if_needed(printer)
         await refresh_printer_monitoring(db, printer)
-        _prepare_printer_response(printer)
+        _prepare_printer_response(printer, camera_map)
     return PaginatedPrinters(items=items, total=total, skip=skip, limit=limit)
 
 
@@ -109,7 +145,21 @@ async def get_printer(printer_id: uuid.UUID, db: DB):
     for event in history_events:
         setattr(event, "actor_name", event.actor.full_name if getattr(event, "actor", None) else None)
     setattr(printer, "history_events", history_events)
-    return _prepare_printer_response(printer)
+
+    # Single camera lookup
+    cam_row = await db.execute(
+        select(Camera.id, Camera.name, Camera.go2rtc_base_url, Camera.stream_name).where(
+            Camera.printer_id == printer.id, Camera.is_active.is_(True)
+        )
+    )
+    cam = cam_row.one_or_none()
+    camera_map = {}
+    if cam:
+        camera_map[printer.id] = {
+            "id": cam.id, "name": cam.name,
+            "go2rtc_base_url": cam.go2rtc_base_url, "stream_name": cam.stream_name,
+        }
+    return _prepare_printer_response(printer, camera_map)
 
 
 @router.post(

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import EmptyState from '@/components/ui/EmptyState';
 import { cn } from '@/lib/utils';
@@ -187,6 +188,15 @@ function PrinterWallCard({
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[104px_minmax(0,1fr)]">
+        {printer.camera_mse_ws_url || printer.camera_snapshot_url ? (
+          <CameraFeed
+            mseWsUrl={printer.camera_mse_ws_url}
+            snapshotUrl={printer.camera_snapshot_url}
+            alt={`${printer.name} camera`}
+            className="h-[104px] w-[104px] rounded-[1.25rem]"
+            showLiveBadge={false}
+          />
+        ) : (
         <PrinterThumbnail
           src={printer.current_print_thumbnail_url}
           alt={printer.current_print_name ? `${printer.current_print_name} thumbnail` : `${printer.name} thumbnail`}
@@ -194,6 +204,7 @@ function PrinterWallCard({
           imgClassName="object-cover"
           fallbackLabel={printer.current_print_name ? 'No thumbnail' : 'No active print'}
         />
+        )}
 
         <div className="min-w-0">
           <div className="flex items-center justify-between gap-3">
@@ -567,15 +578,11 @@ export default function PrintersPage() {
           subtext="Attention printers plus queue items needing assignment"
           emphasis={analytics.printersAtAttention + analytics.unassignedJobs ? 'warning' : 'default'}
         />
-        {!wallMode ? (
-          <div className="rounded-[1.5rem] border border-border bg-card/80 p-4 shadow-[0_14px_40px_rgba(8,17,31,0.06)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Camera integration path</p>
-            <p className="mt-3 text-base font-semibold text-foreground">Ready for `#129`</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Wall mode uses print thumbnails now and reserves camera tile space for the dedicated live-camera issue.
-            </p>
-          </div>
-        ) : null}
+        <SummaryCard
+          label="Live cameras"
+          value={String(printers.filter((p) => p.camera_id).length)}
+          subtext={`${printers.filter((p) => p.camera_id).length} printers with camera feeds`}
+        />
       </div>
 
       {attentionPrinters.length > 0 ? (
@@ -653,7 +660,7 @@ export default function PrintersPage() {
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-slate-300">
               <span className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">
-                <Camera className="h-3.5 w-3.5" /> Camera tiles plug in here after `#129`
+                <Camera className="h-3.5 w-3.5" /> {printers.filter((p) => p.camera_id).length} live camera{printers.filter((p) => p.camera_id).length !== 1 ? 's' : ''}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">
                 {reducedMotion ? 'Reduced motion respected' : 'Motion available'}

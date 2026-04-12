@@ -135,6 +135,10 @@ class PrinterResponse(BaseModel):
     monitor_ws_last_error: str | None = None
     monitor_last_seen_at: datetime | None = None
     monitor_last_updated_at: datetime | None = None
+    camera_id: uuid.UUID | None = None
+    camera_name: str | None = None
+    camera_snapshot_url: str | None = None
+    camera_mse_ws_url: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

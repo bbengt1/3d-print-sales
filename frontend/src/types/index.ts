@@ -97,8 +97,35 @@ export interface Printer {
   monitor_ws_last_error: string | null;
   monitor_last_seen_at: string | null;
   monitor_last_updated_at: string | null;
+  camera_id: string | null;
+  camera_name: string | null;
+  camera_snapshot_url: string | null;
+  camera_mse_ws_url: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+export interface Camera {
+  id: string;
+  name: string;
+  slug: string;
+  go2rtc_base_url: string;
+  stream_name: string;
+  printer_id: string | null;
+  printer_name: string | null;
+  is_active: boolean;
+  notes: string | null;
+  snapshot_url: string | null;
+  mse_ws_url: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PaginatedCameras {
+  items: Camera[];
+  total: number;
+  skip: number;
+  limit: number;
 }
 
 export interface PrinterConnectionTestResult {
