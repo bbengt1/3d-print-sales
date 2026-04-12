@@ -217,6 +217,30 @@ async def assign_camera(camera_id: uuid.UUID, body: dict, user: CurrentUser, db:
     return _prepare_camera_response(camera, printer_name)
 
 
+@router.post(
+    "/test-snapshot",
+    summary="Test camera snapshot by URL",
+    description="Proxies a snapshot from go2rtc using provided URL and stream name, for previewing before saving.",
+)
+async def test_camera_snapshot(body: dict, user: CurrentUser, db: DB):
+    base_url = (body.get("go2rtc_base_url") or "").strip().rstrip("/")
+    stream_name = (body.get("stream_name") or "").strip()
+    if not base_url or not stream_name:
+        raise HTTPException(status_code=400, detail="go2rtc_base_url and stream_name are required")
+
+    stream = quote(stream_name, safe="")
+    snapshot_url = f"{base_url}/api/frame.jpeg?src={stream}"
+
+    try:
+        async with httpx.AsyncClient(timeout=_SNAPSHOT_TIMEOUT) as client:
+            resp = await client.get(snapshot_url)
+            resp.raise_for_status()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Snapshot unavailable: {exc}") from exc
+
+    return Response(content=resp.content, media_type="image/jpeg")
+
+
 @router.get(
     "/{camera_id}/snapshot",
     summary="Get camera snapshot",
