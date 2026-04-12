@@ -1,64 +1,77 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { ChevronLeft, Settings, X } from 'lucide-react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { ChevronLeft, PanelsTopLeft, X } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
-import { appNavLinks } from './appNav';
+import WorkspaceLocalNav from './WorkspaceLocalNav';
+import { getVisibleWorkspaces, getWorkspaceForPath, isWorkspaceLinkActive } from './workspaces';
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuthStore();
+  const location = useLocation();
+  const activeWorkspace = getWorkspaceForPath(location.pathname);
+  const visibleWorkspaces = getVisibleWorkspaces(user?.role);
 
   return (
     <div className="flex h-full flex-col">
-      <div className="px-3 pb-3">
-        <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Main Navigation
+      <div className="px-3 pb-4">
+        <div className="rounded-2xl border border-border bg-background/70 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_12px_32px_rgba(34,197,94,0.25)]">
+              <PanelsTopLeft className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                Active Workspace
+              </p>
+              <p className="mt-1 font-display text-base font-semibold text-foreground">
+                {activeWorkspace.label}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {activeWorkspace.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-3 pb-2">
+        <p className="px-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          Workspaces
         </p>
       </div>
 
       <nav className="space-y-1 px-3">
-        {appNavLinks.map(({ to, label, icon: Icon, end }) => (
+        {visibleWorkspaces.map(({ key, to, label, icon: Icon, matchPrefixes }) => (
           <NavLink
-            key={to}
+            key={key}
             to={to}
-            end={end}
             onClick={onNavigate}
-            className={({ isActive }) =>
+            className={() =>
               cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors no-underline',
-                isActive
-                  ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                'flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors no-underline',
+                isWorkspaceLinkActive(location.pathname, matchPrefixes)
+                  ? 'bg-primary text-primary-foreground shadow-[0_18px_40px_rgba(34,197,94,0.18)]'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               )
             }
           >
-            <Icon className="w-4 h-4 shrink-0" />
+            <span
+              className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-xl border transition-colors',
+                isWorkspaceLinkActive(location.pathname, matchPrefixes)
+                  ? 'border-primary-foreground/15 bg-primary-foreground/10'
+                  : 'border-border bg-background/70'
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+            </span>
             <span>{label}</span>
           </NavLink>
         ))}
       </nav>
-
-      {user?.role === 'admin' && (
-        <div className="mt-6 border-t border-border px-3 pt-6">
-          <NavLink
-            to="/admin/settings"
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors no-underline',
-                isActive
-                  ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              )
-            }
-          >
-            <Settings className="w-4 h-4 shrink-0" />
-            <span>Admin</span>
-          </NavLink>
-        </div>
-      )}
     </div>
   );
 }
@@ -70,15 +83,16 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-background">
       <Header onOpenMobileNav={() => setMobileNavOpen(true)} />
 
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        <div className="flex gap-6 lg:gap-8 min-h-full">
-          <aside className="hidden md:block w-64 shrink-0">
-            <div className="sticky top-24 rounded-2xl border border-border bg-card p-3 shadow-sm">
+      <div className="mx-auto flex-1 w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="flex min-h-full gap-6 lg:gap-8">
+          <aside className="hidden w-80 shrink-0 xl:block">
+            <div className="sticky top-24 rounded-[1.9rem] border border-border bg-card/80 p-3 shadow-[0_20px_60px_rgba(8,17,31,0.10)] backdrop-blur">
               <SidebarContent />
             </div>
           </aside>
 
-          <main className="flex-1 min-w-0">
+          <main className="min-w-0 flex-1 space-y-5">
+            <WorkspaceLocalNav />
             <Outlet />
           </main>
         </div>
@@ -93,11 +107,11 @@ export default function Layout() {
             onClick={() => setMobileNavOpen(false)}
           />
 
-          <aside className="relative flex h-full w-full max-w-xs flex-col border-r border-border bg-card shadow-xl">
+          <aside className="relative flex h-full w-full max-w-sm flex-col border-r border-border bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-border px-4 py-4">
               <div>
-                <p className="text-sm font-semibold">Navigation</p>
-                <p className="text-xs text-muted-foreground">Jump to any section</p>
+                <p className="text-sm font-semibold">Workspaces</p>
+                <p className="text-xs text-muted-foreground">Jump to the right operating context</p>
               </div>
               <button
                 onClick={() => setMobileNavOpen(false)}

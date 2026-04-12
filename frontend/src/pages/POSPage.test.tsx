@@ -141,13 +141,14 @@ describe('POSPage', () => {
 
     await screen.findByText('Desk Dragon');
     await user.click(screen.getByRole('button', { name: 'Add Desk Dragon to cart' }));
-    await user.selectOptions(screen.getByLabelText('Customer'), 'customer-1');
+    await user.click(screen.getByRole('button', { name: 'Existing customer Attach the sale to an existing customer record.' }));
+    await user.selectOptions(screen.getByLabelText('Existing customer'), 'customer-1');
 
     const taxInput = screen.getByLabelText('Tax collected');
     await user.clear(taxInput);
     await user.type(taxInput, '2.5');
 
-    await user.selectOptions(screen.getByLabelText('Payment method'), 'card');
+    await user.click(screen.getByRole('button', { name: 'Card' }));
     await user.type(screen.getByLabelText('Notes'), 'Booth sale');
     await user.click(screen.getByRole('button', { name: 'Complete checkout' }));
 
@@ -173,7 +174,7 @@ describe('POSPage', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Sale S-2026-0001 completed');
     expect(screen.getByText('Cart is empty')).toBeInTheDocument();
-    expect(screen.getByLabelText('Payment method')).toHaveValue('cash');
+    expect(screen.getByRole('button', { name: 'Cash' })).toHaveAttribute('aria-pressed', 'true');
     expect(toastSuccess).toHaveBeenCalledWith('POS checkout complete: S-2026-0001');
   });
 

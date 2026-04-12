@@ -7,7 +7,7 @@ Full-stack web application for managing a 3D printing business — job costing, 
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | Python 3.13, FastAPI, SQLAlchemy 2 (async), PostgreSQL 16 |
-| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query |
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, Zustand |
 | **Auth** | JWT (python-jose) + bcrypt |
 | **API Docs** | OpenAPI 3.1 / Swagger UI |
 | **Infrastructure** | Docker Compose, multi-stage builds, nginx (production) |
@@ -134,6 +134,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 
 - **Protected Routes** — Auto-redirect to login, preserves original URL
 - **Dark/Light Theme** — Persisted to localStorage, respects system preference
+- **Workspace Shell** — Role-aware workspace navigation for Control Center, Print Floor, Sell, Stock, Product Studio, Orders, Insights, and Admin while preserving legacy deep links
 - **Active Navigation** — Current route highlighted, admin-only items
 - **Error Boundary** — Global error catch with reload action
 - **Empty States** — Contextual illustrations and CTA buttons on empty lists
@@ -146,16 +147,20 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 
 ### Pages
 
-- **Dashboard** — Summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, item COGS, gross profit, contribution margin) + revenue by channel chart
-- **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview
+- **Control Center** — Role-aware landing workspace with urgent printer, stock, sales, finance, and draft-job priorities plus quick actions into the main operational areas
+- **Print Floor** — Dedicated printer wall with grouped machine states, queue-pressure and utilization signals, reduced-chrome wall mode via `/print-floor?mode=wall`, console-style printer detail pages for live monitoring, and a defined camera-tile integration path for issue `#129`
+- **Stock** — Exceptions-first inventory workspace at `/stock` with product-impacting low-stock triage, quick reconcile/adjust actions, material signals separated from finished-goods alerts, and the full ledger preserved as a secondary surface
+- **Orders** — Unified queue workspace at `/orders` that stitches production jobs, fulfillment-relevant sales, printer readiness, and customer load into one operational surface while preserving the existing jobs and sales detail flows
+- **Dashboard** — Classic metrics view with summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, item COGS, gross profit, contribution margin) + revenue by channel chart
+- **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview, now reachable inside the Orders workspace at `/orders/jobs`
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
-- **Products** — Product catalog with CRUD modal, SKU/UPC, stock tracking, reorder alerts, search, pagination
-- **Product Detail** — Product info with margin, inventory value, transaction history, stock adjustment
-- **Sales** — Sales list with search, status/channel filters, pagination; sale detail with line items, gross profit + contribution margin breakdown, status management, refund
-- **Sales** — Sales list with search, status/channel/payment-method filters, pagination; sale detail with line items, payment method, gross profit + contribution margin breakdown, status management, refund
-- **POS** — Dedicated `/pos` cashier page with searchable product catalog, keyboard-wedge barcode scanning by product UPC, touch-friendly cart controls, guest or attached customer checkout, tax entry, and success reset flow
+- **Product Studio** — Catalog workspace at `/product-studio` with product search, readiness signals, archive/restore controls, and direct navigation into the full-page product editor
+- **Product Editor** — Full-page create/edit workflow at `/product-studio/products/new` and `/product-studio/products/:id/edit` with identity, SKU/UPC, pricing, material selection, reorder policy, margin preview, readiness context, and recent stock activity
+- **Product Detail** — Existing record-style detail page remains available during migration, with inventory history and stock adjustment actions plus a link into the new editor
+- **Sales Inbox** — `Sell` workspace queue for recent sales with search, status/channel/payment-method filters, pagination, detail drill-in, payment method visibility, and refund/status follow-up
+- **POS** — Dedicated `Sell` workspace register at `/sell` and `/sell/pos` with a split cashier layout, keyboard-wedge barcode scanning by product UPC, touch-friendly cart/payment controls, explicit guest/existing/new customer modes, and faster success/error recovery
 - **New Sale** — Sale creation form with customer autocomplete, channel select, product-linked line items, shipping/tax, live total
 - **Sales Channels** — CRUD for sales platforms (Etsy, Amazon, etc.) with platform fee and fixed fee configuration
 - **Reports** — Tab-based sub-navigation (Inventory, Sales, P&L) with shared date range/period controls and CSV export
@@ -167,6 +172,10 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
 - **Admin Data** — CSV export for jobs, materials, rates, customers, settings
 - **Login** — JWT authentication with Zod validation
+
+## Design Briefs
+
+- [Role-Based Frontend Redesign User Story](docs/frontend_role_based_redesign_user_story.md) — issue-ready redesign brief for print monitoring, live views, POS, inventory, product studio, and role-based workspaces.
 
 ## Testing
 

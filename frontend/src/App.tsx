@@ -8,6 +8,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const ControlCenterPage = lazy(() => import('@/pages/ControlCenterPage'));
 const JobsPage = lazy(() => import('@/pages/JobsPage'));
 const JobDetailPage = lazy(() => import('@/pages/JobDetailPage'));
 const JobFormPage = lazy(() => import('@/pages/JobFormPage'));
@@ -15,6 +16,7 @@ const MaterialsPage = lazy(() => import('@/pages/MaterialsPage'));
 const RatesPage = lazy(() => import('@/pages/RatesPage'));
 const CustomersPage = lazy(() => import('@/pages/CustomersPage'));
 const ProductsPage = lazy(() => import('@/pages/ProductsPage'));
+const ProductEditorPage = lazy(() => import('@/pages/ProductEditorPage'));
 const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const PrintersPage = lazy(() => import('@/pages/PrintersPage'));
 const PrinterDetailPage = lazy(() => import('@/pages/PrinterDetailPage'));
@@ -26,6 +28,7 @@ const SaleFormPage = lazy(() => import('@/pages/SaleFormPage'));
 const SalesChannelsPage = lazy(() => import('@/pages/SalesChannelsPage'));
 const POSPage = lazy(() => import('@/pages/POSPage'));
 const CalculatorPage = lazy(() => import('@/pages/CalculatorPage'));
+const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
 const ReportsLayout = lazy(() => import('@/pages/reports/ReportsLayout'));
 const InventoryReportPage = lazy(() => import('@/pages/reports/InventoryReportPage'));
 const SalesReportPage = lazy(() => import('@/pages/reports/SalesReportPage'));
@@ -73,7 +76,45 @@ export default function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route path="/" element={<DashboardPage />} />
+                <Route path="/" element={<Navigate to="/control-center" replace />} />
+                <Route path="/control-center" element={<ControlCenterPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+
+                <Route path="/print-floor" element={<PrintersPage />} />
+                <Route path="/print-floor/printers" element={<PrintersPage />} />
+                <Route path="/print-floor/printers/new" element={<PrinterFormPage />} />
+                <Route path="/print-floor/printers/:id" element={<PrinterDetailPage />} />
+                <Route path="/print-floor/printers/:id/edit" element={<PrinterFormPage />} />
+
+                <Route path="/sell" element={<POSPage />} />
+                <Route path="/sell/pos" element={<POSPage />} />
+                <Route path="/sell/sales" element={<SalesPage />} />
+                <Route path="/sell/sales/new" element={<SaleFormPage />} />
+                <Route path="/sell/sales/:id" element={<SaleDetailPage />} />
+                <Route path="/sell/channels" element={<SalesChannelsPage />} />
+
+                <Route path="/stock" element={<InventoryPage />} />
+                <Route path="/stock/inventory" element={<InventoryPage />} />
+                <Route path="/stock/materials" element={<MaterialsPage />} />
+
+                <Route path="/product-studio" element={<ProductsPage />} />
+                <Route path="/product-studio/products" element={<ProductsPage />} />
+                <Route path="/product-studio/products/new" element={<ProductEditorPage />} />
+                <Route path="/product-studio/products/:id" element={<ProductDetailPage />} />
+                <Route path="/product-studio/products/:id/edit" element={<ProductEditorPage />} />
+                <Route path="/product-studio/calculator" element={<CalculatorPage />} />
+                <Route path="/product-studio/rates" element={<RatesPage />} />
+
+                <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/orders/jobs" element={<JobsPage />} />
+                <Route path="/orders/jobs/new" element={<JobFormPage />} />
+                <Route path="/orders/jobs/:id" element={<JobDetailPage />} />
+                <Route path="/orders/jobs/:id/edit" element={<JobFormPage />} />
+                <Route path="/orders/customers" element={<CustomersPage />} />
+
+                <Route path="/insights" element={<Navigate to="/reports/inventory" replace />} />
+                <Route path="/insights/reports" element={<Navigate to="/reports/inventory" replace />} />
+
                 <Route path="/jobs" element={<JobsPage />} />
                 <Route path="/jobs/new" element={<JobFormPage />} />
                 <Route path="/jobs/:id" element={<JobDetailPage />} />

@@ -45,7 +45,7 @@ export default function JobsPage() {
       const { data } = await api.post(`/jobs/${job.id}/duplicate`);
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       toast.success('Job copied to draft successfully');
-      navigate(`/jobs/${data.id}`);
+      navigate(`/orders/jobs/${data.id}`);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to copy job');
     } finally {
@@ -58,7 +58,7 @@ export default function JobsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Jobs</h1>
         <Link
-          to="/jobs/new"
+          to="/orders/jobs/new"
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity no-underline"
         >
           <Plus className="w-4 h-4" /> New Job
@@ -118,7 +118,7 @@ export default function JobsPage() {
                 {jobs.map((job) => (
                   <tr key={job.id} className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors">
                     <td className="px-4 py-3">
-                      <Link to={`/jobs/${job.id}`} className="text-primary hover:underline font-medium no-underline">
+                      <Link to={`/orders/jobs/${job.id}`} className="text-primary hover:underline font-medium no-underline">
                         {job.job_number}
                       </Link>
                     </td>

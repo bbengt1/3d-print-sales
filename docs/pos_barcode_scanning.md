@@ -15,8 +15,8 @@ This implementation is intentionally narrow:
 
 ## Operator Workflow
 
-1. Open the POS page at `/pos`.
-2. Scan into the `Barcode Scan` field, or scan while focus is outside other form controls.
+1. Open the POS register at `/sell`, `/sell/pos`, or the legacy-compatible `/pos` route.
+2. Scan into the `Scan barcode` field, or scan while focus is outside other form controls.
 3. The app sends the scanned code to `POST /api/v1/pos/scan/resolve`.
 4. If one sellable product matches, that product is added to the cart.
 5. Complete checkout using the existing POS checkout flow.

@@ -1,6 +1,23 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Minus, Plus, Receipt, Search, ShoppingBasket, Trash2, UserRound, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Barcode,
+  CheckCircle2,
+  Clock3,
+  Minus,
+  Plus,
+  Receipt,
+  Search,
+  ShoppingBasket,
+  Trash2,
+  UserRound,
+  Users,
+  WalletCards,
+  XCircle,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
@@ -16,10 +33,118 @@ import {
   updateCartLineQuantity,
   type POSCartLine,
 } from '@/pages/posCart';
-import type { Customer, PaginatedProducts, Product, Sale } from '@/types';
+import type { Customer, PaginatedProducts, PaginatedSales, Product, Sale, SaleListItem } from '@/types';
 
 const today = new Date().toISOString().split('T')[0];
 const POS_PRODUCT_PAGE_SIZE = 100;
+const SALES_INBOX_PAGE_SIZE = 6;
+
+type CustomerMode = 'guest' | 'existing' | 'new';
+type ProductFilter = 'all' | 'scannable' | 'low-stock' | 'in-cart';
+
+interface MetricCardProps {
+  label: string;
+  value: string;
+  detail: string;
+}
+
+function MetricCard({ label, value, detail }: MetricCardProps) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+      <p className="text-xs uppercase tracking-[0.25em] text-white/55">{label}</p>
+      <p className="mt-3 text-2xl font-semibold">{value}</p>
+      <p className="mt-2 text-sm text-white/70">{detail}</p>
+    </div>
+  );
+}
+
+interface QuickFilterButtonProps {
+  active: boolean;
+  label: string;
+  detail: string;
+  onClick: () => void;
+}
+
+function QuickFilterButton({ active, label, detail, onClick }: QuickFilterButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-2xl border px-4 py-3 text-left transition-colors',
+        active
+          ? 'border-primary bg-primary/10 text-foreground shadow-sm'
+          : 'border-border bg-background/80 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+      )}
+    >
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="mt-1 text-xs">{detail}</p>
+    </button>
+  );
+}
+
+interface CustomerModeButtonProps {
+  active: boolean;
+  icon: typeof UserRound;
+  label: string;
+  detail: string;
+  onClick: () => void;
+}
+
+function CustomerModeButton({ active, icon: Icon, label, detail, onClick }: CustomerModeButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'rounded-2xl border px-4 py-4 text-left transition-colors',
+        active
+          ? 'border-primary bg-primary/10 text-foreground shadow-sm'
+          : 'border-border bg-background/85 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            'rounded-2xl p-2',
+            active ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground'
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="font-semibold">{label}</p>
+          <p className="mt-1 text-xs">{detail}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+interface PaymentButtonProps {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}
+
+function PaymentButton({ active, label, onClick }: PaymentButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors',
+        active
+          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+          : 'border-border bg-background hover:border-primary/40 hover:text-foreground'
+      )}
+    >
+      {label}
+    </button>
+  );
+}
 
 function getErrorDetail(error: unknown): string {
   if (
@@ -59,10 +184,52 @@ function getErrorDetail(error: unknown): string {
   return 'Failed to complete POS checkout';
 }
 
+function SalesInboxCard({ sale }: { sale: SaleListItem }) {
+  const statusTone =
+    sale.status === 'refunded'
+      ? 'border-destructive/20 bg-destructive/5 text-destructive'
+      : sale.status === 'pending'
+        ? 'border-amber-300/50 bg-amber-50 text-amber-900'
+        : 'border-emerald-300/40 bg-emerald-50 text-emerald-900';
+
+  return (
+    <Link
+      to={`/sell/sales/${sale.id}`}
+      className="block rounded-2xl border border-border bg-background/85 p-4 no-underline transition-colors hover:border-primary/35"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">{sale.sale_number}</p>
+          <p className="mt-2 truncate text-base font-semibold text-foreground">{sale.customer_name || 'Guest checkout'}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {sale.date} • {sale.channel_name || 'Direct'} • {sale.item_count} items
+          </p>
+        </div>
+        <div className={cn('rounded-full border px-3 py-1 text-xs font-semibold capitalize', statusTone)}>
+          {sale.status}
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Payment</p>
+          <p className="mt-1 capitalize text-foreground">{sale.payment_method || 'Unknown'}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Total</p>
+          <p className="mt-1 font-semibold text-foreground">{formatCurrency(sale.total)}</p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function POSPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [productFilter, setProductFilter] = useState<ProductFilter>('all');
   const [cart, setCart] = useState<POSCartLine[]>([]);
+  const [customerMode, setCustomerMode] = useState<CustomerMode>('guest');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -112,20 +279,52 @@ export default function POSPage() {
     queryFn: () => api.get('/customers').then((r) => r.data),
   });
 
+  const { data: salesInboxData, isLoading: salesInboxLoading } = useQuery<PaginatedSales>({
+    queryKey: ['sales', 'sell-inbox'],
+    queryFn: () =>
+      api
+        .get('/sales', {
+          params: {
+            skip: 0,
+            limit: SALES_INBOX_PAGE_SIZE,
+          },
+        })
+        .then((r) => r.data),
+  });
+
+  const salesInbox = salesInboxData?.items || [];
   const products = (productsData?.items || []).filter((product) => product.is_active);
   const normalizedSearch = deferredSearch.trim().toLowerCase();
   const filteredProducts = products.filter((product) => {
-    if (!normalizedSearch) return true;
-    return [product.name, product.sku, product.upc || ''].some((value) =>
-      value.toLowerCase().includes(normalizedSearch)
-    );
+    const searchMatch =
+      !normalizedSearch ||
+      [product.name, product.sku, product.upc || ''].some((value) => value.toLowerCase().includes(normalizedSearch));
+
+    if (!searchMatch) return false;
+
+    const cartQty = getProductCartQuantity(cart, product.id);
+    switch (productFilter) {
+      case 'scannable':
+        return Boolean(product.upc);
+      case 'low-stock':
+        return product.stock_qty <= product.reorder_point;
+      case 'in-cart':
+        return cartQty > 0;
+      default:
+        return true;
+    }
   });
 
   const subtotal = getCartSubtotal(cart);
   const total = getCartTotal(cart, taxCollected);
+  const cartUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
+  const scannableCount = products.filter((product) => Boolean(product.upc)).length;
+  const lowStockCount = products.filter((product) => product.stock_qty <= product.reorder_point).length;
+  const salesNeedingAttention = salesInbox.filter((sale) => ['pending', 'refunded'].includes(sale.status)).length;
 
   const resetCheckoutFields = () => {
     setCart([]);
+    setCustomerMode('guest');
     setSelectedCustomerId('');
     setCustomerName('');
     setPaymentMethod('cash');
@@ -224,8 +423,8 @@ export default function POSPage() {
       const payload = buildPOSCheckoutPayload({
         cart,
         date: today,
-        customerId: selectedCustomerId,
-        customerName,
+        customerId: customerMode === 'existing' ? selectedCustomerId : '',
+        customerName: customerMode === 'new' ? customerName : null,
         taxCollected,
         paymentMethod,
         notes,
@@ -253,119 +452,163 @@ export default function POSPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-3xl border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_28%),linear-gradient(135deg,_rgba(26,32,44,1),_rgba(60,72,88,0.98))] p-6 text-white shadow-sm">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/70">Cashier</p>
-            <h1 className="mt-2 flex items-center gap-3 text-3xl font-bold">
+      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(19,52,34,0.96)_100%)] p-6 text-white shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-sm uppercase tracking-[0.3em] text-white/65">Sell Workspace</p>
+            <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold">
               <Receipt className="h-8 w-8" />
-              POS Checkout
+              POS register
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-white/80">
-              Product-first checkout for quick counter sales. Because making staff click through the general sales form for every walk-up sale would be a weird hobby.
+            <p className="mt-3 text-sm text-white/80">
+              Fast counter checkout with a visible scanner lane, larger touch targets, and a sales inbox that keeps follow-up work nearby instead of hidden behind a generic sales list.
             </p>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm">
-            <p className="text-white/65">Checkout date</p>
-            <p className="mt-1 text-lg font-semibold">{today}</p>
-          </div>
-        </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.25em] text-white/60">Cart Subtotal</p>
-            <p className="mt-2 text-2xl font-semibold">{formatCurrency(subtotal)}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.25em] text-white/60">Tax Collected</p>
-            <p className="mt-2 text-2xl font-semibold">{formatCurrency(taxCollected)}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.25em] text-white/60">Total</p>
-            <p className="mt-2 text-2xl font-semibold">{formatCurrency(total)}</p>
-          </div>
-        </div>
-      </div>
-
-      {successMessage && (
-        <div className="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-emerald-900" role="status">
-          {successMessage}
-        </div>
-      )}
-
-      {checkoutError && (
-        <div className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-destructive" role="alert">
-          {checkoutError}
-        </div>
-      )}
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
-        <section className="space-y-4">
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Product Catalog</h2>
-                <p className="text-sm text-muted-foreground">Search by name, SKU, or UPC and keep scanner traffic in the dedicated scan lane below.</p>
-              </div>
-              <div className="relative w-full md:max-w-sm">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search products..."
-                  aria-label="Search products"
-                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[320px]">
+            <div className="rounded-3xl border border-white/10 bg-white/8 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-white/60">Shift date</p>
+              <p className="mt-2 text-xl font-semibold">{today}</p>
+              <p className="mt-1 text-sm text-white/65">Recommended route: `/sell`</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/8 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-white/60">Sales inbox</p>
+              <p className="mt-2 text-xl font-semibold">{salesNeedingAttention}</p>
+              <p className="mt-1 text-sm text-white/65">Pending or refunded sales needing eyes</p>
             </div>
           </div>
+        </div>
 
+        <div className="mt-6 grid gap-3 lg:grid-cols-4">
+          <MetricCard label="Cart Total" value={formatCurrency(total)} detail={`${cartUnits} units in the current basket`} />
+          <MetricCard label="Barcode Ready" value={`${scannableCount}`} detail="Active products with UPC for wedge scanners" />
+          <MetricCard label="Low Stock" value={`${lowStockCount}`} detail="Products at or below reorder point" />
+          <MetricCard label="Sales Queue" value={`${salesInbox.length}`} detail="Recent transactions one tap away" />
+        </div>
+      </section>
+
+      {successMessage ? (
+        <div className="rounded-3xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm" role="status">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Checkout complete</p>
+              <p className="mt-1 text-sm">{successMessage}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {checkoutError ? (
+        <div className="rounded-3xl border border-destructive/35 bg-destructive/10 px-5 py-4 text-destructive shadow-sm" role="alert">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Checkout blocked</p>
+              <p className="mt-1 text-sm">{checkoutError}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.95fr)]">
+        <section className="space-y-4">
           <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
               <div>
-                <h2 className="text-xl font-semibold">Barcode Scan</h2>
-                <p className="text-sm text-muted-foreground">
-                  Supports keyboard-wedge scanners using the product UPC field. Scan into this field or scan while focus is outside form inputs.
+                <div className="flex items-center gap-2">
+                  <Barcode className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Scanner lane</h2>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Keep wedge scanning obvious. Operators can scan into the field below or scan with focus outside other form controls.
                 </p>
-              </div>
-              <div className="w-full md:max-w-sm">
-                <label className="mb-1 block text-sm font-medium" htmlFor="pos-scan-code">
-                  Scan barcode
-                </label>
                 <form
+                  className="mt-4"
                   onSubmit={(event) => {
                     event.preventDefault();
                     void handleResolveScan(scanCode);
                   }}
                 >
-                  <input
-                    id="pos-scan-code"
-                    value={scanCode}
-                    onChange={(e) => setScanCode(e.target.value)}
-                    placeholder="Scan UPC and press Enter"
-                    aria-label="Scan barcode"
-                    className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+                  <label className="mb-2 block text-sm font-medium" htmlFor="pos-scan-code">
+                    Scan barcode
+                  </label>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      id="pos-scan-code"
+                      value={scanCode}
+                      onChange={(event) => setScanCode(event.target.value)}
+                      placeholder="Scan UPC and press Enter"
+                      aria-label="Scan barcode"
+                      className="min-h-14 flex-1 rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                    >
+                      Resolve scan
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </form>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-background/80 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Lane rules</p>
+                <div className="mt-3 space-y-3 text-sm text-muted-foreground">
+                  <p>Exact UPC match only.</p>
+                  <p>Only active, in-stock products resolve.</p>
+                  <p>Failed scans leave the cart unchanged.</p>
+                </div>
               </div>
             </div>
 
             {scanStatus ? (
-              <div className={cn(
-                'mt-4 rounded-2xl border px-4 py-3 text-sm',
-                scanStatus.startsWith('Scanned ')
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                  : 'border-amber-300 bg-amber-50 text-amber-900'
-              )}>
+              <div
+                className={cn(
+                  'mt-4 rounded-2xl border px-4 py-3 text-sm',
+                  scanStatus.startsWith('Scanned ')
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                    : 'border-amber-300 bg-amber-50 text-amber-900'
+                )}
+              >
                 {scanStatus}
               </div>
             ) : null}
           </div>
 
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Catalog lane</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Search by product name, SKU, or UPC. Quick filters reduce choice overload during busy counter traffic.
+                </p>
+              </div>
+              <div className="relative w-full lg:max-w-sm">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search products..."
+                  aria-label="Search products"
+                  className="min-h-14 w-full rounded-2xl border border-input bg-background py-3 pl-11 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <QuickFilterButton active={productFilter === 'all'} label="All products" detail={`${products.length} active items`} onClick={() => setProductFilter('all')} />
+              <QuickFilterButton active={productFilter === 'scannable'} label="Scanner-ready" detail={`${scannableCount} products with UPC`} onClick={() => setProductFilter('scannable')} />
+              <QuickFilterButton active={productFilter === 'low-stock'} label="Low stock" detail={`${lowStockCount} products need attention`} onClick={() => setProductFilter('low-stock')} />
+              <QuickFilterButton active={productFilter === 'in-cart'} label="In cart" detail={`${cart.length} product lines selected`} onClick={() => setProductFilter('in-cart')} />
+            </div>
+          </div>
+
           {productsLoading ? (
-            <div className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-28 animate-pulse rounded-3xl border border-border bg-card" />
+                <div key={index} className="h-48 animate-pulse rounded-3xl border border-border bg-card" />
               ))}
             </div>
           ) : productsError ? (
@@ -374,72 +617,69 @@ export default function POSPage() {
             </div>
           ) : !filteredProducts.length ? (
             <EmptyState
-              icon="search"
-              title={products.length ? 'No products match that search' : 'No active products available'}
+              icon="sales"
+              title={products.length ? 'No products match the current lane filters' : 'No active products available'}
               description={
                 products.length
-                  ? 'Try a different name or SKU.'
-                  : 'Add active products with stock before using the POS screen.'
+                  ? 'Try a different search term or filter combination.'
+                  : 'Add active products with stock before using the POS register.'
               }
+              className="rounded-3xl border border-border bg-card"
             />
           ) : (
-            <div className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
               {filteredProducts.map((product) => {
                 const cartQty = getProductCartQuantity(cart, product.id);
                 const remainingStock = product.stock_qty - cartQty;
                 const outOfStock = remainingStock <= 0;
+                const lowStock = product.stock_qty <= product.reorder_point;
 
                 return (
                   <article
                     key={product.id}
                     className={cn(
-                      'rounded-3xl border border-border bg-card p-4 shadow-sm transition-colors',
-                      outOfStock ? 'opacity-70' : 'hover:border-primary/40'
+                      'rounded-3xl border border-border bg-card p-5 shadow-sm transition-colors',
+                      outOfStock ? 'opacity-70' : 'hover:border-primary/35'
                     )}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <p className="shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                            {product.sku}
-                          </p>
-                          {product.upc ? (
-                            <p className="shrink-0 text-xs uppercase tracking-[0.15em] text-muted-foreground">
-                              UPC {product.upc}
-                            </p>
-                          ) : null}
-                          <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-tight">
-                            {product.name}
-                          </h3>
-                        </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">{product.sku}</p>
+                        <h3 className="mt-2 text-lg font-semibold leading-tight">{product.name}</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {product.upc ? `UPC ${product.upc}` : 'No UPC assigned yet'}
+                        </p>
                       </div>
-                      <div className="inline-flex shrink-0 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground">
+                      <div className="rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground">
                         {formatCurrency(product.unit_price)}
                       </div>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-3">
-                      <div className="inline-flex items-center gap-2 rounded-2xl bg-background px-3 py-2 text-sm">
-                        <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Stock</span>
-                        <span className={cn('font-semibold', product.stock_qty <= product.reorder_point && 'text-amber-600')}>
-                          {product.stock_qty}
-                        </span>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl bg-background px-3 py-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Stock</p>
+                        <p className={cn('mt-2 text-lg font-semibold', lowStock && 'text-amber-600')}>{product.stock_qty}</p>
                       </div>
-                      <div className="inline-flex items-center gap-2 rounded-2xl bg-background px-3 py-2 text-sm">
-                        <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">In cart</span>
-                        <span className="font-semibold">{cartQty}</span>
+                      <div className="rounded-2xl bg-background px-3 py-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">In cart</p>
+                        <p className="mt-2 text-lg font-semibold">{cartQty}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleAddProduct(product)}
-                        disabled={outOfStock}
-                        aria-label={`Add ${product.name} to cart`}
-                        className="ml-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2.5 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-                      >
-                        <Plus className="h-4 w-4" />
-                        {outOfStock ? 'Stock maxed in cart' : 'Add to cart'}
-                      </button>
+                      <div className="rounded-2xl bg-background px-3 py-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Scanner</p>
+                        <p className="mt-2 text-sm font-semibold">{product.upc ? 'Ready' : 'Manual only'}</p>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddProduct(product)}
+                      disabled={outOfStock}
+                      aria-label={`Add ${product.name} to cart`}
+                      className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {outOfStock ? 'Stock maxed in cart' : 'Add to cart'}
+                    </button>
                   </article>
                 );
               })}
@@ -451,11 +691,11 @@ export default function POSPage() {
           <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold">Cart</h2>
-                <p className="text-sm text-muted-foreground">Keep it moving. This is the fast lane.</p>
+                <h2 className="text-xl font-semibold">Cart and checkout</h2>
+                <p className="mt-2 text-sm text-muted-foreground">Large controls, shorter decisions, faster recovery.</p>
               </div>
               <div className="rounded-full bg-accent px-3 py-1 text-sm font-medium text-accent-foreground">
-                {cart.reduce((sum, line) => sum + line.quantity, 0)} items
+                {cartUnits} items
               </div>
             </div>
 
@@ -463,12 +703,12 @@ export default function POSPage() {
               <div className="mt-6 rounded-3xl border border-dashed border-border bg-background/70 p-8 text-center">
                 <ShoppingBasket className="mx-auto h-10 w-10 text-muted-foreground" />
                 <p className="mt-4 text-lg font-medium">Cart is empty</p>
-                <p className="mt-2 text-sm text-muted-foreground">Add products from the catalog to start a sale.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Add products from the catalog lane or scan a barcode to start a sale.</p>
               </div>
             ) : (
               <div className="mt-5 space-y-3">
                 {cart.map((line) => (
-                  <div key={line.product_id} className="rounded-2xl border border-border bg-background/80 p-4">
+                  <div key={line.product_id} className="rounded-3xl border border-border bg-background/85 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium">{line.name}</p>
@@ -478,23 +718,23 @@ export default function POSPage() {
                         type="button"
                         onClick={() => setCart((prev) => removeProductFromCart(prev, line.product_id))}
                         aria-label={`Remove ${line.name} from cart`}
-                        className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        className="rounded-2xl p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
-                      <div className="inline-flex items-center rounded-full border border-border bg-card">
+                      <div className="inline-flex items-center rounded-2xl border border-border bg-card">
                         <button
                           type="button"
                           onClick={() => setCart((prev) => updateCartLineQuantity(prev, line.product_id, line.quantity - 1))}
                           aria-label={`Decrease quantity for ${line.name}`}
-                          className="rounded-l-full px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          className="rounded-l-2xl px-4 py-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <span aria-label={`${line.name} quantity`} className="min-w-12 px-3 text-center font-semibold">
+                        <span aria-label={`${line.name} quantity`} className="min-w-14 px-3 text-center text-lg font-semibold">
                           {line.quantity}
                         </span>
                         <button
@@ -502,108 +742,164 @@ export default function POSPage() {
                           onClick={() => setCart((prev) => updateCartLineQuantity(prev, line.product_id, line.quantity + 1))}
                           disabled={line.quantity >= line.stock_qty}
                           aria-label={`Increase quantity for ${line.name}`}
-                          className="rounded-r-full px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:text-muted-foreground/40"
+                          className="rounded-r-2xl px-4 py-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:text-muted-foreground/40"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
+
                       <div className="text-right">
                         <p className="text-sm text-muted-foreground">{formatCurrency(line.unit_price)} each</p>
-                        <p className="font-semibold">{formatCurrency(line.unit_price * line.quantity)}</p>
+                        <p className="text-lg font-semibold">{formatCurrency(line.unit_price * line.quantity)}</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <UserRound className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">Checkout</h2>
-            </div>
+            <div className="mt-6 rounded-3xl border border-border bg-background/70 p-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-base font-semibold">Customer mode</h3>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Make the cashier choice explicit instead of hiding it in one select box.
+              </p>
 
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium">Customer</label>
-                <select
-                  value={selectedCustomerId}
-                  onChange={(e) => {
-                    setSelectedCustomerId(e.target.value);
+              <div className="mt-4 grid gap-3">
+                <CustomerModeButton
+                  active={customerMode === 'guest'}
+                  icon={UserRound}
+                  label="Guest"
+                  detail="Fastest path for walk-up checkout."
+                  onClick={() => {
+                    setCustomerMode('guest');
+                    setSelectedCustomerId('');
+                    setCustomerName('');
                     setCheckoutError(null);
-                    if (e.target.value) {
-                      setCustomerName('');
-                    }
                   }}
-                  aria-label="Customer"
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Guest checkout</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </select>
+                />
+                <CustomerModeButton
+                  active={customerMode === 'existing'}
+                  icon={Users}
+                  label="Existing customer"
+                  detail="Attach the sale to an existing customer record."
+                  onClick={() => {
+                    setCustomerMode('existing');
+                    setCustomerName('');
+                    setCheckoutError(null);
+                  }}
+                />
+                <CustomerModeButton
+                  active={customerMode === 'new'}
+                  icon={Receipt}
+                  label="New customer name"
+                  detail="Capture a customer name on the sale without leaving the register."
+                  onClick={() => {
+                    setCustomerMode('new');
+                    setSelectedCustomerId('');
+                    setCheckoutError(null);
+                  }}
+                />
               </div>
 
-              {!selectedCustomerId && (
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Guest name</label>
+              {customerMode === 'existing' ? (
+                <div className="mt-4">
+                  <label className="mb-2 block text-sm font-medium" htmlFor="pos-existing-customer">
+                    Existing customer
+                  </label>
+                  <select
+                    id="pos-existing-customer"
+                    value={selectedCustomerId}
+                    onChange={(event) => {
+                      setSelectedCustomerId(event.target.value);
+                      setCheckoutError(null);
+                    }}
+                    aria-label="Existing customer"
+                    className="min-h-14 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Select customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
+              {customerMode === 'new' ? (
+                <div className="mt-4">
+                  <label className="mb-2 block text-sm font-medium" htmlFor="pos-customer-name">
+                    Customer name
+                  </label>
                   <input
+                    id="pos-customer-name"
                     value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Optional walk-up customer name"
-                    aria-label="Guest name"
-                    className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    placeholder="Name for receipt or follow-up"
+                    aria-label="Customer name"
+                    className="min-h-14 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
-              )}
+              ) : null}
+            </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium">Payment method</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  aria-label="Payment method"
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {POS_PAYMENT_METHODS.map((method) => (
-                    <option key={method.value} value={method.value}>
-                      {method.label}
-                    </option>
-                  ))}
-                </select>
+            <div className="mt-4 rounded-3xl border border-border bg-background/70 p-4">
+              <div className="flex items-center gap-2">
+                <WalletCards className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-base font-semibold">Payment method</h3>
               </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {POS_PAYMENT_METHODS.map((method) => (
+                  <PaymentButton
+                    key={method.value}
+                    active={paymentMethod === method.value}
+                    label={method.label}
+                    onClick={() => setPaymentMethod(method.value)}
+                  />
+                ))}
+              </div>
+              <div className="sr-only" aria-live="polite">
+                Payment method: {POS_PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label || paymentMethod}
+              </div>
+            </div>
 
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium">Tax collected</label>
+                <label className="mb-2 block text-sm font-medium" htmlFor="pos-tax-collected">
+                  Tax collected
+                </label>
                 <input
+                  id="pos-tax-collected"
                   type="number"
                   min="0"
                   step="0.01"
                   value={taxCollected}
-                  onChange={(e) => setTaxCollected(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(event) => setTaxCollected(Math.max(0, Number(event.target.value) || 0))}
                   aria-label="Tax collected"
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-14 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">Notes</label>
+                <label className="mb-2 block text-sm font-medium" htmlFor="pos-notes">
+                  Notes
+                </label>
                 <textarea
+                  id="pos-notes"
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(event) => setNotes(event.target.value)}
                   rows={3}
                   placeholder="Optional booth or counter notes"
                   aria-label="Notes"
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
 
-            <div className="mt-6 rounded-3xl bg-background p-4">
+            <div className="mt-4 rounded-3xl bg-background p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
@@ -621,29 +917,76 @@ export default function POSPage() {
             <button
               type="button"
               onClick={handleCheckout}
-              disabled={saving || !cart.length}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+              disabled={
+                saving ||
+                !cart.length ||
+                (customerMode === 'existing' && !selectedCustomerId) ||
+                (customerMode === 'new' && !customerName.trim())
+              }
+              className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
             >
               {saving ? 'Processing checkout...' : 'Complete checkout'}
             </button>
 
-            {!!cart.length && (
+            {!!cart.length ? (
               <button
                 type="button"
                 onClick={resetCheckoutFields}
-                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 font-medium transition-colors hover:bg-accent"
+                className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 font-semibold transition-colors hover:bg-accent"
               >
                 <XCircle className="h-4 w-4" />
                 Clear cart
               </button>
-            )}
+            ) : null}
 
             <div className="mt-4 rounded-2xl border border-amber-300/60 bg-amber-50 p-3 text-sm text-amber-900">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p>POS checkout will block oversell when cart quantity exceeds available stock. Fancy concept, I know.</p>
+                <p>Checkout blocks oversell when requested quantity exceeds available stock.</p>
               </div>
             </div>
+          </section>
+
+          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Clock3 className="h-5 w-5 text-muted-foreground" />
+                  <h2 className="text-xl font-semibold">Sales inbox</h2>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Recent sales and exceptions stay adjacent to the register so staff do not need to context-switch into the full sales area.
+                </p>
+              </div>
+              <Link
+                to="/sell/sales"
+                className="inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
+              >
+                Open inbox
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {salesInboxLoading ? (
+              <div className="mt-4 space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="h-28 animate-pulse rounded-3xl border border-border bg-background" />
+                ))}
+              </div>
+            ) : salesInbox.length ? (
+              <div className="mt-4 space-y-3">
+                {salesInbox.map((sale) => (
+                  <SalesInboxCard key={sale.id} sale={sale} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="sales"
+                title="No recent sales"
+                description="Completed sales will appear here so staff can review them without leaving the Sell workspace."
+                className="py-10"
+              />
+            )}
           </section>
         </aside>
       </div>

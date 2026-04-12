@@ -58,11 +58,27 @@ export default function SalesPage() {
   ) as string[];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Sales</h1>
+    <div className="space-y-6">
+      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(22,44,64,0.96)_100%)] p-6 text-white shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-sm uppercase tracking-[0.3em] text-white/65">Sell Workspace</p>
+            <h1 className="mt-3 text-3xl font-bold">Sales inbox</h1>
+            <p className="mt-3 text-sm text-white/80">
+              Review recent sales, refunds, and follow-up work without dropping back into the general dashboard.
+            </p>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-white/8 px-4 py-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Visible sales</p>
+            <p className="mt-2 text-2xl font-semibold">{total}</p>
+            <p className="mt-1 text-sm text-white/65">Filtered transactions in the current inbox view</p>
+          </div>
+        </div>
+      </section>
+
+      <div className="flex items-center justify-between">
         <Link
-          to="/sales/new"
+          to="/sell/sales/new"
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity no-underline"
         >
           <Plus className="w-4 h-4" /> New Sale
@@ -136,7 +152,7 @@ export default function SalesPage() {
           description="Record your first sale to start tracking revenue."
           action={
             <Link
-              to="/sales/new"
+              to="/sell/sales/new"
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 no-underline"
             >
               <Plus className="w-4 h-4" /> New Sale
@@ -183,7 +199,7 @@ export default function SalesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <Link to={`/sales/${s.id}`} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground inline-block" title="View">
+                      <Link to={`/sell/sales/${s.id}`} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground inline-block" title="View">
                         <Eye className="w-4 h-4" />
                       </Link>
                     </td>
@@ -196,7 +212,7 @@ export default function SalesPage() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {sales.map((s) => (
-              <Link key={s.id} to={`/sales/${s.id}`} className="block bg-card border border-border rounded-lg p-4 no-underline">
+              <Link key={s.id} to={`/sell/sales/${s.id}`} className="block bg-card border border-border rounded-lg p-4 no-underline">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-semibold">{s.sale_number}</p>

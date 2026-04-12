@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Archive, ArchiveRestore, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, X, Archive, ArchiveRestore, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
@@ -135,7 +135,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Link to="/products" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
+      <Link to="/product-studio" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Products
       </Link>
 
@@ -152,6 +152,13 @@ export default function ProductDetailPage() {
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentProduct.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
               {currentProduct.is_active ? 'Active' : 'Archived'}
             </span>
+            <Link
+              to={`/product-studio/products/${currentProduct.id}/edit`}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent no-underline text-foreground"
+            >
+              <Pencil className="w-4 h-4" />
+              Open Editor
+            </Link>
             <button
               onClick={toggleActive}
               disabled={saving}
