@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Printer, RefreshCw, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
 import type { Sale, SalesChannel } from '@/types';
 
@@ -19,6 +21,20 @@ export default function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [savingShipment, setSavingShipment] = useState(false);
+  const [printingLabel, setPrintingLabel] = useState(false);
+  const [markingPrinted, setMarkingPrinted] = useState(false);
+  const [shipmentForm, setShipmentForm] = useState({
+    shipping_recipient_name: '',
+    shipping_company: '',
+    shipping_address_line1: '',
+    shipping_address_line2: '',
+    shipping_city: '',
+    shipping_state: '',
+    shipping_postal_code: '',
+    shipping_country: '',
+    tracking_number: '',
+  });
 
   const { data: sale, isLoading } = useQuery<Sale>({
     queryKey: ['sale', id],
@@ -31,6 +47,23 @@ export default function SaleDetailPage() {
     queryFn: () => api.get('/sales/channels').then((r) => r.data),
   });
 
+  useEffect(() => {
+    if (!sale) {
+      return;
+    }
+    setShipmentForm({
+      shipping_recipient_name: sale.shipping_recipient_name || sale.customer_name || '',
+      shipping_company: sale.shipping_company || '',
+      shipping_address_line1: sale.shipping_address_line1 || '',
+      shipping_address_line2: sale.shipping_address_line2 || '',
+      shipping_city: sale.shipping_city || '',
+      shipping_state: sale.shipping_state || '',
+      shipping_postal_code: sale.shipping_postal_code || '',
+      shipping_country: sale.shipping_country || '',
+      tracking_number: sale.tracking_number || '',
+    });
+  }, [sale]);
+
   const channelName = sale?.channel_id
     ? channels?.find((c) => c.id === sale.channel_id)?.name || '—'
     : 'Direct';
@@ -38,7 +71,7 @@ export default function SaleDetailPage() {
   const handleStatusChange = async (newStatus: string) => {
     try {
       await api.put(`/sales/${id}`, { status: newStatus });
-      queryClient.invalidateQueries({ queryKey: ['sale', id] });
+      await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success(`Status updated to ${newStatus}`);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to update');
@@ -48,7 +81,7 @@ export default function SaleDetailPage() {
   const handleRefund = async () => {
     try {
       await api.post(`/sales/${id}/refund`);
-      queryClient.invalidateQueries({ queryKey: ['sale', id] });
+      await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success('Sale refunded');
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to refund');
@@ -65,6 +98,75 @@ export default function SaleDetailPage() {
     }
   };
 
+  const handleShipmentSave = async () => {
+    try {
+      setSavingShipment(true);
+      await api.put(`/sales/${id}`, {
+        tracking_number: shipmentForm.tracking_number || null,
+        shipping_recipient_name: shipmentForm.shipping_recipient_name || null,
+        shipping_company: shipmentForm.shipping_company || null,
+        shipping_address_line1: shipmentForm.shipping_address_line1 || null,
+        shipping_address_line2: shipmentForm.shipping_address_line2 || null,
+        shipping_city: shipmentForm.shipping_city || null,
+        shipping_state: shipmentForm.shipping_state || null,
+        shipping_postal_code: shipmentForm.shipping_postal_code || null,
+        shipping_country: shipmentForm.shipping_country || null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['sale', id] });
+      toast.success('Shipment details saved');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to save shipment details');
+    } finally {
+      setSavingShipment(false);
+    }
+  };
+
+  const handlePrintLabel = async () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Popup blocked. Allow popups for this workstation to print labels.');
+      return;
+    }
+
+    try {
+      setPrintingLabel(true);
+      const resp = await api.get(`/sales/${id}/shipping-label`, {
+        responseType: 'text',
+        headers: {
+          Accept: 'text/html',
+        },
+      });
+
+      printWindow.document.open();
+      printWindow.document.write(resp.data as string);
+      printWindow.document.close();
+      printWindow.focus();
+      window.setTimeout(() => {
+        printWindow.print();
+      }, 250);
+      await queryClient.invalidateQueries({ queryKey: ['sale', id] });
+      toast.success('Print dialog opened on this workstation. Mark the label printed after a successful thermal print.');
+    } catch (err: any) {
+      printWindow.close();
+      toast.error(err.response?.data?.detail || 'Failed to open shipping label');
+    } finally {
+      setPrintingLabel(false);
+    }
+  };
+
+  const handleMarkPrinted = async () => {
+    try {
+      setMarkingPrinted(true);
+      await api.post(`/sales/${id}/shipping-label/mark-printed`);
+      await queryClient.invalidateQueries({ queryKey: ['sale', id] });
+      toast.success('Label marked as printed');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to mark label printed');
+    } finally {
+      setMarkingPrinted(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="animate-pulse space-y-4"><div className="h-8 bg-muted rounded w-1/3" /><div className="h-64 bg-muted rounded" /></div>;
   }
@@ -72,6 +174,28 @@ export default function SaleDetailPage() {
   if (!sale) {
     return <div className="text-center py-16 text-muted-foreground">Sale not found</div>;
   }
+
+  const shipmentMissingFields = getShippingLabelMissingFields({
+    customer_name: shipmentForm.shipping_recipient_name ? null : sale.customer_name,
+    shipping_recipient_name: shipmentForm.shipping_recipient_name,
+    shipping_address_line1: shipmentForm.shipping_address_line1,
+    shipping_city: shipmentForm.shipping_city,
+    shipping_state: shipmentForm.shipping_state,
+    shipping_postal_code: shipmentForm.shipping_postal_code,
+    shipping_country: shipmentForm.shipping_country,
+    shipping_label_print_count: sale.shipping_label_print_count,
+  });
+
+  const shipmentDirty =
+    shipmentForm.shipping_recipient_name !== (sale.shipping_recipient_name || sale.customer_name || '') ||
+    shipmentForm.shipping_company !== (sale.shipping_company || '') ||
+    shipmentForm.shipping_address_line1 !== (sale.shipping_address_line1 || '') ||
+    shipmentForm.shipping_address_line2 !== (sale.shipping_address_line2 || '') ||
+    shipmentForm.shipping_city !== (sale.shipping_city || '') ||
+    shipmentForm.shipping_state !== (sale.shipping_state || '') ||
+    shipmentForm.shipping_postal_code !== (sale.shipping_postal_code || '') ||
+    shipmentForm.shipping_country !== (sale.shipping_country || '') ||
+    shipmentForm.tracking_number !== (sale.tracking_number || '');
 
   return (
     <div>
@@ -89,7 +213,6 @@ export default function SaleDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Line Items */}
         <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Line Items</h2>
           <table className="w-full text-sm">
@@ -116,9 +239,7 @@ export default function SaleDetailPage() {
           </table>
         </div>
 
-        {/* Summary & Actions */}
         <div className="space-y-6">
-          {/* Financial summary */}
           <div className="bg-card border border-border rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Summary</h2>
             <div className="space-y-2 text-sm">
@@ -138,7 +259,6 @@ export default function SaleDetailPage() {
             </div>
           </div>
 
-          {/* Details */}
           <div className="bg-card border border-border rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Details</h2>
             <div className="space-y-2 text-sm">
@@ -149,7 +269,74 @@ export default function SaleDetailPage() {
             </div>
           </div>
 
-          {/* Actions */}
+          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">Shipping Label</h2>
+                <p className="text-sm text-muted-foreground">
+                  Server renders a 4x6 browser-printable label. The workstation browser owns the final thermal print step.
+                </p>
+              </div>
+              <div className="text-right text-xs text-muted-foreground">
+                <p>Format: {sale.shipping_label_format || 'html-4x6-v1'}</p>
+                <p>Printed: {sale.shipping_label_print_count}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <input value={shipmentForm.shipping_recipient_name} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_recipient_name: e.target.value }))} placeholder="Recipient name" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input value={shipmentForm.shipping_company} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_company: e.target.value }))} placeholder="Company (optional)" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input value={shipmentForm.shipping_address_line1} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_address_line1: e.target.value }))} placeholder="Address line 1" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input value={shipmentForm.shipping_address_line2} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_address_line2: e.target.value }))} placeholder="Address line 2" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input value={shipmentForm.shipping_city} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_city: e.target.value }))} placeholder="City" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                <input value={shipmentForm.shipping_state} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_state: e.target.value }))} placeholder="State" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                <input value={shipmentForm.shipping_postal_code} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_postal_code: e.target.value }))} placeholder="Postal code" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <input value={shipmentForm.shipping_country} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_country: e.target.value }))} placeholder="Country" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input value={shipmentForm.tracking_number} onChange={(e) => setShipmentForm((prev) => ({ ...prev, tracking_number: e.target.value }))} placeholder="Tracking number" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+
+            {shipmentMissingFields.length > 0 ? (
+              <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Add {shipmentMissingFields.join(', ')} before printing from this workstation.
+              </p>
+            ) : (
+              <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                Label is ready for workstation-local printing. Canceling the browser print dialog does not mark the label printed.
+              </p>
+            )}
+
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                onClick={handleShipmentSave}
+                disabled={savingShipment || !shipmentDirty}
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" /> {savingShipment ? 'Saving shipment...' : 'Save Shipment Details'}
+              </button>
+              <button
+                onClick={handlePrintLabel}
+                disabled={printingLabel || shipmentMissingFields.length > 0 || shipmentDirty}
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Printer className="w-4 h-4" /> {printingLabel ? 'Opening print dialog...' : getShippingLabelActionLabel(sale)}
+              </button>
+              <button
+                onClick={handleMarkPrinted}
+                disabled={markingPrinted || shipmentDirty || shipmentMissingFields.length > 0}
+                className="rounded-md border border-border px-4 py-2 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {markingPrinted ? 'Recording print...' : 'Mark Printed After Successful Print'}
+              </button>
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              <p>Generated: {sale.shipping_label_generated_at ? new Date(sale.shipping_label_generated_at).toLocaleString() : 'Not generated yet'}</p>
+              <p>Last printed: {sale.shipping_label_last_printed_at ? new Date(sale.shipping_label_last_printed_at).toLocaleString() : 'Not marked printed yet'}</p>
+            </div>
+          </div>
+
           <div className="bg-card border border-border rounded-lg p-6 space-y-3">
             <h2 className="text-lg font-semibold mb-2">Actions</h2>
             {sale.status !== 'refunded' && sale.status !== 'cancelled' && (

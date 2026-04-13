@@ -5,7 +5,7 @@ import uuid
 from decimal import Decimal
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -34,6 +34,14 @@ from app.services.sales_service import (
     deduct_inventory_for_sale,
     generate_sale_number,
     restore_inventory_for_refund,
+)
+from app.services.shipping_label_service import (
+    SUPPORTED_SHIPPING_LABEL_FORMAT,
+    ShippingLabelValidationError,
+    mark_shipping_label_generated,
+    mark_shipping_label_printed,
+    render_sale_shipping_label_html,
+    shipping_label_ready,
 )
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
@@ -65,6 +73,19 @@ def _to_sale_response(sale: Sale) -> SaleResponse:
         contribution_margin=sale.net_revenue,
         payment_method=sale.payment_method,
         tracking_number=sale.tracking_number,
+        shipping_recipient_name=sale.shipping_recipient_name,
+        shipping_company=sale.shipping_company,
+        shipping_address_line1=sale.shipping_address_line1,
+        shipping_address_line2=sale.shipping_address_line2,
+        shipping_city=sale.shipping_city,
+        shipping_state=sale.shipping_state,
+        shipping_postal_code=sale.shipping_postal_code,
+        shipping_country=sale.shipping_country,
+        shipping_label_ready=shipping_label_ready(sale),
+        shipping_label_format=SUPPORTED_SHIPPING_LABEL_FORMAT,
+        shipping_label_generated_at=sale.shipping_label_generated_at,
+        shipping_label_last_printed_at=sale.shipping_label_last_printed_at,
+        shipping_label_print_count=sale.shipping_label_print_count,
         notes=sale.notes,
         items=sale.items,
         created_at=sale.created_at,
@@ -304,6 +325,14 @@ async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
             tax_collected=body.tax_collected,
             payment_method=body.payment_method,
             tracking_number=body.tracking_number,
+            shipping_recipient_name=body.shipping_recipient_name,
+            shipping_company=body.shipping_company,
+            shipping_address_line1=body.shipping_address_line1,
+            shipping_address_line2=body.shipping_address_line2,
+            shipping_city=body.shipping_city,
+            shipping_state=body.shipping_state,
+            shipping_postal_code=body.shipping_postal_code,
+            shipping_country=body.shipping_country,
             notes=body.notes,
             status=body.status.value,
             items=body.items,
@@ -323,6 +352,12 @@ async def create_sale(body: SaleCreate, user: CurrentUser, db: DB):
             "total": sale.total,
             "customer_name": sale.customer_name,
             "tax_treatment": sale.tax_treatment,
+            "shipping_recipient_name": sale.shipping_recipient_name,
+            "shipping_address_line1": sale.shipping_address_line1,
+            "shipping_city": sale.shipping_city,
+            "shipping_state": sale.shipping_state,
+            "shipping_postal_code": sale.shipping_postal_code,
+            "shipping_country": sale.shipping_country,
         },
         reason=body.notes,
     )
@@ -474,5 +509,93 @@ async def refund_sale(sale_id: uuid.UUID, body: RefundRequestBody = Body(...), u
 
     result = await db.execute(
         select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale.id)
+    )
+    return _to_sale_response(result.scalar_one())
+
+
+@router.get(
+    "/{sale_id}/shipping-label",
+    response_class=HTMLResponse,
+    summary="Get browser-printable shipping label",
+    description="Returns a 4x6 browser-printable HTML shipping label for workstation-local printing.",
+)
+async def get_shipping_label(sale_id: uuid.UUID, user: CurrentUser, db: DB):
+    result = await db.execute(
+        select(Sale)
+        .options(selectinload(Sale.items), selectinload(Sale.channel))
+        .where(Sale.id == sale_id, Sale.is_deleted == False)
+    )
+    sale = result.scalar_one_or_none()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    try:
+        html = render_sale_shipping_label_html(sale)
+    except ShippingLabelValidationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    previously_generated_at = sale.shipping_label_generated_at
+    before = snapshot_model(sale, ["shipping_label_generated_at"])
+    mark_shipping_label_generated(sale)
+    if sale.shipping_label_generated_at != previously_generated_at:
+        await create_audit_log(
+            db,
+            actor_user_id=user.id,
+            entity_type="sale",
+            entity_id=str(sale.id),
+            action="shipping_label_generate",
+            before_snapshot=before,
+            after_snapshot=snapshot_model(sale, ["shipping_label_generated_at"]),
+        )
+        await db.commit()
+
+    return HTMLResponse(content=html)
+
+
+@router.post(
+    "/{sale_id}/shipping-label/mark-printed",
+    response_model=SaleResponse,
+    summary="Mark shipping label as printed",
+    description="Records operator-confirmed shipping label printing after the workstation successfully prints the label.",
+)
+async def mark_sale_shipping_label_printed(sale_id: uuid.UUID, user: CurrentUser, db: DB):
+    result = await db.execute(
+        select(Sale)
+        .options(selectinload(Sale.items), selectinload(Sale.channel))
+        .where(Sale.id == sale_id, Sale.is_deleted == False)
+    )
+    sale = result.scalar_one_or_none()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    try:
+        render_sale_shipping_label_html(sale)
+    except ShippingLabelValidationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    before = snapshot_model(
+        sale,
+        ["shipping_label_generated_at", "shipping_label_last_printed_at", "shipping_label_print_count"],
+    )
+    mark_shipping_label_printed(sale)
+    await create_audit_log(
+        db,
+        actor_user_id=user.id,
+        entity_type="sale",
+        entity_id=str(sale.id),
+        action="shipping_label_print",
+        before_snapshot=before,
+        after_snapshot=snapshot_model(
+            sale,
+            ["shipping_label_generated_at", "shipping_label_last_printed_at", "shipping_label_print_count"],
+        ),
+    )
+    await db.commit()
+    await db.refresh(sale)
+
+    result = await db.execute(
+        select(Sale)
+        .options(selectinload(Sale.items), selectinload(Sale.channel))
+        .where(Sale.id == sale.id)
     )
     return _to_sale_response(result.scalar_one())
