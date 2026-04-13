@@ -53,6 +53,14 @@ class SaleCreate(BaseModel):
     tax_collected: Decimal = Field(Decimal(0), ge=0, examples=[0])
     payment_method: str | None = Field(None, max_length=50, examples=["card"])
     tracking_number: str | None = Field(None, max_length=100)
+    shipping_recipient_name: str | None = Field(None, max_length=200)
+    shipping_company: str | None = Field(None, max_length=200)
+    shipping_address_line1: str | None = Field(None, max_length=200)
+    shipping_address_line2: str | None = Field(None, max_length=200)
+    shipping_city: str | None = Field(None, max_length=120)
+    shipping_state: str | None = Field(None, max_length=120)
+    shipping_postal_code: str | None = Field(None, max_length=40)
+    shipping_country: str | None = Field(None, max_length=120)
     notes: str | None = Field(None, max_length=1000)
     status: SaleStatus = Field(SaleStatus.pending, examples=["paid"])
     items: list[SaleItemCreate] = Field(..., min_length=1)
@@ -70,6 +78,14 @@ class SaleUpdate(BaseModel):
     tax_collected: Decimal | None = Field(None, ge=0)
     payment_method: str | None = Field(None, max_length=50)
     tracking_number: str | None = Field(None, max_length=100)
+    shipping_recipient_name: str | None = Field(None, max_length=200)
+    shipping_company: str | None = Field(None, max_length=200)
+    shipping_address_line1: str | None = Field(None, max_length=200)
+    shipping_address_line2: str | None = Field(None, max_length=200)
+    shipping_city: str | None = Field(None, max_length=120)
+    shipping_state: str | None = Field(None, max_length=120)
+    shipping_postal_code: str | None = Field(None, max_length=40)
+    shipping_country: str | None = Field(None, max_length=120)
     notes: str | None = Field(None, max_length=1000)
     status: SaleStatus | None = None
 
@@ -96,6 +112,19 @@ class SaleResponse(BaseModel):
     contribution_margin: Decimal
     payment_method: str | None = None
     tracking_number: str | None = None
+    shipping_recipient_name: str | None = None
+    shipping_company: str | None = None
+    shipping_address_line1: str | None = None
+    shipping_address_line2: str | None = None
+    shipping_city: str | None = None
+    shipping_state: str | None = None
+    shipping_postal_code: str | None = None
+    shipping_country: str | None = None
+    shipping_label_ready: bool = False
+    shipping_label_format: str | None = None
+    shipping_label_generated_at: datetime.datetime | None = None
+    shipping_label_last_printed_at: datetime.datetime | None = None
+    shipping_label_print_count: int = 0
     notes: str | None = None
     items: list[SaleItemResponse] = []
     created_at: datetime.datetime | None = None

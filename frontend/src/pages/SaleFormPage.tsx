@@ -31,6 +31,14 @@ export default function SaleFormPage() {
     shipping_cost: 0,
     tax_collected: 0,
     tracking_number: '',
+    shipping_recipient_name: '',
+    shipping_company: '',
+    shipping_address_line1: '',
+    shipping_address_line2: '',
+    shipping_city: '',
+    shipping_state: '',
+    shipping_postal_code: '',
+    shipping_country: 'US',
     notes: '',
   });
 
@@ -90,6 +98,14 @@ export default function SaleFormPage() {
         ...form,
         channel_id: form.channel_id || null,
         tracking_number: form.tracking_number || null,
+        shipping_recipient_name: form.shipping_recipient_name || null,
+        shipping_company: form.shipping_company || null,
+        shipping_address_line1: form.shipping_address_line1 || null,
+        shipping_address_line2: form.shipping_address_line2 || null,
+        shipping_city: form.shipping_city || null,
+        shipping_state: form.shipping_state || null,
+        shipping_postal_code: form.shipping_postal_code || null,
+        shipping_country: form.shipping_country || null,
         notes: form.notes || null,
         items: items
           .filter((i) => i.description.trim())
@@ -147,7 +163,13 @@ export default function SaleFormPage() {
                 <input
                   list="customer-list"
                   value={form.customer_name}
-                  onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      customer_name: e.target.value,
+                      shipping_recipient_name: prev.shipping_recipient_name || e.target.value,
+                    }))
+                  }
                   placeholder="Customer name..."
                   className={inputCls}
                 />
@@ -185,6 +207,47 @@ export default function SaleFormPage() {
               <label className="block text-sm font-medium mb-1">Notes</label>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className={inputCls} />
             </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Shipment Label</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Recipient</label>
+                <input value={form.shipping_recipient_name} onChange={(e) => setForm({ ...form, shipping_recipient_name: e.target.value })} placeholder="Customer or recipient name" className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Company</label>
+                <input value={form.shipping_company} onChange={(e) => setForm({ ...form, shipping_company: e.target.value })} placeholder="Optional" className={inputCls} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1">Address Line 1</label>
+                <input value={form.shipping_address_line1} onChange={(e) => setForm({ ...form, shipping_address_line1: e.target.value })} placeholder="Street address" className={inputCls} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1">Address Line 2</label>
+                <input value={form.shipping_address_line2} onChange={(e) => setForm({ ...form, shipping_address_line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">City</label>
+                <input value={form.shipping_city} onChange={(e) => setForm({ ...form, shipping_city: e.target.value })} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">State / Region</label>
+                <input value={form.shipping_state} onChange={(e) => setForm({ ...form, shipping_state: e.target.value })} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Postal Code</label>
+                <input value={form.shipping_postal_code} onChange={(e) => setForm({ ...form, shipping_postal_code: e.target.value })} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Country</label>
+                <input value={form.shipping_country} onChange={(e) => setForm({ ...form, shipping_country: e.target.value })} className={inputCls} />
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              The backend produces a browser-printable 4x6 label, and the local workstation handles the thermal printer itself.
+            </p>
           </div>
 
           {/* Line items */}

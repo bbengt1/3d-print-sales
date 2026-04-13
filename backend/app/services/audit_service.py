@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -9,6 +10,8 @@ from app.models.audit_log import AuditLog
 def _json_safe(value):
     if isinstance(value, Decimal):
         return str(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
     if isinstance(value, UUID):
         return str(value)
     if isinstance(value, list):

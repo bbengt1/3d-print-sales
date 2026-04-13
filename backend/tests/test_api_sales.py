@@ -58,6 +58,12 @@ def _sale_payload(channel_id=None, product_id=None, shipping_cost=0, shipping_ch
         "status": "paid",
         "shipping_cost": shipping_cost,
         "shipping_charged": shipping_charged,
+        "shipping_recipient_name": "John Doe",
+        "shipping_address_line1": "123 Maker Lane",
+        "shipping_city": "Austin",
+        "shipping_state": "TX",
+        "shipping_postal_code": "78701",
+        "shipping_country": "US",
         "items": [item],
     }
     if channel_id:
@@ -122,6 +128,8 @@ async def test_create_sale(client: AsyncClient, auth_headers: dict, seed_channel
     assert "item_cogs" in data
     assert "gross_profit" in data
     assert "contribution_margin" in data
+    assert data["shipping_recipient_name"] == "John Doe"
+    assert data["shipping_label_ready"] is True
 
 
 @pytest.mark.asyncio
@@ -214,6 +222,49 @@ async def test_update_sale(client: AsyncClient, auth_headers: dict):
     assert resp.status_code == 200
     assert resp.json()["customer_name"] == "Jane Doe"
     assert resp.json()["status"] == "shipped"
+
+
+@pytest.mark.asyncio
+async def test_get_shipping_label_returns_html_for_ready_sale(client: AsyncClient, auth_headers: dict):
+    create_resp = await client.post("/api/v1/sales", headers=auth_headers, json=_sale_payload())
+    sale_id = create_resp.json()["id"]
+
+    resp = await client.get(f"/api/v1/sales/{sale_id}/shipping-label", headers=auth_headers)
+
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    assert "123 Maker Lane" in resp.text
+    assert "S-2026-" in resp.text
+
+
+@pytest.mark.asyncio
+async def test_get_shipping_label_requires_shipping_fields(client: AsyncClient, auth_headers: dict):
+    payload = _sale_payload()
+    payload["shipping_address_line1"] = None
+    create_resp = await client.post("/api/v1/sales", headers=auth_headers, json=payload)
+    sale_id = create_resp.json()["id"]
+
+    resp = await client.get(f"/api/v1/sales/{sale_id}/shipping-label", headers=auth_headers)
+
+    assert resp.status_code == 409
+    assert "address line 1" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_mark_shipping_label_printed_tracks_print_metadata(client: AsyncClient, auth_headers: dict):
+    create_resp = await client.post("/api/v1/sales", headers=auth_headers, json=_sale_payload())
+    sale_id = create_resp.json()["id"]
+
+    resp = await client.post(
+        f"/api/v1/sales/{sale_id}/shipping-label/mark-printed",
+        headers=auth_headers,
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["shipping_label_print_count"] == 1
+    assert data["shipping_label_generated_at"] is not None
+    assert data["shipping_label_last_printed_at"] is not None
 
 
 @pytest.mark.asyncio
