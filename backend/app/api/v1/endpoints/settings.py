@@ -14,9 +14,9 @@ router = APIRouter(prefix="/settings", tags=["Settings"])
     "",
     response_model=list[SettingResponse],
     summary="List all settings",
-    description="Returns every business configuration setting (currency, margins, fees, etc.).",
+    description="Admin-only. Returns every business and AI configuration setting, including provider configuration records.",
 )
-async def list_settings(db: DB):
+async def list_settings(admin: CurrentAdmin, db: DB):
     from app.models.setting import Setting
 
     result = await db.execute(select(Setting).order_by(Setting.key))
@@ -27,9 +27,9 @@ async def list_settings(db: DB):
     "/{key}",
     response_model=SettingResponse,
     summary="Get a setting by key",
-    description="Retrieve a single configuration setting by its unique key.",
+    description="Admin-only. Retrieve a single configuration setting by its unique key.",
 )
-async def get_setting(key: str, db: DB):
+async def get_setting(key: str, admin: CurrentAdmin, db: DB):
     from app.models.setting import Setting
 
     result = await db.execute(select(Setting).where(Setting.key == key))
@@ -43,7 +43,7 @@ async def get_setting(key: str, db: DB):
     "/{key}",
     response_model=SettingResponse,
     summary="Update a setting",
-    description="Update the value of an existing configuration setting.",
+    description="Admin-only. Update the value of an existing configuration setting.",
 )
 async def update_setting(key: str, body: SettingUpdate, admin: CurrentAdmin, db: DB):
     from app.models.setting import Setting
@@ -64,7 +64,7 @@ async def update_setting(key: str, body: SettingUpdate, admin: CurrentAdmin, db:
     "/bulk",
     response_model=list[SettingResponse],
     summary="Bulk update settings",
-    description="Update multiple settings in a single request. Keys that don't exist are silently skipped.",
+    description="Admin-only. Update multiple settings in a single request. Keys that don't exist are silently skipped.",
 )
 async def bulk_update_settings(body: BulkSettingUpdate, admin: CurrentAdmin, db: DB):
     from app.models.setting import Setting

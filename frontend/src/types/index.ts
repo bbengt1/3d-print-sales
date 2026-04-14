@@ -4,6 +4,42 @@ export interface Setting {
   notes: string | null;
 }
 
+export interface AIInsightStatus {
+  provider: 'chatgpt' | 'claude' | 'grok';
+  model: string;
+  configured: boolean;
+  available_providers: Array<'chatgpt' | 'claude' | 'grok'>;
+  note: string;
+}
+
+export interface AIInsightItem {
+  title: string;
+  detail: string;
+  priority: 'high' | 'medium' | 'low';
+  evidence: string[];
+  recommended_action: string | null;
+}
+
+export interface AIInsightMetric {
+  key: string;
+  label: string;
+  value: string;
+}
+
+export interface AIInsightSummary {
+  provider: 'chatgpt' | 'claude' | 'grok';
+  model: string;
+  generated_at: string;
+  title: string;
+  summary: string;
+  question: string | null;
+  recommendations: AIInsightItem[];
+  risks: AIInsightItem[];
+  suggested_questions: string[];
+  evidence_metrics: AIInsightMetric[];
+  read_only: boolean;
+}
+
 export interface Material {
   id: string;
   name: string;

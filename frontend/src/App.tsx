@@ -29,6 +29,7 @@ const SalesChannelsPage = lazy(() => import('@/pages/SalesChannelsPage'));
 const POSPage = lazy(() => import('@/pages/POSPage'));
 const CalculatorPage = lazy(() => import('@/pages/CalculatorPage'));
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
+const InsightsPage = lazy(() => import('@/pages/InsightsPage'));
 const ReportsLayout = lazy(() => import('@/pages/reports/ReportsLayout'));
 const InventoryReportPage = lazy(() => import('@/pages/reports/InventoryReportPage'));
 const SalesReportPage = lazy(() => import('@/pages/reports/SalesReportPage'));
@@ -122,7 +123,7 @@ export default function App() {
                 <Route path="/orders/jobs/:id/edit" element={<JobFormPage />} />
                 <Route path="/orders/customers" element={<CustomersPage />} />
 
-                <Route path="/insights" element={<Navigate to="/reports/inventory" replace />} />
+                <Route path="/insights" element={<InsightsPage />} />
                 <Route path="/insights/reports" element={<Navigate to="/reports/inventory" replace />} />
 
                 <Route path="/jobs" element={<JobsPage />} />

@@ -27,6 +27,7 @@ from app.models.user import User
 from app.models.camera import Camera  # noqa: F401
 from app.models.printer_history_event import PrinterHistoryEvent  # noqa: F401
 from app.services.accounting_service import seed_chart_of_accounts
+from app.services.settings_defaults import SETTINGS_DATA
 
 TEST_DB_URL = "sqlite+aiosqlite:///./test.db"
 
@@ -109,19 +110,7 @@ async def user_headers(client: AsyncClient, db_session: AsyncSession):
 
 @pytest_asyncio.fixture
 async def seed_settings(db_session: AsyncSession):
-    settings_data = [
-        ("currency", "USD", "Currency"),
-        ("default_profit_margin_pct", "40", "Target markup"),
-        ("platform_fee_pct", "9.5", "Platform fee"),
-        ("fixed_fee_per_order", "0.45", "Per-transaction fee"),
-        ("sales_tax_pct", "0", "Sales tax"),
-        ("electricity_cost_per_kwh", "0.18", "Electricity rate"),
-        ("printer_power_draw_watts", "120", "Printer power"),
-        ("failure_rate_pct", "5", "Failure buffer"),
-        ("packaging_cost_per_order", "1.25", "Packaging cost"),
-        ("shipping_charged_to_customer", "0", "Shipping model"),
-    ]
-    for key, value, notes in settings_data:
+    for key, value, notes in SETTINGS_DATA:
         db_session.add(Setting(key=key, value=value, notes=notes))
     await db_session.commit()
 

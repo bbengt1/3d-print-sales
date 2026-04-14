@@ -83,7 +83,8 @@ All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 | Resource | Endpoints | Filters |
 |----------|-----------|---------|
 | **Auth** | `POST /auth/login`, `GET /auth/me`, `PUT /auth/me/password`, `POST /auth/register` (admin), `GET/PUT/DELETE /auth/users` (admin) | `?is_active` |
-| **Settings** | `GET/PUT /settings`, `GET/PUT /settings/{key}`, `PUT /settings/bulk` | — |
+| **Settings** | `GET/PUT /settings`, `GET/PUT /settings/{key}`, `PUT /settings/bulk` | Admin-only |
+| **Insights** | `GET /insights/status`, `POST /insights/summary` | Auth required |
 | **Materials** | Full CRUD at `/materials` | `?active`, `?search`, pagination |
 | **Rates** | Full CRUD at `/rates` | `?active`, pagination |
 | **Customers** | Full CRUD at `/customers` | `?search` (name/email), pagination |
@@ -137,6 +138,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - **Protected Routes** — Auto-redirect to login, preserves original URL
 - **Dark/Light Theme** — Persisted to localStorage, respects system preference
 - **Workspace Shell** — Role-aware workspace navigation for Control Center, Print Floor, Sell, Stock, Product Studio, Orders, Insights, and Admin while preserving legacy deep links
+- **AI Insights** — Dedicated `/insights` workspace for read-only business summaries with admin-configurable `ChatGPT`, `Claude`, or `Grok` provider selection
 - **Active Navigation** — Current route highlighted, admin-only items
 - **Error Boundary** — Global error catch with reload action
 - **Empty States** — Contextual illustrations and CTA buttons on empty lists
@@ -155,6 +157,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - **Stock** — Exceptions-first inventory workspace at `/stock` with product-impacting low-stock triage, quick reconcile/adjust actions, material signals separated from finished-goods alerts, and the full ledger preserved as a secondary surface
 - **Orders** — Unified queue workspace at `/orders` that stitches production jobs, fulfillment-relevant sales, printer readiness, and customer load into one operational surface while preserving the existing jobs and sales detail flows
 - **Dashboard** — Classic metrics view with summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, item COGS, gross profit, contribution margin) + revenue by channel chart
+- **Insights** — Separate AI analysis workspace with focused questions, provider status, recommendations, risks, follow-up prompts, and source-of-truth evidence metrics
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview, now reachable inside the Orders workspace at `/orders/jobs`
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
@@ -172,7 +175,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
   - **Sales Report** — Gross sales/gross profit trend chart, top products ranking, channel breakdown with fees and contribution margin
   - **Profit & Loss** — Sales-realized revenue P&L with production estimates shown separately for operational context, cost breakdown by category, stacked bar trend chart, period detail table
 - **Calculator** — Standalone cost calculator with live preview and "Save as Job"
-- **Admin Settings** — Editable business settings with bulk save, grouped by category
+- **Admin Settings** — Editable business settings with bulk save, grouped by category, plus AI provider, model, and API-key configuration for Insights
 - **Admin Users** — User management with create, edit, role assignment, deactivate/reactivate
 - **Admin Data** — CSV export for jobs, materials, rates, customers, settings
 - **Login** — JWT authentication with Zod validation
@@ -181,6 +184,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 
 - [Camera Setup Guide](docs/camera-setup.md) — go2rtc configuration, Wyze camera setup, stream formats, kiosk mode, troubleshooting
 - [Shipping Label Printing](docs/shipping_label_printing.md) — remote-compatible 4x6 shipping-label workflow, backend contract, workstation print path, and operator rules for print/cancel/reprint
+- [AI Insights Guide](docs/ai_insights.md) — provider configuration, safety boundaries, endpoints, and UX rationale for issue `#112`
 - [Role-Based Frontend Redesign User Story](docs/frontend_role_based_redesign_user_story.md) — issue-ready redesign brief for print monitoring, live views, POS, inventory, product studio, and role-based workspaces.
 
 ## Testing
@@ -202,7 +206,8 @@ python -m pytest backend/tests/ -v
 # Test categories:
 #   test_cost_calculator.py   - Cost calculation engine (6 tests)
 #   test_api_auth.py          - Auth, RBAC, user management (18 tests)
-#   test_api_settings.py      - Settings CRUD + admin guard (7 tests)
+#   test_api_settings.py      - Settings CRUD + admin guard (8 tests)
+#   test_api_insights.py      - AI provider status + read-only insight flow (3 tests)
 #   test_api_materials.py     - Materials CRUD + auth guard (9 tests)
 #   test_api_rates.py         - Rates CRUD + auth guard (6 tests)
 #   test_api_customers.py     - Customers CRUD + auth guard (8 tests)
