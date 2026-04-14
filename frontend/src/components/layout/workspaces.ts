@@ -121,13 +121,14 @@ export const workspaces: WorkspaceDefinition[] = [
   {
     key: 'insights',
     label: 'Insights',
-    description: 'Reports, trends, and financial visibility.',
+    description: 'AI summaries, trends, and read-only recommendations.',
     to: '/insights',
     icon: BarChart3,
     roles: ['admin', 'analyst', 'general'],
     matchPrefixes: ['/insights', '/reports'],
     localLinks: [
-      { to: '/insights', label: 'Reports', matchPrefixes: ['/insights', '/reports'] },
+      { to: '/insights', label: 'AI Summary', matchPrefixes: ['/insights'] },
+      { to: '/reports/inventory', label: 'Reports', matchPrefixes: ['/reports'] },
     ],
   },
   {

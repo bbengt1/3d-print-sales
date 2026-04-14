@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import accounting, approvals, audit, auth, cameras, customers, dashboard, inventory, invoices, jobs, materials, pos, printers, products, quotes, rates, reports, sales, sales_channels, settlements, settings, tax
+from app.api.v1.endpoints import accounting, approvals, audit, auth, cameras, customers, dashboard, insights, inventory, invoices, jobs, materials, pos, printers, products, quotes, rates, reports, sales, sales_channels, settlements, settings, tax
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -24,4 +24,5 @@ api_router.include_router(pos.router)
 api_router.include_router(settlements.router)
 api_router.include_router(reports.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(insights.router)
 api_router.include_router(tax.router)
