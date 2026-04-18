@@ -24,10 +24,12 @@ This is the authoritative technical reference index for the current codebase.
 - [`../../backend/Dockerfile`](../../backend/Dockerfile) - backend container build targets
 - [`../../frontend/Dockerfile`](../../frontend/Dockerfile) - frontend container build targets
 - [`../../scripts/web01-compose.sh`](../../scripts/web01-compose.sh) - canonical `web01` compose wrapper
+- [`../docker_image_publish.md`](../docker_image_publish.md) - Docker Hub publishing model, tag strategy, and required GitHub secrets/variables
 
 ## CI And Repository Safeguards
 
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml) - baseline backend/frontend validation in GitHub Actions
+- [`../../.github/workflows/docker-publish.yml`](../../.github/workflows/docker-publish.yml) - Docker Buildx workflow for build-only PR validation and Docker Hub publishing from approved refs
 - [`../../.github/workflows/secret-scan.yml`](../../.github/workflows/secret-scan.yml) - gitleaks-based repository secret scan
 
 ## Maintained Docs Families

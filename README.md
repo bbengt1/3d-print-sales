@@ -272,6 +272,7 @@ Baseline repository CI now lives in [`.github/workflows/ci.yml`](./.github/workf
 - [web01 Compose Deployment](docs/deployment_web01_compose.md)
 - [web01 Environment and Storage](docs/deployment_web01_env_and_storage.md)
 - [web01 Runbook](docs/deployment_web01_runbook.md)
+- [Docker Image Publishing](docs/docker_image_publish.md)
 
 It runs on pull requests and pushes to `main` with separate jobs for:
 - backend tests via `python -m pytest backend/tests -q`
@@ -279,6 +280,21 @@ It runs on pull requests and pushes to `main` with separate jobs for:
 - frontend build validation via `cd frontend && npm run build`
 
 Keep local validation aligned with those commands before opening or updating a PR.
+
+## Container Publishing
+
+The repository also includes a Docker publish workflow in [`.github/workflows/docker-publish.yml`](./.github/workflows/docker-publish.yml).
+
+It builds production backend and frontend images on pull requests and publishes them to Docker Hub only from approved refs:
+- `main` publishes rolling `main` plus immutable `sha-*` tags
+- release tags such as `v1.2.3` publish release tags plus `latest`
+
+Required GitHub configuration:
+- repository secret `DOCKERHUB_USERNAME`
+- repository secret `DOCKERHUB_TOKEN`
+- repository variable `DOCKERHUB_NAMESPACE`
+
+See [docs/docker_image_publish.md](./docs/docker_image_publish.md) for the full naming, tagging, and promotion model.
 
 ## Environment Variables
 
