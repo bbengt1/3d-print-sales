@@ -13,7 +13,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 # ---------- Production ----------
 FROM base AS production
 COPY . .
-RUN adduser --disabled-password --no-create-home appuser && chown -R appuser:appuser /app
+RUN adduser --disabled-password --gecos "" --no-create-home appuser && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

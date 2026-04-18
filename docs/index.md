@@ -15,6 +15,7 @@ Start here if you need the maintained documentation path for this repository.
 - [web01 Runbook](deployment_web01_runbook.md)
 - [web01 Audit](deployment_web01_audit.md)
 - [web01 Deployment Plan](deployment_web01_plan.md)
+- [Docker Image Publishing](docker_image_publish.md)
 
 ## Feature And Workflow Guides
 

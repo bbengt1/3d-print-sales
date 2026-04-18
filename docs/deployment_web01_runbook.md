@@ -72,6 +72,14 @@ PY
 - starts or updates the stack in detached mode
 - applies schema changes through Alembic instead of relying on runtime table creation
 
+### Current relation to CI-published images
+Issue `#134` adds Docker Hub image publishing in GitHub Actions, but `web01` still deploys from the checked-out repository with `--build`.
+
+That means:
+- Docker Hub images exist as reusable release artifacts
+- `web01` is not yet pulling those published images directly
+- a future deployment-automation issue can switch the deployment source when that tradeoff is approved
+
 ---
 
 ## Routine Update Procedure
