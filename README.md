@@ -18,9 +18,8 @@ Full-stack web application for managing a 3D printing business — job costing, 
 # Clone and start (development)
 git clone <repo-url>
 cd 3d-print-sales
-cp .env.example .env
-# Replace placeholder secrets before first run
-docker compose up -d
+./scripts/bootstrap-env.sh local
+docker compose up -d --build
 
 # Services
 # Frontend:  http://localhost:5173
@@ -29,10 +28,13 @@ docker compose up -d
 # ReDoc:     http://localhost:8000/api/v1/redoc
 ```
 
+If you prefer to set values manually, copy `.env.example` to `.env` and replace the tracked placeholder secrets before first run.
+
 ### Production Deployment
 
 ```bash
-# Production uses nginx on port 80 with API proxy
+# Generate a server env file, then point compose at it
+./scripts/bootstrap-env.sh web01 --output /srv/3d-print-sales/env/web01.env
 docker compose -f docker-compose.prod.yml up -d --build
 
 # Access at http://localhost
@@ -41,6 +43,12 @@ docker compose -f docker-compose.prod.yml up -d --build
 ### Admin Seed Login
 
 The backend seeds an admin user from `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Set those values in your local `.env` before first run. The backend now refuses to start while tracked placeholder secrets remain in place.
+
+### Start Here
+
+- [Fresh Start Guide](docs/getting_started.md) - validated local bootstrap and `web01` deployment path
+- [Docs Hub](docs/index.md) - task-oriented documentation entry point
+- [Reference Map](docs/reference/index.md) - authoritative technical reference index
 
 ## Project Structure
 
@@ -257,6 +265,13 @@ docker compose up -d
 ## CI
 
 Baseline repository CI now lives in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
+## Deployment Docs
+
+- [Fresh Start Guide](docs/getting_started.md)
+- [web01 Compose Deployment](docs/deployment_web01_compose.md)
+- [web01 Environment and Storage](docs/deployment_web01_env_and_storage.md)
+- [web01 Runbook](docs/deployment_web01_runbook.md)
 
 It runs on pull requests and pushes to `main` with separate jobs for:
 - backend tests via `python -m pytest backend/tests -q`
