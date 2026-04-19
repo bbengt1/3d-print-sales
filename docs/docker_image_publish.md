@@ -27,9 +27,27 @@ Behavior:
 - pull requests: build both production images, but do not push them
 - pushes to `main`: build and push both images
 - pushes to version tags matching `v*`: build and push both images
-- manual dispatch: allowed, but image push still only happens from `main` or `v*` tags
+- manual dispatch from `main` or `v*` (no `version` input): behaves like the corresponding push
+- manual dispatch with `version` input (e.g. `1.2.3`): builds from the selected ref and pushes with tags `sha-<commit>`, `<version>`, and `latest` — works from any branch so hotfix or off-main releases can be cut without creating a Git tag first
 
 This keeps pull requests as build-only validation while reserving Docker Hub publishing for approved refs.
+
+### Manual dispatch with a version
+
+Use **Actions → Docker Publish → Run workflow** in the GitHub UI and fill in the `version` input (e.g. `1.4.0` or `v1.4.0`). The resulting images are tagged with:
+
+- `sha-<full-commit-sha>` (always, immutable traceable tag)
+- `<version>` (the exact string you typed)
+- `latest`
+
+Example: dispatching from `main` with `version=1.4.0` publishes:
+
+- `docker.io/bbengt1/print-backend:sha-<sha>`
+- `docker.io/bbengt1/print-backend:1.4.0`
+- `docker.io/bbengt1/print-backend:latest`
+- (same three tags for `print-frontend`)
+
+If you leave `version` blank during dispatch, the run falls back to the default ref-based tagging (and only pushes from `main` or `v*` refs).
 
 ## Required GitHub Configuration
 
@@ -53,6 +71,10 @@ The repository uses this baseline strategy:
 - pushes to release tags such as `v1.2.3` publish:
   - the exact Git tag, for example `v1.2.3`
   - semver expansion tags such as `1.2.3` and `1.2`
+  - the rolling `latest` tag
+- manual dispatch with a `version` input publishes:
+  - `sha-<full-commit-sha>`
+  - the exact string supplied (e.g. `1.4.0` or `v1.4.0`)
   - the rolling `latest` tag
 
 PR builds also compute `pr-<number>` metadata tags, but those builds are not pushed to Docker Hub.
