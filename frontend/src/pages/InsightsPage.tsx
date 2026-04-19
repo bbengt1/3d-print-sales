@@ -58,12 +58,12 @@ export default function InsightsPage() {
   };
 
   if (statusLoading) {
-    return <div className="space-y-6"><div className="h-12 w-72 animate-pulse rounded-2xl bg-card" /><div className="h-64 animate-pulse rounded-3xl bg-card" /></div>;
+    return <div className="space-y-6"><div className="h-12 w-72 animate-pulse rounded-md bg-card" /><div className="h-64 animate-pulse rounded-lg bg-card" /></div>;
   }
 
   return (
     <div className="space-y-8">
-      <section className="rounded-[2rem] border border-border bg-card/90 p-6 shadow-[0_18px_50px_rgba(8,17,31,0.08)]">
+      <section className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
@@ -75,7 +75,7 @@ export default function InsightsPage() {
               Ask for explainable recommendations grounded in your app data. This surface is analysis only: no autonomous writes, no silent pricing changes, and no hidden inventory actions.
             </p>
           </div>
-          <div className="rounded-[1.5rem] border border-border bg-background/80 p-4 text-sm">
+          <div className="rounded-md border border-border bg-background/80 p-4 text-sm">
             <p className="font-semibold text-foreground">Active provider</p>
             <p className="mt-2 text-lg font-semibold capitalize">{status?.provider || 'Unavailable'}</p>
             <p className="text-muted-foreground">{status?.model || 'No model selected'}</p>
@@ -104,7 +104,7 @@ export default function InsightsPage() {
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-border bg-card/90 p-6 shadow-[0_18px_50px_rgba(8,17,31,0.08)]">
+      <section className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
         <div className="flex flex-col gap-4">
           <div>
             <h2 className="text-xl font-semibold">Ask a focused question</h2>
@@ -134,7 +134,7 @@ export default function InsightsPage() {
             onChange={(e) => setQuestion(e.target.value)}
             rows={4}
             placeholder="Example: What should I print more of before the next market and what inventory is at risk?"
-            className="w-full rounded-[1.5rem] border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
 
           <div className="flex flex-wrap items-center gap-3">
@@ -142,7 +142,7 @@ export default function InsightsPage() {
               type="button"
               onClick={() => void handleGenerate()}
               disabled={summaryMutation.isPending || !status?.configured}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
             >
               {summaryMutation.isPending ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
               {summaryMutation.isPending ? 'Generating insights...' : 'Generate Insight Summary'}
@@ -164,9 +164,9 @@ export default function InsightsPage() {
 
       {summary ? (
         <>
-          <section className="rounded-[2rem] border border-border bg-card/90 p-6 shadow-[0_18px_50px_rgba(8,17,31,0.08)]">
+          <section className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-primary/12 text-primary">
                 <Bot className="h-6 w-6" />
               </div>
               <div>
@@ -186,11 +186,11 @@ export default function InsightsPage() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-[2rem] border border-border bg-card/90 p-6 shadow-[0_18px_50px_rgba(8,17,31,0.08)]">
+            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
               <h3 className="text-xl font-semibold">Recommendations</h3>
               <div className="mt-4 space-y-4">
                 {summary.recommendations.length ? summary.recommendations.map((item, index) => (
-                  <article key={`${item.title}-${index}`} className="rounded-[1.5rem] border border-border bg-background/80 p-4">
+                  <article key={`${item.title}-${index}`} className="rounded-md border border-border bg-background/80 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <h4 className="font-semibold">{item.title}</h4>
                       <PriorityBadge value={item.priority} />
@@ -203,11 +203,11 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-border bg-card/90 p-6 shadow-[0_18px_50px_rgba(8,17,31,0.08)]">
+            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
               <h3 className="text-xl font-semibold">Risks</h3>
               <div className="mt-4 space-y-4">
                 {summary.risks.length ? summary.risks.map((item, index) => (
-                  <article key={`${item.title}-${index}`} className="rounded-[1.5rem] border border-border bg-background/80 p-4">
+                  <article key={`${item.title}-${index}`} className="rounded-md border border-border bg-background/80 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <h4 className="font-semibold">{item.title}</h4>
                       <PriorityBadge value={item.priority} />
@@ -222,14 +222,14 @@ export default function InsightsPage() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-            <div className="rounded-[2rem] border border-border bg-card/90 p-6 shadow-[0_18px_50px_rgba(8,17,31,0.08)]">
+            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
               <h3 className="text-xl font-semibold">Evidence metrics</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Jakob&apos;s Law and Common Region: the recommendation copy stays separate from the source-of-truth numbers it references.
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {summary.evidence_metrics.map((metric) => (
-                  <div key={metric.key} className="rounded-[1.3rem] border border-border bg-background/80 p-4">
+                  <div key={metric.key} className="rounded-md border border-border bg-background/80 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{metric.label}</p>
                     <p className="mt-2 text-xl font-semibold">{metric.value}</p>
                   </div>
@@ -237,7 +237,7 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-border bg-card/90 p-6 shadow-[0_18px_50px_rgba(8,17,31,0.08)]">
+            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
               <h3 className="text-xl font-semibold">Suggested follow-ups</h3>
               <div className="mt-4 space-y-3">
                 {summary.suggested_questions.length ? summary.suggested_questions.map((item) => (
@@ -248,7 +248,7 @@ export default function InsightsPage() {
                       setQuestion(item);
                       void handleGenerate(item);
                     }}
-                    className="block w-full rounded-[1.3rem] border border-border bg-background/80 px-4 py-3 text-left text-sm font-medium transition-colors hover:border-primary/35 hover:bg-primary/5"
+                    className="block w-full rounded-md border border-border bg-background/80 px-4 py-3 text-left text-sm font-medium transition-colors hover:border-primary/35 hover:bg-primary/5"
                   >
                     {item}
                   </button>

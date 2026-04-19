@@ -52,7 +52,7 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(24,24,27,0.96)_100%)] p-6 text-white shadow-sm">
+      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(24,24,27,0.96)_100%)] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.3em] text-white/65">Product Studio</p>
@@ -64,7 +64,7 @@ export default function ProductsPage() {
 
           <Link
             to="/product-studio/products/new"
-            className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90"
+            className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
             New product
@@ -72,26 +72,26 @@ export default function ProductsPage() {
         </div>
 
         <div className="mt-6 grid gap-3 lg:grid-cols-4">
-          <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
             <p className="text-xs uppercase tracking-[0.24em] text-white/55">Visible products</p>
             <p className="mt-3 text-2xl font-semibold">{total}</p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
             <p className="text-xs uppercase tracking-[0.24em] text-white/55">Low stock</p>
             <p className="mt-3 text-2xl font-semibold">{lowStockCount}</p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
             <p className="text-xs uppercase tracking-[0.24em] text-white/55">Barcode ready</p>
             <p className="mt-3 text-2xl font-semibold">{barcodeReadyCount}</p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
             <p className="text-xs uppercase tracking-[0.24em] text-white/55">Authoring route</p>
             <p className="mt-3 text-lg font-semibold">/product-studio/products/new</p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 className="text-xl font-semibold">Catalog</h2>
@@ -106,7 +106,7 @@ export default function ProductsPage() {
               setSearch(event.target.value);
               setPage(0);
             }}
-            className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring lg:max-w-sm"
+            className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring lg:max-w-sm"
           />
         </div>
       </section>
@@ -130,7 +130,7 @@ export default function ProductsPage() {
         />
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-3xl border border-border bg-card shadow-sm md:block">
+          <div className="hidden overflow-x-auto rounded-lg border border-border bg-card shadow-sm md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
@@ -215,7 +215,7 @@ export default function ProductsPage() {
 
           <div className="space-y-3 md:hidden">
             {products.map((product) => (
-              <div key={product.id} className="rounded-3xl border border-border bg-card p-4 shadow-sm">
+              <div key={product.id} className="rounded-lg border border-border bg-card p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold">{product.name}</p>
@@ -244,14 +244,14 @@ export default function ProductsPage() {
                 <div className="mt-4 flex gap-2">
                   <Link
                     to={`/product-studio/products/${product.id}/edit`}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-semibold text-primary-foreground no-underline"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground no-underline"
                   >
                     <Pencil className="h-4 w-4" />
                     Edit
                   </Link>
                   <Link
                     to={`/product-studio/products/${product.id}`}
-                    className="inline-flex items-center justify-center rounded-2xl border border-border px-4 py-3 text-foreground no-underline"
+                    className="inline-flex items-center justify-center rounded-md border border-border px-4 py-3 text-foreground no-underline"
                   >
                     <ArrowRight className="h-4 w-4" />
                   </Link>

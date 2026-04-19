@@ -34,7 +34,7 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
             </button>
 
             <Link to="/control-center" className="flex min-w-0 items-center gap-3 no-underline">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/30 bg-primary text-primary-foreground shadow-[0_14px_40px_rgba(34,197,94,0.28)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-md border border-primary/30 bg-primary text-primary-foreground shadow-sm">
                 <Printer className="h-5 w-5 shrink-0" />
               </div>
               <div className="min-w-0">
@@ -58,7 +58,7 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
             </button>
 
             {user && (
-              <div className="hidden min-w-0 max-w-[280px] items-center gap-3 rounded-2xl border border-border bg-card/70 px-3 py-2 text-sm text-muted-foreground sm:flex">
+              <div className="hidden min-w-0 max-w-[280px] items-center gap-3 rounded-md border border-border bg-card/70 px-3 py-2 text-sm text-muted-foreground sm:flex">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background/80 text-foreground">
                   <User className="h-4 w-4 shrink-0" />
                 </div>

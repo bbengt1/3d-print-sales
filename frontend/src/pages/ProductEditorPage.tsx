@@ -142,13 +142,13 @@ export default function ProductEditorPage() {
   }
 
   const inputClass = (field: string) =>
-    `w-full rounded-2xl border px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring ${
+    `w-full rounded-md border px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring ${
       formErrors[field] ? 'border-destructive' : 'border-input'
     }`;
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(24,24,27,0.96)_100%)] p-6 text-white shadow-sm">
+      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(24,24,27,0.96)_100%)] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.3em] text-white/65">Product Studio</p>
@@ -164,7 +164,7 @@ export default function ProductEditorPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               to="/product-studio"
-              className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
+              className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to catalog
@@ -172,7 +172,7 @@ export default function ProductEditorPage() {
             {!isCreate ? (
               <Link
                 to={`/product-studio/products/${id}`}
-                className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
+                className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
               >
                 View record
                 <ArrowRight className="h-4 w-4" />
@@ -184,7 +184,7 @@ export default function ProductEditorPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
         <section className="space-y-6">
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <ReceiptText className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-xl font-semibold">Identity and sellable details</h2>
@@ -218,7 +218,7 @@ export default function ProductEditorPage() {
 
               <div>
                 <label className="mb-2 block text-sm font-medium">SKU</label>
-                <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm">
+                <div className="rounded-md border border-border bg-background px-4 py-3 text-sm">
                   {product?.sku || 'Generated after first save'}
                 </div>
               </div>
@@ -287,7 +287,7 @@ export default function ProductEditorPage() {
                 type="button"
                 onClick={save}
                 disabled={saving}
-                className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />
                 {saving ? 'Saving...' : isCreate ? 'Create product' : 'Save changes'}
@@ -295,7 +295,7 @@ export default function ProductEditorPage() {
               {!isCreate ? (
                 <Link
                   to={`/product-studio/products/${id}`}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-border px-5 py-3 font-semibold text-foreground no-underline transition-colors hover:bg-accent"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-md border border-border px-5 py-3 font-semibold text-foreground no-underline transition-colors hover:bg-accent"
                 >
                   Open detail record
                 </Link>
@@ -303,7 +303,7 @@ export default function ProductEditorPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <Boxes className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-xl font-semibold">Stock and activity context</h2>
@@ -322,7 +322,7 @@ export default function ProductEditorPage() {
             ) : (
               <div className="mt-4 space-y-3">
                 {recentTransactions.map((transaction: InventoryTransaction) => (
-                  <div key={transaction.id} className="rounded-2xl border border-border bg-background/80 px-4 py-3">
+                  <div key={transaction.id} className="rounded-md border border-border bg-background/80 px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium capitalize">{transaction.type}</p>
@@ -349,14 +349,14 @@ export default function ProductEditorPage() {
         </section>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <BadgeDollarSign className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-xl font-semibold">Readiness and margin</h2>
             </div>
 
             <div className="mt-4 space-y-3">
-              <div className={cn('rounded-2xl border px-4 py-3', readinessTone(identityReadiness))}>
+              <div className={cn('rounded-md border px-4 py-3', readinessTone(identityReadiness))}>
                 <p className="font-semibold">Identity</p>
                 <p className="mt-1 text-sm">
                   {identityReadiness === 'ready'
@@ -367,7 +367,7 @@ export default function ProductEditorPage() {
                 </p>
               </div>
 
-              <div className={cn('rounded-2xl border px-4 py-3', readinessTone(barcodeReadiness))}>
+              <div className={cn('rounded-md border px-4 py-3', readinessTone(barcodeReadiness))}>
                 <p className="font-semibold">POS readiness</p>
                 <p className="mt-1 text-sm">
                   {barcodeReadiness === 'ready'
@@ -376,7 +376,7 @@ export default function ProductEditorPage() {
                 </p>
               </div>
 
-              <div className={cn('rounded-2xl border px-4 py-3', readinessTone(stockReadiness))}>
+              <div className={cn('rounded-md border px-4 py-3', readinessTone(stockReadiness))}>
                 <p className="font-semibold">Stock policy</p>
                 <p className="mt-1 text-sm">
                   {isCreate
@@ -390,7 +390,7 @@ export default function ProductEditorPage() {
               </div>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-3xl bg-background p-4">
+            <div className="mt-5 space-y-3 rounded-lg bg-background p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Unit price</span>
                 <span>{formatCurrency(Number(form.unit_price || 0))}</span>
@@ -418,7 +418,7 @@ export default function ProductEditorPage() {
             </div>
 
             {marginDollars < 0 ? (
-              <div className="mt-4 rounded-2xl border border-destructive/35 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <div className="mt-4 rounded-md border border-destructive/35 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <p>This price is below the current unit cost.</p>
@@ -427,20 +427,20 @@ export default function ProductEditorPage() {
             ) : null}
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <h2 className="text-xl font-semibold">Material context</h2>
             {selectedMaterial ? (
               <div className="mt-4 space-y-3 text-sm">
-                <div className="rounded-2xl bg-background px-4 py-3">
+                <div className="rounded-md bg-background px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Material</p>
                   <p className="mt-2 font-semibold">{selectedMaterial.name}</p>
                   <p className="mt-1 text-muted-foreground">{selectedMaterial.brand}</p>
                 </div>
-                <div className="rounded-2xl bg-background px-4 py-3">
+                <div className="rounded-md bg-background px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Cost per gram</p>
                   <p className="mt-2 font-semibold">${Number(selectedMaterial.cost_per_g).toFixed(4)}</p>
                 </div>
-                <div className="rounded-2xl bg-background px-4 py-3">
+                <div className="rounded-md bg-background px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Material stock</p>
                   <p className="mt-2 font-semibold">{selectedMaterial.spools_in_stock} spools</p>
                   <p className="mt-1 text-muted-foreground">Reorder at {selectedMaterial.reorder_point}</p>

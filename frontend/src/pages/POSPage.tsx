@@ -50,7 +50,7 @@ interface MetricCardProps {
 
 function MetricCard({ label, value, detail }: MetricCardProps) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+    <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
       <p className="text-xs uppercase tracking-[0.25em] text-white/55">{label}</p>
       <p className="mt-3 text-2xl font-semibold">{value}</p>
       <p className="mt-2 text-sm text-white/70">{detail}</p>
@@ -71,7 +71,7 @@ function QuickFilterButton({ active, label, detail, onClick }: QuickFilterButton
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-2xl border px-4 py-3 text-left transition-colors',
+        'rounded-md border px-4 py-3 text-left transition-colors',
         active
           ? 'border-primary bg-primary/10 text-foreground shadow-sm'
           : 'border-border bg-background/80 text-muted-foreground hover:border-primary/40 hover:text-foreground'
@@ -98,7 +98,7 @@ function CustomerModeButton({ active, icon: Icon, label, detail, onClick }: Cust
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-2xl border px-4 py-4 text-left transition-colors',
+        'rounded-md border px-4 py-4 text-left transition-colors',
         active
           ? 'border-primary bg-primary/10 text-foreground shadow-sm'
           : 'border-border bg-background/85 text-muted-foreground hover:border-primary/40 hover:text-foreground'
@@ -107,7 +107,7 @@ function CustomerModeButton({ active, icon: Icon, label, detail, onClick }: Cust
       <div className="flex items-start gap-3">
         <div
           className={cn(
-            'rounded-2xl p-2',
+            'rounded-md p-2',
             active ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground'
           )}
         >
@@ -135,7 +135,7 @@ function PaymentButton({ active, label, onClick }: PaymentButtonProps) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors',
+        'rounded-md border px-4 py-3 text-sm font-semibold transition-colors',
         active
           ? 'border-primary bg-primary text-primary-foreground shadow-sm'
           : 'border-border bg-background hover:border-primary/40 hover:text-foreground'
@@ -195,7 +195,7 @@ function SalesInboxCard({ sale }: { sale: SaleListItem }) {
   return (
     <Link
       to={`/sell/sales/${sale.id}`}
-      className="block rounded-2xl border border-border bg-background/85 p-4 no-underline transition-colors hover:border-primary/35"
+      className="block rounded-md border border-border bg-background/85 p-4 no-underline transition-colors hover:border-primary/35"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -452,7 +452,7 @@ export default function POSPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(19,52,34,0.96)_100%)] p-6 text-white shadow-sm">
+      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(19,52,34,0.96)_100%)] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.3em] text-white/65">Sell Workspace</p>
@@ -466,12 +466,12 @@ export default function POSPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[320px]">
-            <div className="rounded-3xl border border-white/10 bg-white/8 px-4 py-4">
+            <div className="rounded-lg border border-white/10 bg-white/8 px-4 py-4">
               <p className="text-xs uppercase tracking-[0.22em] text-white/60">Shift date</p>
               <p className="mt-2 text-xl font-semibold">{today}</p>
               <p className="mt-1 text-sm text-white/65">Recommended route: `/sell`</p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/8 px-4 py-4">
+            <div className="rounded-lg border border-white/10 bg-white/8 px-4 py-4">
               <p className="text-xs uppercase tracking-[0.22em] text-white/60">Sales inbox</p>
               <p className="mt-2 text-xl font-semibold">{salesNeedingAttention}</p>
               <p className="mt-1 text-sm text-white/65">Pending or refunded sales needing eyes</p>
@@ -488,7 +488,7 @@ export default function POSPage() {
       </section>
 
       {successMessage ? (
-        <div className="rounded-3xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm" role="status">
+        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm" role="status">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
@@ -500,7 +500,7 @@ export default function POSPage() {
       ) : null}
 
       {checkoutError ? (
-        <div className="rounded-3xl border border-destructive/35 bg-destructive/10 px-5 py-4 text-destructive shadow-sm" role="alert">
+        <div className="rounded-lg border border-destructive/35 bg-destructive/10 px-5 py-4 text-destructive shadow-sm" role="alert">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
@@ -513,7 +513,7 @@ export default function POSPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.95fr)]">
         <section className="space-y-4">
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
               <div>
                 <div className="flex items-center gap-2">
@@ -540,11 +540,11 @@ export default function POSPage() {
                       onChange={(event) => setScanCode(event.target.value)}
                       placeholder="Scan UPC and press Enter"
                       aria-label="Scan barcode"
-                      className="min-h-14 flex-1 rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="min-h-14 flex-1 rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     <button
                       type="submit"
-                      className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                      className="inline-flex min-h-14 items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                     >
                       Resolve scan
                       <ArrowRight className="h-4 w-4" />
@@ -553,7 +553,7 @@ export default function POSPage() {
                 </form>
               </div>
 
-              <div className="rounded-3xl border border-border bg-background/80 p-4">
+              <div className="rounded-lg border border-border bg-background/80 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Lane rules</p>
                 <div className="mt-3 space-y-3 text-sm text-muted-foreground">
                   <p>Exact UPC match only.</p>
@@ -566,7 +566,7 @@ export default function POSPage() {
             {scanStatus ? (
               <div
                 className={cn(
-                  'mt-4 rounded-2xl border px-4 py-3 text-sm',
+                  'mt-4 rounded-md border px-4 py-3 text-sm',
                   scanStatus.startsWith('Scanned ')
                     ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
                     : 'border-amber-300 bg-amber-50 text-amber-900'
@@ -577,7 +577,7 @@ export default function POSPage() {
             ) : null}
           </div>
 
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h2 className="text-xl font-semibold">Catalog lane</h2>
@@ -592,7 +592,7 @@ export default function POSPage() {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search products..."
                   aria-label="Search products"
-                  className="min-h-14 w-full rounded-2xl border border-input bg-background py-3 pl-11 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-14 w-full rounded-md border border-input bg-background py-3 pl-11 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
@@ -608,11 +608,11 @@ export default function POSPage() {
           {productsLoading ? (
             <div className="grid gap-3 md:grid-cols-2">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-48 animate-pulse rounded-3xl border border-border bg-card" />
+                <div key={index} className="h-48 animate-pulse rounded-lg border border-border bg-card" />
               ))}
             </div>
           ) : productsError ? (
-            <div className="rounded-3xl border border-destructive/40 bg-destructive/10 p-6 text-destructive">
+            <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-6 text-destructive">
               Unable to load products for POS checkout.
             </div>
           ) : !filteredProducts.length ? (
@@ -624,7 +624,7 @@ export default function POSPage() {
                   ? 'Try a different search term or filter combination.'
                   : 'Add active products with stock before using the POS register.'
               }
-              className="rounded-3xl border border-border bg-card"
+              className="rounded-lg border border-border bg-card"
             />
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
@@ -638,7 +638,7 @@ export default function POSPage() {
                   <article
                     key={product.id}
                     className={cn(
-                      'rounded-3xl border border-border bg-card p-5 shadow-sm transition-colors',
+                      'rounded-lg border border-border bg-card p-5 shadow-sm transition-colors',
                       outOfStock ? 'opacity-70' : 'hover:border-primary/35'
                     )}
                   >
@@ -650,21 +650,21 @@ export default function POSPage() {
                           {product.upc ? `UPC ${product.upc}` : 'No UPC assigned yet'}
                         </p>
                       </div>
-                      <div className="rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground">
+                      <div className="rounded-md bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground">
                         {formatCurrency(product.unit_price)}
                       </div>
                     </div>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl bg-background px-3 py-3">
+                      <div className="rounded-md bg-background px-3 py-3">
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Stock</p>
                         <p className={cn('mt-2 text-lg font-semibold', lowStock && 'text-amber-600')}>{product.stock_qty}</p>
                       </div>
-                      <div className="rounded-2xl bg-background px-3 py-3">
+                      <div className="rounded-md bg-background px-3 py-3">
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">In cart</p>
                         <p className="mt-2 text-lg font-semibold">{cartQty}</p>
                       </div>
-                      <div className="rounded-2xl bg-background px-3 py-3">
+                      <div className="rounded-md bg-background px-3 py-3">
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Scanner</p>
                         <p className="mt-2 text-sm font-semibold">{product.upc ? 'Ready' : 'Manual only'}</p>
                       </div>
@@ -675,7 +675,7 @@ export default function POSPage() {
                       onClick={() => handleAddProduct(product)}
                       disabled={outOfStock}
                       aria-label={`Add ${product.name} to cart`}
-                      className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                      className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
                     >
                       <Plus className="h-4 w-4" />
                       {outOfStock ? 'Stock maxed in cart' : 'Add to cart'}
@@ -688,7 +688,7 @@ export default function POSPage() {
         </section>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold">Cart and checkout</h2>
@@ -700,7 +700,7 @@ export default function POSPage() {
             </div>
 
             {!cart.length ? (
-              <div className="mt-6 rounded-3xl border border-dashed border-border bg-background/70 p-8 text-center">
+              <div className="mt-6 rounded-lg border border-dashed border-border bg-background/70 p-8 text-center">
                 <ShoppingBasket className="mx-auto h-10 w-10 text-muted-foreground" />
                 <p className="mt-4 text-lg font-medium">Cart is empty</p>
                 <p className="mt-2 text-sm text-muted-foreground">Add products from the catalog lane or scan a barcode to start a sale.</p>
@@ -708,7 +708,7 @@ export default function POSPage() {
             ) : (
               <div className="mt-5 space-y-3">
                 {cart.map((line) => (
-                  <div key={line.product_id} className="rounded-3xl border border-border bg-background/85 p-4">
+                  <div key={line.product_id} className="rounded-lg border border-border bg-background/85 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium">{line.name}</p>
@@ -718,14 +718,14 @@ export default function POSPage() {
                         type="button"
                         onClick={() => setCart((prev) => removeProductFromCart(prev, line.product_id))}
                         aria-label={`Remove ${line.name} from cart`}
-                        className="rounded-2xl p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
-                      <div className="inline-flex items-center rounded-2xl border border-border bg-card">
+                      <div className="inline-flex items-center rounded-md border border-border bg-card">
                         <button
                           type="button"
                           onClick={() => setCart((prev) => updateCartLineQuantity(prev, line.product_id, line.quantity - 1))}
@@ -758,7 +758,7 @@ export default function POSPage() {
               </div>
             )}
 
-            <div className="mt-6 rounded-3xl border border-border bg-background/70 p-4">
+            <div className="mt-6 rounded-lg border border-border bg-background/70 p-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-base font-semibold">Customer mode</h3>
@@ -817,7 +817,7 @@ export default function POSPage() {
                       setCheckoutError(null);
                     }}
                     aria-label="Existing customer"
-                    className="min-h-14 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="min-h-14 w-full rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Select customer</option>
                     {customers.map((customer) => (
@@ -840,13 +840,13 @@ export default function POSPage() {
                     onChange={(event) => setCustomerName(event.target.value)}
                     placeholder="Name for receipt or follow-up"
                     aria-label="Customer name"
-                    className="min-h-14 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="min-h-14 w-full rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
               ) : null}
             </div>
 
-            <div className="mt-4 rounded-3xl border border-border bg-background/70 p-4">
+            <div className="mt-4 rounded-lg border border-border bg-background/70 p-4">
               <div className="flex items-center gap-2">
                 <WalletCards className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-base font-semibold">Payment method</h3>
@@ -879,7 +879,7 @@ export default function POSPage() {
                   value={taxCollected}
                   onChange={(event) => setTaxCollected(Math.max(0, Number(event.target.value) || 0))}
                   aria-label="Tax collected"
-                  className="min-h-14 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-14 w-full rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
@@ -894,12 +894,12 @@ export default function POSPage() {
                   rows={3}
                   placeholder="Optional booth or counter notes"
                   aria-label="Notes"
-                  className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
 
-            <div className="mt-4 rounded-3xl bg-background p-4">
+            <div className="mt-4 rounded-lg bg-background p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
@@ -923,7 +923,7 @@ export default function POSPage() {
                 (customerMode === 'existing' && !selectedCustomerId) ||
                 (customerMode === 'new' && !customerName.trim())
               }
-              className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+              className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
             >
               {saving ? 'Processing checkout...' : 'Complete checkout'}
             </button>
@@ -932,14 +932,14 @@ export default function POSPage() {
               <button
                 type="button"
                 onClick={resetCheckoutFields}
-                className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 font-semibold transition-colors hover:bg-accent"
+                className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-md border border-border px-4 py-3 font-semibold transition-colors hover:bg-accent"
               >
                 <XCircle className="h-4 w-4" />
                 Clear cart
               </button>
             ) : null}
 
-            <div className="mt-4 rounded-2xl border border-amber-300/60 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="mt-4 rounded-md border border-amber-300/60 bg-amber-50 p-3 text-sm text-amber-900">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>Checkout blocks oversell when requested quantity exceeds available stock.</p>
@@ -947,7 +947,7 @@ export default function POSPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -960,7 +960,7 @@ export default function POSPage() {
               </div>
               <Link
                 to="/sell/sales"
-                className="inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
               >
                 Open inbox
                 <ArrowRight className="h-4 w-4" />
@@ -970,7 +970,7 @@ export default function POSPage() {
             {salesInboxLoading ? (
               <div className="mt-4 space-y-3">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="h-28 animate-pulse rounded-3xl border border-border bg-background" />
+                  <div key={index} className="h-28 animate-pulse rounded-lg border border-border bg-background" />
                 ))}
               </div>
             ) : salesInbox.length ? (

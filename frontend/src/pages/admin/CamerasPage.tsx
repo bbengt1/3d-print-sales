@@ -286,7 +286,7 @@ export default function CamerasPage() {
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-card border border-border rounded-md shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6 space-y-5">
               <h2 className="text-lg font-display font-bold">
                 {modal === 'create' ? 'Add Camera' : 'Edit Camera'}

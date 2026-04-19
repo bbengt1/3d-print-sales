@@ -17,9 +17,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-3 pb-4">
-        <div className="rounded-2xl border border-border bg-background/70 p-4">
+        <div className="rounded-md border border-border bg-background/70 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_12px_32px_rgba(34,197,94,0.25)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
               <PanelsTopLeft className="h-5 w-5" />
             </div>
             <div>
@@ -51,9 +51,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={() =>
               cn(
-                'flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors no-underline',
+                'flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors no-underline',
                 isWorkspaceLinkActive(location.pathname, matchPrefixes)
-                  ? 'bg-primary text-primary-foreground shadow-[0_18px_40px_rgba(34,197,94,0.18)]'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               )
             }
@@ -86,7 +86,7 @@ export default function Layout() {
       <div className="mx-auto flex-1 w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="flex min-h-full gap-6 lg:gap-8">
           <aside className="hidden w-80 shrink-0 xl:block">
-            <div className="sticky top-24 rounded-[1.9rem] border border-border bg-card/80 p-3 shadow-[0_20px_60px_rgba(8,17,31,0.10)] backdrop-blur">
+            <div className="sticky top-24 rounded-lg border border-border bg-card/80 p-3 shadow-md backdrop-blur">
               <SidebarContent />
             </div>
           </aside>

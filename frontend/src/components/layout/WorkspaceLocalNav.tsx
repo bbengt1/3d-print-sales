@@ -7,7 +7,7 @@ export default function WorkspaceLocalNav() {
   const workspace = getWorkspaceForPath(location.pathname);
 
   return (
-    <section className="rounded-[1.75rem] border border-border bg-card/80 p-4 shadow-[0_16px_48px_rgba(8,17,31,0.08)] backdrop-blur">
+    <section className="rounded-lg border border-border bg-card/80 p-4 shadow-md backdrop-blur">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.26em] text-muted-foreground">
@@ -35,7 +35,7 @@ export default function WorkspaceLocalNav() {
                 className={cn(
                   'rounded-full border px-3 py-2 text-sm font-medium no-underline transition-colors',
                   active
-                    ? 'border-primary/40 bg-primary text-primary-foreground shadow-[0_10px_30px_rgba(34,197,94,0.28)]'
+                    ? 'border-primary/40 bg-primary text-primary-foreground shadow-sm'
                     : 'border-border bg-background/70 text-muted-foreground hover:border-primary/30 hover:text-foreground'
                 )}
               >
