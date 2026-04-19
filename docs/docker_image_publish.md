@@ -6,8 +6,8 @@ This document is the source of truth for issue `#134`: how the repository builds
 
 The repository publishes two production images:
 
-- `docker.io/<namespace>/3d-print-sales-backend`
-- `docker.io/<namespace>/3d-print-sales-frontend`
+- `docker.io/<namespace>/print-backend`
+- `docker.io/<namespace>/print-frontend`
 
 Default namespace behavior:
 
@@ -78,9 +78,9 @@ Use `sha-*` tags when traceability matters more than convenience.
 
 Examples:
 
-- safest explicit backend image reference: `docker.io/<namespace>/3d-print-sales-backend:sha-<full-commit-sha>`
-- rolling integration reference: `docker.io/<namespace>/3d-print-sales-backend:main`
-- release reference: `docker.io/<namespace>/3d-print-sales-backend:1.2.3`
+- safest explicit backend image reference: `docker.io/<namespace>/print-backend:sha-<full-commit-sha>`
+- rolling integration reference: `docker.io/<namespace>/print-backend:main`
+- release reference: `docker.io/<namespace>/print-backend:1.2.3`
 
 Avoid deploying production from `latest` unless the environment intentionally tracks release tags without a stricter pin.
 

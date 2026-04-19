@@ -32,12 +32,12 @@ jobs:
             context: ./backend
             dockerfile: ./backend/Dockerfile
             target: production
-            image_repo: 3d-print-sales-backend
+            image_repo: print-backend
           - image_name: frontend
             context: ./frontend
             dockerfile: ./frontend/Dockerfile
             target: production
-            image_repo: 3d-print-sales-frontend
+            image_repo: print-frontend
 
     env:
       SHOULD_PUSH: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
