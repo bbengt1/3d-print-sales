@@ -66,30 +66,35 @@ Visit `http://<n8n-host>:5678` and create an owner account.
 
 The workflow requires two credentials in n8n. Both are referenced by **name** inside the workflow JSON, so the names matter.
 
-#### a) `web01.bengtson.local` (SSH Private Key)
+#### a) `web01.bengtson.local` (SSH — Password auth)
 
-> **This repository already has this credential configured on the target n8n instance.** The steps below are for reference / disaster-recovery if the credential is ever lost.
+> **This repository already has this credential configured on the target n8n instance** (credential ID `VIDK7yaGu0SqsBxb`, credential type `sshPassword`). The exported workflow JSON references it by both `id` and `name`, so importing the JSON into the current n8n instance wires it up automatically. The steps below are only for reference / disaster-recovery if the credential is ever lost, or for a brand-new n8n instance.
 
 1. **Credentials** → **Add credential** → select **SSH**.
-2. Authentication: **Private Key**.
+2. Authentication: **Password** (the working credential on the current instance uses password auth; if you switch to Private Key, the credential type changes to `sshPrivateKey` and you must update the workflow JSON to reference that type instead).
 3. Host: `web01.bengtson.local`.
 4. Username: `root`.
-5. Private Key: paste the content of a key whose matching public key is in `root@web01.bengtson.local:~/.ssh/authorized_keys`.
+5. Password: the SSH password for `root@web01.bengtson.local`.
 6. Name the credential exactly `web01.bengtson.local`.
 7. Click **Test** to verify, then **Save**.
+8. Note the credential's new ID (visible in the URL after save: `/credentials/<id>`). If the ID differs from `VIDK7yaGu0SqsBxb`, update `ops/n8n/web01-deploy.json` so every SSH node references the new ID under `credentials.sshPassword.id`.
 
 Hardening recommendations on the web01 side:
 - Use a dedicated keypair (not your personal key).
 - In `~/.ssh/authorized_keys`, constrain the key with `from="<n8n host IP>"` so it can only be used from the expected source.
 - Rotate annually.
 
-#### b) `web01-deploy-webhook-token` (HTTP Header Auth)
+#### b) Webhook authentication (optional)
+
+The exported workflow ships with Webhook Trigger `authentication: "none"` — anyone who knows the webhook URL can trigger a deploy. This is acceptable when the n8n instance itself is behind auth (e.g. SSO + Cloudflare Access on the n8n host). To add bearer-token auth:
 
 1. **Credentials** → **Add credential** → select **Header Auth**.
-2. Name: `Authorization`.
+2. Name header: `Authorization`.
 3. Value: `Bearer <generate-a-long-random-token>`.
-4. Name the credential exactly `web01-deploy-webhook-token`.
-5. Save.
+4. Name the credential (any name, e.g. `web01-deploy-webhook-token`).
+5. Save, note the credential ID.
+6. In n8n, open the `web01-deploy` workflow → click the `Webhook Trigger` node → change **Authentication** from "None" to "Header Auth" → bind the credential → save the workflow.
+7. Alternatively, update `ops/n8n/web01-deploy.json` to set `parameters.authentication: "headerAuth"` and add `credentials.httpHeaderAuth: { id: "<credId>", name: "<credName>" }` on the Webhook Trigger node, then re-import.
 
 Keep the token in your password manager. You will pass it in the `Authorization` header on every webhook call.
 

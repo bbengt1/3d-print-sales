@@ -5,7 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "web01-deploy",
-        "authentication": "headerAuth",
+        "authentication": "none",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -13,14 +13,12 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "webhookId": "web01-deploy-webhook",
-      "credentials": {
-        "httpHeaderAuth": {
-          "name": "web01-deploy-webhook-token"
-        }
-      },
-      "notes": "POST /webhook/web01-deploy with JSON body { branch, run_migrations?, force_rebuild?, triggered_by? }. Bearer token via Authorization header credential."
+      "notes": "POST /webhook/web01-deploy with JSON body { branch, run_migrations?, force_rebuild?, triggered_by? }. Authentication disabled; add Header Auth credential in n8n to re-enable."
     },
     {
       "parameters": {},
@@ -28,7 +26,10 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 560],
+      "position": [
+        240,
+        560
+      ],
       "notes": "Click 'Execute Workflow' for interactive deploys from the n8n UI."
     },
     {
@@ -40,7 +41,10 @@
       "name": "Validate Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 400],
+      "position": [
+        480,
+        400
+      ],
       "notes": "Rejects unknown branches. Normalizes flags. Sets started_at."
     },
     {
@@ -52,9 +56,13 @@
       "name": "SSH: Check reachable",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [720, 400],
+      "position": [
+        720,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -69,9 +77,13 @@
       "name": "SSH: Tree clean check",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [960, 400],
+      "position": [
+        960,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -86,7 +98,10 @@
       "name": "Verify Tree Clean",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1200, 400]
+      "position": [
+        1200,
+        400
+      ]
     },
     {
       "parameters": {
@@ -97,9 +112,13 @@
       "name": "SSH: Capture before SHA",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [1440, 400],
+      "position": [
+        1440,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -114,9 +133,13 @@
       "name": "SSH: Fetch and checkout",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [1680, 400],
+      "position": [
+        1680,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -131,9 +154,13 @@
       "name": "SSH: Capture after SHA",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [1920, 400],
+      "position": [
+        1920,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -148,9 +175,13 @@
       "name": "SSH: Diff migrations",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [2160, 400],
+      "position": [
+        2160,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -165,7 +196,10 @@
       "name": "Detect Migrations",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2400, 400]
+      "position": [
+        2400,
+        400
+      ]
     },
     {
       "parameters": {
@@ -194,7 +228,10 @@
       "name": "IF Migrations Needed",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2640, 400]
+      "position": [
+        2640,
+        400
+      ]
     },
     {
       "parameters": {
@@ -205,9 +242,13 @@
       "name": "SSH: Run Migrations",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [2880, 260],
+      "position": [
+        2880,
+        260
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -222,9 +263,13 @@
       "name": "SSH: Compose up --build",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [3120, 400],
+      "position": [
+        3120,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -239,7 +284,10 @@
       "name": "Wait for containers",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [3360, 400],
+      "position": [
+        3360,
+        400
+      ],
       "webhookId": "web01-deploy-wait"
     },
     {
@@ -251,9 +299,13 @@
       "name": "SSH: Compose ps",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [3600, 400],
+      "position": [
+        3600,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -268,7 +320,10 @@
       "name": "Parse Compose ps",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3840, 400]
+      "position": [
+        3840,
+        400
+      ]
     },
     {
       "parameters": {
@@ -279,9 +334,13 @@
       "name": "SSH: GET /health",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [4080, 400],
+      "position": [
+        4080,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -296,9 +355,13 @@
       "name": "SSH: GET / (frontend)",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [4320, 400],
+      "position": [
+        4320,
+        400
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -313,7 +376,10 @@
       "name": "Build Success Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4560, 400]
+      "position": [
+        4560,
+        400
+      ]
     },
     {
       "parameters": {
@@ -343,7 +409,10 @@
       "name": "Notify Success",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [4800, 400],
+      "position": [
+        4800,
+        400
+      ],
       "continueOnFail": true,
       "notes": "Set n8n variable DEPLOY_NOTIFICATION_URL to an inbound webhook (Slack/Discord/Mattermost/custom). When unset, this node is a no-op."
     },
@@ -359,7 +428,10 @@
       "name": "Respond Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [5040, 400]
+      "position": [
+        5040,
+        400
+      ]
     },
     {
       "parameters": {
@@ -370,7 +442,10 @@
       "name": "Handle Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4080, 700]
+      "position": [
+        4080,
+        700
+      ]
     },
     {
       "parameters": {
@@ -381,9 +456,13 @@
       "name": "SSH: Log tail (best effort)",
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
-      "position": [4320, 700],
+      "position": [
+        4320,
+        700
+      ],
       "credentials": {
-        "sshPrivateKey": {
+        "sshPassword": {
+          "id": "VIDK7yaGu0SqsBxb",
           "name": "web01.bengtson.local"
         }
       },
@@ -399,7 +478,10 @@
       "name": "Build Failure Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4560, 700]
+      "position": [
+        4560,
+        700
+      ]
     },
     {
       "parameters": {
@@ -429,7 +511,10 @@
       "name": "Notify Failure",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [4800, 700],
+      "position": [
+        4800,
+        700
+      ],
       "continueOnFail": true
     },
     {
@@ -444,7 +529,10 @@
       "name": "Respond Failure",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [5040, 700]
+      "position": [
+        5040,
+        700
+      ]
     }
   ],
   "pinData": {},
@@ -825,7 +913,11 @@
     "templateCredsSetupCompleted": false
   },
   "tags": [
-    { "name": "deploy" },
-    { "name": "web01" }
+    {
+      "name": "deploy"
+    },
+    {
+      "name": "web01"
+    }
   ]
 }

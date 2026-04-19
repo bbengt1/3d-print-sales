@@ -31,14 +31,22 @@ After editing a workflow in n8n:
 
 ## Credentials assumed to exist in n8n
 
-The exported workflow references credentials by **name** (no IDs, no secrets). The target n8n instance must have:
+The exported workflow references credentials by both `id` and `name`. The target n8n instance must have:
 
-| Credential name | Type | Used by |
-|-----------------|------|---------|
-| `web01.bengtson.local` | SSH (Private Key) | every SSH node in the workflow |
-| `web01-deploy-webhook-token` | HTTP Header Auth | the Webhook trigger node |
+| Credential name | Type | Credential ID | Used by |
+|-----------------|------|---------------|---------|
+| `web01.bengtson.local` | SSH — Password auth (`sshPassword`) | `VIDK7yaGu0SqsBxb` | all 12 SSH nodes |
+| *(optional)* bearer-token credential | HTTP Header Auth (`httpHeaderAuth`) | — | Webhook Trigger (only if you switch auth from `none` to `headerAuth`) |
 
-If either is missing, the workflow will load but will error at the first node that needs the credential. The runbook documents how to create them from scratch.
+The Webhook Trigger ships with `authentication: "none"` for simplicity. To add bearer-token auth, follow the runbook at `docs/deployment_n8n_workflow.md`.
+
+If the credential ID changes (e.g. because the credential was recreated), update every SSH node's `credentials.sshPassword.id` in `web01-deploy.json`. A quick sed works:
+
+```bash
+sed -i '' 's/"id": "VIDK7yaGu0SqsBxb"/"id": "<new-id>"/g' ops/n8n/web01-deploy.json
+```
+
+If the SSH auth method changes (password → private key), swap every `sshPassword` key in the JSON to `sshPrivateKey`.
 
 ## Concurrency and safety
 
