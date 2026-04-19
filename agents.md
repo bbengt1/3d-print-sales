@@ -138,6 +138,8 @@
 
 ## Deployment Notes
 
+- **Canonical deploy path: the `web01-deploy` n8n workflow** defined at [`ops/n8n/web01-deploy.json`](ops/n8n/web01-deploy.json). It encapsulates the full deploy sequence (pull → migrate → rebuild → verify) with per-step observability. Operator runbook: [`docs/deployment_n8n_workflow.md`](docs/deployment_n8n_workflow.md).
+- **Fallback: the manual SSH flow below.** Use it when n8n is unavailable, when debugging a broken deploy, or when performing one-off operations that don't fit the workflow (e.g. `alembic downgrade`, emergency restart).
 - Live host: `root@web01.bengtson.local`
 - App root on host: `/srv/3d-print-sales`
 - Repo checkout on host: `/srv/3d-print-sales/repo`
