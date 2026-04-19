@@ -15,11 +15,16 @@ import {
 import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
-import { SkeletonTable } from '@/components/ui/Skeleton';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
+import DataTable, { type Column, type SortDir } from '@/components/data/DataTable';
+import StatusBadge, { type StatusTone } from '@/components/data/StatusBadge';
+import TableToolbar from '@/components/data/TableToolbar';
+import SearchInput from '@/components/data/SearchInput';
+import Select from '@/components/data/Select';
+import Pagination from '@/components/data/Pagination';
 import { cn, formatCurrency } from '@/lib/utils';
-import type { InventoryAlert, InventoryReconcileResponse, PaginatedProducts, PaginatedTransactions } from '@/types';
+import type { InventoryAlert, InventoryReconcileResponse, InventoryTransaction, PaginatedProducts, PaginatedTransactions } from '@/types';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All types' },
@@ -115,24 +120,28 @@ export default function InventoryPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const [sortKey, setSortKey] = useState<string>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [showReconcile, setShowReconcile] = useState(false);
   const [reconcileSaving, setReconcileSaving] = useState(false);
   const [reconcileForm, setReconcileForm] = useState({ product_id: '', counted_qty: 0, reason: '', notes: '' });
   const [showAdjust, setShowAdjust] = useState(false);
   const [adjustSaving, setAdjustSaving] = useState(false);
   const [adjustForm, setAdjustForm] = useState({ product_id: '', type: 'adjustment', quantity: 0, notes: '' });
-  const limit = 25;
 
   const params = useMemo(
     () => ({
-      skip: page * limit,
-      limit,
+      skip: page * pageSize,
+      limit: pageSize,
+      sort_by: sortKey || undefined,
+      sort_dir: sortDir,
       ...(search ? { search } : {}),
       ...(type ? { type } : {}),
       ...(dateFrom ? { date_from: dateFrom } : {}),
       ...(dateTo ? { date_to: dateTo } : {}),
     }),
-    [page, limit, search, type, dateFrom, dateTo]
+    [page, pageSize, sortKey, sortDir, search, type, dateFrom, dateTo]
   );
 
   const { data, isLoading } = useQuery<PaginatedTransactions>({
@@ -155,7 +164,6 @@ export default function InventoryPage() {
   const selectedProduct = products.find((product) => product.id === reconcileForm.product_id) || null;
   const adjustProduct = products.find((product) => product.id === adjustForm.product_id) || null;
   const variance = selectedProduct ? reconcileForm.counted_qty - selectedProduct.stock_qty : 0;
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / limit)) : 1;
 
   const productAlerts = alerts.filter((alert) => alert.type === 'product');
   const materialAlerts = alerts.filter((alert) => alert.type !== 'product');
@@ -768,157 +776,184 @@ export default function InventoryPage() {
           </section>
         </div>
       ) : (
-        <div className="space-y-6">
-          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
+        (() => {
+          const typeToneMap: Record<string, StatusTone> = {
+            production: 'success',
+            sale: 'info',
+            adjustment: 'warning',
+            return: 'info',
+            waste: 'destructive',
+          };
+          const activeFilters = [search, type, dateFrom, dateTo].filter(Boolean).length;
+          const clearFilters = () => {
+            setSearch('');
+            setType('');
+            setDateFrom('');
+            setDateTo('');
+            setPage(0);
+          };
+          const handleSortChange = (key: string, dir: SortDir | null) => {
+            if (!key || !dir) {
+              setSortKey('created_at');
+              setSortDir('desc');
+            } else {
+              setSortKey(key);
+              setSortDir(dir);
+            }
+            setPage(0);
+          };
+          const ledgerColumns: Column<InventoryTransaction>[] = [
+            {
+              key: 'created_at',
+              header: 'Date',
+              sortable: true,
+              cell: (t) => (
+                <span className="text-xs tabular-nums">
+                  {t.created_at ? new Date(t.created_at).toLocaleString() : '—'}
+                </span>
+              ),
+            },
+            {
+              key: 'product_name',
+              header: 'Product',
+              cell: (t) =>
+                t.product_name ? (
+                  <Link className="font-medium no-underline hover:underline" to={`/products/${t.product_id}`}>
+                    {t.product_name}
+                  </Link>
+                ) : (
+                  <span className="font-mono text-xs">{t.product_id}</span>
+                ),
+            },
+            {
+              key: 'product_sku',
+              header: 'SKU',
+              colClassName: 'hidden lg:table-cell',
+              cell: (t) => <span className="font-mono text-xs">{t.product_sku || '—'}</span>,
+            },
+            {
+              key: 'type',
+              header: 'Type',
+              sortable: true,
+              cell: (t) => <StatusBadge tone={typeToneMap[t.type] || 'neutral'}>{t.type}</StatusBadge>,
+            },
+            {
+              key: 'quantity',
+              header: 'Qty',
+              sortable: true,
+              numeric: true,
+              cell: (t) => (
+                <span className={t.quantity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+                  {t.quantity > 0 ? '+' : ''}
+                  {t.quantity}
+                </span>
+              ),
+            },
+            {
+              key: 'unit_cost',
+              header: 'Unit cost',
+              sortable: true,
+              numeric: true,
+              colClassName: 'hidden md:table-cell',
+              cell: (t) => formatCurrency(t.unit_cost),
+            },
+            {
+              key: 'job_id',
+              header: 'Job',
+              colClassName: 'hidden xl:table-cell',
+              cell: (t) => <span className="font-mono text-xs">{t.job_id || '—'}</span>,
+            },
+            {
+              key: 'notes',
+              header: 'Notes',
+              colClassName: 'hidden xl:table-cell',
+              cell: (t) => <span className="text-xs text-muted-foreground">{t.notes || '—'}</span>,
+            },
+          ];
+
+          return (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ScrollText className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Inventory ledger</h2>
+                  <ScrollText className="h-4 w-4 text-muted-foreground" />
+                  <h2 className="text-base font-semibold">Inventory ledger</h2>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Full transaction history stays available for audit work and troubleshooting, but it is intentionally a secondary surface.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setSurface('exceptions')}
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                >
+                  Back to exceptions
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setSurface('exceptions')}
-                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
-              >
-                Back to exceptions
-              </button>
-            </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-              <input
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setPage(0);
-                }}
-                placeholder="Search product name or SKU"
-                className="rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              <DataTable<InventoryTransaction>
+                data={items}
+                columns={ledgerColumns}
+                rowKey={(t) => t.id}
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSortChange={handleSortChange}
+                loading={isLoading}
+                emptyState={activeFilters > 0 ? 'No transactions match these filters.' : 'No inventory transactions recorded yet.'}
+                toolbar={
+                  <TableToolbar total={data?.total ?? 0} activeFilters={activeFilters} onClearFilters={clearFilters}>
+                    <SearchInput
+                      value={search}
+                      onChange={(v) => {
+                        setSearch(v);
+                        setPage(0);
+                      }}
+                      placeholder="Search product or SKU…"
+                    />
+                    <Select
+                      value={type}
+                      onChange={(v) => {
+                        setType(v);
+                        setPage(0);
+                      }}
+                      options={TYPE_OPTIONS.filter((o) => o.value).map((o) => ({ value: o.value, label: o.label }))}
+                      placeholder="All types"
+                      aria-label="Filter by type"
+                    />
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => {
+                        setDateFrom(e.target.value);
+                        setPage(0);
+                      }}
+                      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      aria-label="From date"
+                    />
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => {
+                        setDateTo(e.target.value);
+                        setPage(0);
+                      }}
+                      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      aria-label="To date"
+                    />
+                  </TableToolbar>
+                }
+                footer={
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    total={data?.total ?? 0}
+                    onPageChange={setPage}
+                    onPageSizeChange={(n) => {
+                      setPageSize(n);
+                      setPage(0);
+                    }}
+                  />
+                }
               />
-              <select
-                value={type}
-                onChange={(event) => {
-                  setType(event.target.value);
-                  setPage(0);
-                }}
-                className="rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(event) => {
-                  setDateFrom(event.target.value);
-                  setPage(0);
-                }}
-                className="rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(event) => {
-                  setDateTo(event.target.value);
-                  setPage(0);
-                }}
-                className="rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-              />
             </div>
-          </section>
-
-          {isLoading ? (
-            <SkeletonTable rows={8} cols={8} />
-          ) : !items.length ? (
-            <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
-              No inventory transactions found
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">Date</th>
-                    <th className="px-4 py-3 font-medium">Product</th>
-                    <th className="px-4 py-3 font-medium">SKU</th>
-                    <th className="px-4 py-3 font-medium">Type</th>
-                    <th className="px-4 py-3 font-medium text-right">Qty</th>
-                    <th className="px-4 py-3 font-medium text-right">Unit Cost</th>
-                    <th className="px-4 py-3 font-medium">Job</th>
-                    <th className="px-4 py-3 font-medium">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((transaction) => (
-                    <tr key={transaction.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                      <td className="px-4 py-3 text-xs">
-                        {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {transaction.product_name ? (
-                          <Link className="font-medium hover:underline" to={`/products/${transaction.product_id}`}>
-                            {transaction.product_name}
-                          </Link>
-                        ) : (
-                          transaction.product_id
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs">{transaction.product_sku || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[transaction.type] || ''}`}>
-                          {transaction.type}
-                        </span>
-                      </td>
-                      <td
-                        className={cn(
-                          'px-4 py-3 text-right font-medium',
-                          transaction.quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                        )}
-                      >
-                        {transaction.quantity > 0 ? '+' : ''}
-                        {transaction.quantity}
-                      </td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(transaction.unit_cost)}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{transaction.job_id || '-'}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{transaction.notes || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between text-sm">
-            <p className="text-muted-foreground">
-              Page {page + 1} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.max(0, current - 1))}
-                disabled={page === 0}
-                className="rounded-xl border border-border px-3 py-2 transition-colors hover:bg-accent disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage((current) => (current + 1 < totalPages ? current + 1 : current))}
-                disabled={page + 1 >= totalPages}
-                className="rounded-xl border border-border px-3 py-2 transition-colors hover:bg-accent disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
+          );
+        })()
       )}
 
       <div className="sr-only" aria-live="polite">

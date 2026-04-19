@@ -1,43 +1,53 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { Copy, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import PageHeader from '@/components/layout/PageHeader';
+import DataTable, { type Column, type SortDir } from '@/components/data/DataTable';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
+import TableToolbar from '@/components/data/TableToolbar';
+import SearchInput from '@/components/data/SearchInput';
+import Select from '@/components/data/Select';
+import Pagination from '@/components/data/Pagination';
 import { formatCurrency } from '@/lib/utils';
 import type { Job, PaginatedJobs } from '@/types';
+
+const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 export default function JobsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [sortKey, setSortKey] = useState<string>('date');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
-  const limit = 20;
 
   const { data, isLoading } = useQuery<PaginatedJobs>({
-    queryKey: ['jobs', { search, status, page }],
+    queryKey: ['jobs', { search, status, sortKey, sortDir, page, pageSize }],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (status) params.set('status', status);
-      params.set('skip', String(page * limit));
-      params.set('limit', String(limit));
+      if (sortKey) params.set('sort_by', sortKey);
+      params.set('sort_dir', sortDir);
+      params.set('skip', String(page * pageSize));
+      params.set('limit', String(pageSize));
       return api.get(`/jobs?${params}`).then((r) => r.data);
     },
   });
 
   const jobs = data?.items || [];
   const total = data?.total || 0;
-  const totalPages = Math.ceil(total / limit);
-
-  const statusColors: Record<string, string> = {
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    draft: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  };
 
   const handleDuplicate = async (job: Job) => {
     setDuplicatingId(job.id);
@@ -53,140 +63,157 @@ export default function JobsPage() {
     }
   };
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Jobs</h1>
-        <Link
-          to="/orders/jobs/new"
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity no-underline"
-        >
-          <Plus className="w-4 h-4" /> New Job
+  const handleSortChange = (key: string, dir: SortDir | null) => {
+    if (!key || !dir) {
+      setSortKey('date');
+      setSortDir('desc');
+    } else {
+      setSortKey(key);
+      setSortDir(dir);
+    }
+    setPage(0);
+  };
+
+  const activeFilters = [search, status].filter(Boolean).length;
+  const clearFilters = () => {
+    setSearch('');
+    setStatus('');
+    setPage(0);
+  };
+
+  const columns: Column<Job>[] = [
+    {
+      key: 'job_number',
+      header: 'Job #',
+      sortable: true,
+      cell: (j) => (
+        <Link to={`/orders/jobs/${j.id}`} className="font-mono text-xs font-medium text-primary no-underline hover:underline">
+          {j.job_number}
         </Link>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            className="w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-        <select
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(0); }}
-          className="px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+      ),
+    },
+    { key: 'date', header: 'Date', sortable: true, cell: (j) => j.date },
+    {
+      key: 'customer_name',
+      header: 'Customer',
+      colClassName: 'hidden lg:table-cell',
+      cell: (j) => j.customer_name || <span className="text-muted-foreground">—</span>,
+    },
+    { key: 'product_name', header: 'Product', cell: (j) => j.product_name },
+    {
+      key: 'printer',
+      header: 'Printer',
+      colClassName: 'hidden lg:table-cell',
+      cell: (j) => <span className="text-xs text-muted-foreground">{j.printer?.name || '—'}</span>,
+    },
+    { key: 'total_pieces', header: 'Pieces', numeric: true, cell: (j) => j.total_pieces },
+    {
+      key: 'total_revenue',
+      header: 'Revenue',
+      sortable: true,
+      numeric: true,
+      cell: (j) => formatCurrency(j.total_revenue),
+    },
+    {
+      key: 'net_profit',
+      header: 'Profit',
+      sortable: true,
+      numeric: true,
+      colClassName: 'hidden md:table-cell',
+      cell: (j) => (
+        <span className={j.net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}>
+          {formatCurrency(j.net_profit)}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      cell: (j) => <StatusBadge tone={defaultStatusTone(j.status)}>{j.status.replace('_', ' ')}</StatusBadge>,
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '104px',
+      cell: (j) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDuplicate(j);
+          }}
+          disabled={duplicatingId === j.id}
+          aria-label={`Copy ${j.job_number}`}
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
         >
-          <option value="">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
+          <Copy className="h-3.5 w-3.5" />
+          {duplicatingId === j.id ? 'Copying…' : 'Copy'}
+        </button>
+      ),
+    },
+  ];
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-lg p-4 h-16 animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto bg-card border border-border rounded-lg">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Job #</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium">Customer</th>
-                  <th className="px-4 py-3 font-medium">Product</th>
-                  <th className="px-4 py-3 font-medium">Printer</th>
-                  <th className="px-4 py-3 font-medium text-right">Pieces</th>
-                  <th className="px-4 py-3 font-medium text-right">Revenue</th>
-                  <th className="px-4 py-3 font-medium text-right">Profit</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((job) => (
-                  <tr key={job.id} className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <Link to={`/orders/jobs/${job.id}`} className="text-primary hover:underline font-medium no-underline">
-                        {job.job_number}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">{job.date}</td>
-                    <td className="px-4 py-3">{job.customer_name || '—'}</td>
-                    <td className="px-4 py-3">{job.product_name}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{job.printer?.name || '—'}</td>
-                    <td className="px-4 py-3 text-right">{job.total_pieces}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(job.total_revenue)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={job.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}>
-                        {formatCurrency(job.net_profit)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[job.status] || 'bg-primary/10 text-primary'}`}>
-                        {job.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleDuplicate(job)}
-                        disabled={duplicatingId === job.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-md text-xs font-medium hover:bg-accent disabled:opacity-50 cursor-pointer"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        {duplicatingId === job.id ? 'Copying...' : 'Copy'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {jobs.length === 0 && (
-                  <tr>
-                    <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
-                      No jobs found. {!search && !status && 'Create your first job to get started.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Jobs"
+        description={`${total.toLocaleString()} ${total === 1 ? 'job' : 'jobs'}`}
+        actions={
+          <Link
+            to="/orders/jobs/new"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> New job
+          </Link>
+        }
+      />
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-muted-foreground">
-                Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}
-              </p>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="p-2 rounded-md hover:bg-accent disabled:opacity-30 transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="p-2 rounded-md hover:bg-accent disabled:opacity-30 transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <DataTable<Job>
+        data={jobs}
+        columns={columns}
+        rowKey={(j) => j.id}
+        onRowClick={(j) => navigate(`/orders/jobs/${j.id}`)}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
+        loading={isLoading}
+        emptyState={activeFilters > 0 ? 'No jobs match these filters.' : 'No jobs yet — create one to get started.'}
+        toolbar={
+          <TableToolbar total={total} activeFilters={activeFilters} onClearFilters={clearFilters}>
+            <SearchInput
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                setPage(0);
+              }}
+              placeholder="Search jobs…"
+            />
+            <Select
+              value={status}
+              onChange={(v) => {
+                setStatus(v);
+                setPage(0);
+              }}
+              options={STATUS_OPTIONS}
+              placeholder="All statuses"
+              aria-label="Filter by status"
+            />
+          </TableToolbar>
+        }
+        footer={
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(0);
+            }}
+          />
+        }
+      />
     </div>
   );
 }

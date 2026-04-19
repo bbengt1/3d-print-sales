@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, X } from 'lucide-react';
+import { Edit, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
-import { SkeletonTable } from '@/components/ui/Skeleton';
-import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/layout/PageHeader';
+import DataTable, { type Column } from '@/components/data/DataTable';
+import StatusBadge from '@/components/data/StatusBadge';
+import TableToolbar from '@/components/data/TableToolbar';
 import type { Rate } from '@/types';
 
 const emptyForm = { name: '', value: 0, unit: '$/hour', notes: '' };
@@ -72,14 +74,66 @@ export default function RatesPage() {
   const inputCls = (field: string) =>
     `w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${formErrors[field] ? 'border-destructive' : 'border-input'}`;
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Rates</h1>
-        <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
-          <Plus className="w-4 h-4" /> Add Rate
+  const columns: Column<Rate>[] = [
+    { key: 'name', header: 'Name', cell: (r) => <span className="font-medium">{r.name}</span> },
+    { key: 'value', header: 'Value', numeric: true, cell: (r) => Number(r.value).toFixed(2) },
+    { key: 'unit', header: 'Unit', cell: (r) => r.unit },
+    {
+      key: 'notes',
+      header: 'Notes',
+      colClassName: 'hidden lg:table-cell',
+      cell: (r) => r.notes || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (r) => (
+        <button
+          type="button"
+          onClick={() => toggleActive(r)}
+          aria-label={r.active ? `Deactivate ${r.name}` : `Activate ${r.name}`}
+          className="cursor-pointer"
+        >
+          <StatusBadge tone={r.active ? 'success' : 'destructive'}>
+            {r.active ? 'Active' : 'Inactive'}
+          </StatusBadge>
         </button>
-      </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '48px',
+      cell: (r) => (
+        <button
+          type="button"
+          onClick={() => openEdit(r)}
+          aria-label={`Edit ${r.name}`}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Edit className="h-4 w-4" />
+        </button>
+      ),
+    },
+  ];
+
+  const total = rates?.length ?? 0;
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Rates"
+        description={`${total.toLocaleString()} ${total === 1 ? 'rate' : 'rates'}`}
+        actions={
+          <button
+            type="button"
+            onClick={openNew}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Add rate
+          </button>
+        }
+      />
 
       {editing !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && close()}>
@@ -119,81 +173,47 @@ export default function RatesPage() {
         </div>
       )}
 
-      {isLoading ? (
-        <SkeletonTable rows={3} cols={5} />
-      ) : !rates?.length ? (
-        <EmptyState
-          icon="rates"
-          title="No rates configured"
-          description="Add labor, machine, and overhead rates to enable cost calculations."
-          action={
-            <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 cursor-pointer">
-              <Plus className="w-4 h-4" /> Add Rate
-            </button>
-          }
+      <div className="hidden md:block">
+        <DataTable<Rate>
+          data={rates || []}
+          columns={columns}
+          rowKey={(r) => r.id}
+          loading={isLoading}
+          emptyState="No rates configured. Add labor, machine, and overhead rates to enable cost calculations."
+          toolbar={<TableToolbar total={total} />}
         />
-      ) : (
-        <>
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto bg-card border border-border rounded-lg">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium text-right">Value</th>
-                  <th className="px-4 py-3 font-medium">Unit</th>
-                  <th className="px-4 py-3 font-medium">Notes</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rates.map((r) => (
-                  <tr key={r.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                    <td className="px-4 py-3 font-medium">{r.name}</td>
-                    <td className="px-4 py-3 text-right">{Number(r.value).toFixed(2)}</td>
-                    <td className="px-4 py-3">{r.unit}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.notes || '—'}</td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => toggleActive(r)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${r.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                        {r.active ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      </div>
 
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-3">
-            {rates.map((r) => (
-              <div key={r.id} className="bg-card border border-border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-semibold">{r.name}</p>
-                    {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => toggleActive(r)} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer ${r.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                      {r.active ? 'Active' : 'Inactive'}
-                    </button>
-                    <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-lg font-bold">{Number(r.value).toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{r.unit}</span></p>
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {rates?.map((r) => (
+          <div key={r.id} className="rounded-md border border-border bg-card p-4">
+            <div className="mb-2 flex items-start justify-between">
+              <div>
+                <p className="font-semibold">{r.name}</p>
+                {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
               </div>
-            ))}
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => toggleActive(r)}>
+                  <StatusBadge tone={r.active ? 'success' : 'destructive'}>{r.active ? 'Active' : 'Inactive'}</StatusBadge>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openEdit(r)}
+                  aria-label={`Edit ${r.name}`}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <p className="text-lg font-semibold tabular-nums">
+              {Number(r.value).toFixed(2)}
+              <span className="ml-1 text-sm font-normal text-muted-foreground">{r.unit}</span>
+            </p>
           </div>
-        </>
-      )}
+        ))}
+      </div>
     </div>
   );
 }

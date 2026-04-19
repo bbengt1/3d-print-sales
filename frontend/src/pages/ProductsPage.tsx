@@ -1,41 +1,54 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, ArrowRight, Archive, ArchiveRestore, Eye, Pencil, Plus, ScanBarcode } from 'lucide-react';
+import { AlertTriangle, Archive, ArchiveRestore, Eye, Pencil, Plus, ScanBarcode } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
-import EmptyState from '@/components/ui/EmptyState';
-import { SkeletonTable } from '@/components/ui/Skeleton';
 import PageHeader from '@/components/layout/PageHeader';
+import DataTable, { type Column, type SortDir } from '@/components/data/DataTable';
+import StatusBadge from '@/components/data/StatusBadge';
+import TableToolbar from '@/components/data/TableToolbar';
+import SearchInput from '@/components/data/SearchInput';
+import Pagination from '@/components/data/Pagination';
 import { formatCurrency } from '@/lib/utils';
 import type { PaginatedProducts, Product } from '@/types';
 
 export default function ProductsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState<string>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(0);
-  const limit = 25;
+  const [pageSize, setPageSize] = useState(25);
 
   const { data, isLoading, refetch } = useQuery<PaginatedProducts>({
-    queryKey: ['products', search, page],
+    queryKey: ['products', search, sortKey, sortDir, page, pageSize],
     queryFn: () =>
-      api.get('/products', { params: { search: search || undefined, skip: page * limit, limit } }).then((r) => r.data),
+      api
+        .get('/products', {
+          params: {
+            search: search || undefined,
+            sort_by: sortKey || undefined,
+            sort_dir: sortDir,
+            skip: page * pageSize,
+            limit: pageSize,
+          },
+        })
+        .then((r) => r.data),
   });
 
   const products = data?.items || [];
   const total = data?.total || 0;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const lowStockCount = products.filter((product) => product.stock_qty <= product.reorder_point).length;
+  const lowStockCount = products.filter((p) => p.stock_qty <= p.reorder_point).length;
 
   const toggleActive = async (product: Product) => {
     const action = product.is_active ? 'archive' : 'restore';
     const confirmed = window.confirm(
       product.is_active
         ? `Archive ${product.name}?\n\nThis removes it from active selling while preserving history.`
-        : `Restore ${product.name} to active products?`
+        : `Restore ${product.name} to active products?`,
     );
-
     if (!confirmed) return;
-
     try {
       if (product.is_active) {
         await api.delete(`/products/${product.id}`);
@@ -50,6 +63,119 @@ export default function ProductsPage() {
     }
   };
 
+  const handleSortChange = (key: string, dir: SortDir | null) => {
+    if (!key || !dir) {
+      setSortKey('name');
+      setSortDir('asc');
+    } else {
+      setSortKey(key);
+      setSortDir(dir);
+    }
+    setPage(0);
+  };
+
+  const activeFilters = [search].filter(Boolean).length;
+  const clearFilters = () => {
+    setSearch('');
+    setPage(0);
+  };
+
+  const columns: Column<Product>[] = [
+    { key: 'sku', header: 'SKU', sortable: true, cell: (p) => <span className="font-mono text-xs">{p.sku}</span> },
+    {
+      key: 'name',
+      header: 'Name',
+      sortable: true,
+      cell: (p) => (
+        <div>
+          <div className="font-medium">{p.name}</div>
+          <div className="text-xs text-muted-foreground">{p.upc ? `UPC ${p.upc}` : 'No UPC yet'}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'unit_price',
+      header: 'Price',
+      sortable: true,
+      numeric: true,
+      cell: (p) => formatCurrency(p.unit_price),
+    },
+    {
+      key: 'unit_cost',
+      header: 'Cost',
+      sortable: true,
+      numeric: true,
+      colClassName: 'hidden lg:table-cell',
+      cell: (p) => formatCurrency(p.unit_cost),
+    },
+    {
+      key: 'stock_qty',
+      header: 'Stock',
+      sortable: true,
+      numeric: true,
+      cell: (p) => {
+        const low = p.stock_qty <= p.reorder_point;
+        return (
+          <span className={low ? 'text-amber-600 dark:text-amber-400' : ''}>
+            {low ? <AlertTriangle className="mr-1 inline h-3 w-3" /> : null}
+            {p.stock_qty}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'readiness',
+      header: 'Readiness',
+      colClassName: 'hidden lg:table-cell',
+      cell: (p) => (
+        <div className="flex flex-wrap gap-1.5">
+          <StatusBadge tone={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'Active' : 'Archived'}</StatusBadge>
+          <StatusBadge tone={p.upc ? 'info' : 'neutral'}>
+            {p.upc ? (
+              <>
+                <ScanBarcode className="mr-0.5 h-3 w-3" />
+                POS
+              </>
+            ) : (
+              'Manual'
+            )}
+          </StatusBadge>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '112px',
+      cell: (p) => (
+        <div className="flex items-center justify-end gap-1">
+          <Link
+            to={`/product-studio/products/${p.id}/edit`}
+            aria-label={`Edit ${p.name}`}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Pencil className="h-4 w-4" />
+          </Link>
+          <Link
+            to={`/product-studio/products/${p.id}`}
+            aria-label={`View ${p.name}`}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Eye className="h-4 w-4" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => toggleActive(p)}
+            aria-label={p.is_active ? `Archive ${p.name}` : `Restore ${p.name}`}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {p.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -58,9 +184,7 @@ export default function ProductsPage() {
           <>
             <span className="tabular-nums">{total.toLocaleString()} total</span>
             {lowStockCount > 0 ? (
-              <span className="ml-3 text-warning">
-                · {lowStockCount} low stock
-              </span>
+              <span className="ml-3 text-amber-600 dark:text-amber-400">· {lowStockCount} low stock</span>
             ) : null}
           </>
         }
@@ -75,201 +199,107 @@ export default function ProductsPage() {
         }
       />
 
-      <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">Catalog</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Search products and jump to either the full-page editor or the existing detail record.
-            </p>
-          </div>
-          <input
-            placeholder="Search products by name or SKU..."
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(0);
-            }}
-            className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring lg:max-w-sm"
-          />
-        </div>
-      </section>
-
-      {isLoading ? (
-        <SkeletonTable rows={5} cols={8} />
-      ) : !products.length ? (
-        <EmptyState
-          icon="products"
-          title="No products yet"
-          description="Start the catalog in the new full-page product editor."
-          action={
-            <Link
-              to="/product-studio/products/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground no-underline hover:opacity-90"
+      {/* Desktop table */}
+      <div className="hidden md:block">
+        <DataTable<Product>
+          data={products}
+          columns={columns}
+          rowKey={(p) => p.id}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
+          loading={isLoading}
+          emptyState={
+            activeFilters > 0
+              ? 'No products match this search.'
+              : 'No products yet — start in the product editor.'
+          }
+          toolbar={
+            <TableToolbar
+              total={total}
+              activeFilters={activeFilters}
+              onClearFilters={clearFilters}
             >
-              <Plus className="h-4 w-4" />
-              New product
-            </Link>
+              <SearchInput
+                value={search}
+                onChange={(v) => {
+                  setSearch(v);
+                  setPage(0);
+                }}
+                placeholder="Search by name, SKU, or UPC…"
+              />
+            </TableToolbar>
+          }
+          footer={
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setPageSize(n);
+                setPage(0);
+              }}
+            />
           }
         />
-      ) : (
-        <>
-          <div className="hidden overflow-x-auto rounded-lg border border-border bg-card shadow-sm md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">SKU</th>
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium text-right">Price</th>
-                  <th className="px-4 py-3 font-medium text-right">Cost</th>
-                  <th className="px-4 py-3 font-medium text-right">Stock</th>
-                  <th className="px-4 py-3 font-medium">Readiness</th>
-                  <th className="px-4 py-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => {
-                  const lowStock = product.stock_qty <= product.reorder_point;
-                  return (
-                    <tr key={product.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                      <td className="px-4 py-3 font-mono text-xs">{product.sku}</td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{product.name}</div>
-                        <div className="mt-0.5 text-xs text-muted-foreground">
-                          {product.upc ? `UPC ${product.upc}` : 'No UPC yet'}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(product.unit_price)}</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(product.unit_cost)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={lowStock ? 'text-amber-600 dark:text-amber-400' : ''}>
-                          {lowStock ? <AlertTriangle className="mr-1 inline h-3 w-3" /> : null}
-                          {product.stock_qty}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
-                            {product.is_active ? 'Active' : 'Archived'}
-                          </span>
-                          <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
-                            {product.upc ? (
-                              <>
-                                <ScanBarcode className="mr-1 h-3 w-3" />
-                                POS ready
-                              </>
-                            ) : (
-                              'Manual lookup'
-                            )}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1">
-                          <Link
-                            to={`/product-studio/products/${product.id}/edit`}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent"
-                            title="Edit in Product Studio"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Link>
-                          <Link
-                            to={`/product-studio/products/${product.id}`}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent"
-                            title="View detail"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => toggleActive(product)}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent"
-                            title={product.is_active ? 'Archive product' : 'Restore product'}
-                          >
-                            {product.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+      </div>
 
-          <div className="space-y-3 md:hidden">
-            {products.map((product) => (
-              <div key={product.id} className="rounded-lg border border-border bg-card p-4 shadow-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold">{product.name}</p>
-                    <p className="font-mono text-xs text-muted-foreground">{product.sku}</p>
-                  </div>
-                  <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
-                    {product.is_active ? 'Active' : 'Archived'}
-                  </span>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Price</p>
-                    <p>{formatCurrency(product.unit_price)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Cost</p>
-                    <p>{formatCurrency(product.unit_cost)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Stock</p>
-                    <p className={product.stock_qty <= product.reorder_point ? 'text-amber-600 dark:text-amber-400' : ''}>
-                      {product.stock_qty}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Link
-                    to={`/product-studio/products/${product.id}/edit`}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground no-underline"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </Link>
-                  <Link
-                    to={`/product-studio/products/${product.id}`}
-                    className="inline-flex items-center justify-center rounded-md border border-border px-4 py-3 text-foreground no-underline"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {products.map((product) => (
+          <div key={product.id} className="rounded-md border border-border bg-card p-4 shadow-xs">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">{product.name}</p>
+                <p className="font-mono text-xs text-muted-foreground">{product.sku}</p>
               </div>
-            ))}
-          </div>
-
-          {totalPages > 1 ? (
-            <div className="flex items-center justify-between text-sm">
-              <p className="text-muted-foreground">{total} products</p>
-              <div className="flex gap-2">
-                <button
-                  disabled={page === 0}
-                  onClick={() => setPage(page - 1)}
-                  className="rounded-md border border-border px-3 py-1 transition-colors hover:bg-accent disabled:opacity-50"
+              <StatusBadge tone={product.is_active ? 'success' : 'neutral'}>
+                {product.is_active ? 'Active' : 'Archived'}
+              </StatusBadge>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Price</p>
+                <p className="tabular-nums">{formatCurrency(product.unit_price)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Cost</p>
+                <p className="tabular-nums">{formatCurrency(product.unit_cost)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Stock</p>
+                <p
+                  className={
+                    product.stock_qty <= product.reorder_point
+                      ? 'tabular-nums text-amber-600 dark:text-amber-400'
+                      : 'tabular-nums'
+                  }
                 >
-                  Prev
-                </button>
-                <span className="px-3 py-1">
-                  {page + 1} / {totalPages}
-                </span>
-                <button
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage(page + 1)}
-                  className="rounded-md border border-border px-3 py-1 transition-colors hover:bg-accent disabled:opacity-50"
-                >
-                  Next
-                </button>
+                  {product.stock_qty}
+                </p>
               </div>
             </div>
-          ) : null}
-        </>
-      )}
+            <div className="mt-4 flex gap-2">
+              <Link
+                to={`/product-studio/products/${product.id}/edit`}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-medium text-primary-foreground no-underline"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Link>
+              <button
+                type="button"
+                onClick={() => navigate(`/product-studio/products/${product.id}`)}
+                aria-label={`View ${product.name}`}
+                className="inline-flex h-12 w-12 items-center justify-center rounded-md border border-border text-foreground"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

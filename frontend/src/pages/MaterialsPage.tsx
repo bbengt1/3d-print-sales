@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, X } from 'lucide-react';
+import { Edit, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
-import { SkeletonTable } from '@/components/ui/Skeleton';
-import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/layout/PageHeader';
+import DataTable, { type Column } from '@/components/data/DataTable';
+import StatusBadge from '@/components/data/StatusBadge';
+import TableToolbar from '@/components/data/TableToolbar';
 import type { Material } from '@/types';
 
 const emptyForm = { name: '', brand: '', spool_weight_g: 1000, spool_price: 20, net_usable_g: 950, notes: '', spools_in_stock: 0, reorder_point: 2 };
@@ -76,14 +78,84 @@ export default function MaterialsPage() {
   const inputCls = (field: string) =>
     `w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${formErrors[field] ? 'border-destructive' : 'border-input'}`;
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Materials</h1>
-        <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
-          <Plus className="w-4 h-4" /> Add Material
+  const columns: Column<Material>[] = [
+    { key: 'name', header: 'Name', cell: (m) => <span className="font-medium">{m.name}</span> },
+    { key: 'brand', header: 'Brand', cell: (m) => m.brand },
+    { key: 'spool_weight_g', header: 'Spool (g)', numeric: true, cell: (m) => m.spool_weight_g },
+    { key: 'spool_price', header: 'Price', numeric: true, cell: (m) => formatCurrency(m.spool_price) },
+    {
+      key: 'net_usable_g',
+      header: 'Usable (g)',
+      numeric: true,
+      colClassName: 'hidden lg:table-cell',
+      cell: (m) => m.net_usable_g,
+    },
+    {
+      key: 'cost_per_g',
+      header: 'Cost/g',
+      numeric: true,
+      cell: (m) => `$${Number(m.cost_per_g).toFixed(4)}`,
+    },
+    {
+      key: 'spools_in_stock',
+      header: 'Spools',
+      numeric: true,
+      cell: (m) => (
+        <span className={m.spools_in_stock <= m.reorder_point ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}>
+          {m.spools_in_stock}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (m) => (
+        <button
+          type="button"
+          onClick={() => toggleActive(m)}
+          aria-label={m.active ? `Deactivate ${m.name}` : `Activate ${m.name}`}
+          className="cursor-pointer"
+        >
+          <StatusBadge tone={m.active ? 'success' : 'destructive'}>
+            {m.active ? 'Active' : 'Inactive'}
+          </StatusBadge>
         </button>
-      </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '48px',
+      cell: (m) => (
+        <button
+          type="button"
+          onClick={() => openEdit(m)}
+          aria-label={`Edit ${m.name}`}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Edit className="h-4 w-4" />
+        </button>
+      ),
+    },
+  ];
+
+  const total = materials?.length ?? 0;
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Materials"
+        description={`${total.toLocaleString()} ${total === 1 ? 'material' : 'materials'}`}
+        actions={
+          <button
+            type="button"
+            onClick={openNew}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Add material
+          </button>
+        }
+      />
 
       {/* Modal */}
       {editing !== null && (
@@ -144,91 +216,58 @@ export default function MaterialsPage() {
         </div>
       )}
 
-      {isLoading ? (
-        <SkeletonTable rows={5} cols={7} />
-      ) : !materials?.length ? (
-        <EmptyState
-          icon="materials"
-          title="No materials yet"
-          description="Add your first filament material to start tracking costs."
-          action={
-            <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 cursor-pointer">
-              <Plus className="w-4 h-4" /> Add Material
-            </button>
-          }
+      {/* Desktop table */}
+      <div className="hidden md:block">
+        <DataTable<Material>
+          data={materials || []}
+          columns={columns}
+          rowKey={(m) => m.id}
+          loading={isLoading}
+          emptyState="No materials yet — add your first filament to start tracking costs."
+          toolbar={<TableToolbar total={total} />}
         />
-      ) : (
-        <>
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto bg-card border border-border rounded-lg">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Brand</th>
-                  <th className="px-4 py-3 font-medium text-right">Spool (g)</th>
-                  <th className="px-4 py-3 font-medium text-right">Price</th>
-                  <th className="px-4 py-3 font-medium text-right">Usable (g)</th>
-                  <th className="px-4 py-3 font-medium text-right">Cost/g</th>
-                  <th className="px-4 py-3 font-medium text-right">Spools</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {materials.map((m) => (
-                  <tr key={m.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                    <td className="px-4 py-3 font-medium">{m.name}</td>
-                    <td className="px-4 py-3">{m.brand}</td>
-                    <td className="px-4 py-3 text-right">{m.spool_weight_g}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(m.spool_price)}</td>
-                    <td className="px-4 py-3 text-right">{m.net_usable_g}</td>
-                    <td className="px-4 py-3 text-right">${Number(m.cost_per_g).toFixed(4)}</td>
-                    <td className={`px-4 py-3 text-right ${m.spools_in_stock <= m.reorder_point ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}`}>{m.spools_in_stock}</td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => toggleActive(m)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${m.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                        {m.active ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => openEdit(m)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      </div>
 
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-3">
-            {materials.map((m) => (
-              <div key={m.id} className="bg-card border border-border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-semibold">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">{m.brand}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => toggleActive(m)} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer ${m.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                      {m.active ? 'Active' : 'Inactive'}
-                    </button>
-                    <button onClick={() => openEdit(m)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div><p className="text-xs text-muted-foreground">Spool</p><p>{m.spool_weight_g}g</p></div>
-                  <div><p className="text-xs text-muted-foreground">Price</p><p>{formatCurrency(m.spool_price)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Cost/g</p><p>${Number(m.cost_per_g).toFixed(4)}</p></div>
-                </div>
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {materials?.map((m) => (
+          <div key={m.id} className="rounded-md border border-border bg-card p-4">
+            <div className="mb-2 flex items-start justify-between">
+              <div>
+                <p className="font-semibold">{m.name}</p>
+                <p className="text-xs text-muted-foreground">{m.brand}</p>
               </div>
-            ))}
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => toggleActive(m)}>
+                  <StatusBadge tone={m.active ? 'success' : 'destructive'}>{m.active ? 'Active' : 'Inactive'}</StatusBadge>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openEdit(m)}
+                  aria-label={`Edit ${m.name}`}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Spool</p>
+                <p className="tabular-nums">{m.spool_weight_g}g</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Price</p>
+                <p className="tabular-nums">{formatCurrency(m.spool_price)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Cost/g</p>
+                <p className="tabular-nums">${Number(m.cost_per_g).toFixed(4)}</p>
+              </div>
+            </div>
           </div>
-        </>
-      )}
+        ))}
+      </div>
     </div>
   );
 }

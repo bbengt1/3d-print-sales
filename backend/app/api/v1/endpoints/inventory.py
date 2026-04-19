@@ -39,6 +39,12 @@ async def list_transactions(
     date_from: datetime.date | None = Query(None, description="Start date (inclusive)"),
     date_to: datetime.date | None = Query(None, description="End date (inclusive)"),
     search: str | None = Query(None, description="Search by product name or SKU"),
+    sort_by: str = Query(
+        "created_at",
+        description="Sort field (allowlisted)",
+        pattern="^(created_at|type|quantity|unit_cost)$",
+    ),
+    sort_dir: str = Query("desc", description="Sort direction", pattern="^(asc|desc)$"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(50, ge=1, le=100, description="Max records to return"),
 ):
@@ -65,9 +71,9 @@ async def list_transactions(
     count_stmt = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_stmt)).scalar() or 0
 
-    result = await db.execute(
-        base.order_by(InventoryTransaction.created_at.desc()).offset(skip).limit(limit)
-    )
+    sort_column = getattr(InventoryTransaction, sort_by, InventoryTransaction.created_at)
+    order = sort_column.desc() if sort_dir == "desc" else sort_column.asc()
+    result = await db.execute(base.order_by(order).offset(skip).limit(limit))
     rows = result.all()
 
     items = [
