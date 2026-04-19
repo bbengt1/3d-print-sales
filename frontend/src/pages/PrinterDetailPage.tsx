@@ -97,7 +97,7 @@ function ConsoleStat({
   emphasis?: 'default' | 'warning' | 'success';
 }) {
   return (
-    <div className="rounded-[1.45rem] border border-border bg-card/85 p-4 shadow-[0_14px_40px_rgba(8,17,31,0.06)]">
+    <div className="rounded-md border border-border bg-card/85 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
@@ -112,7 +112,7 @@ function ConsoleStat({
           </p>
           {subtext ? <p className="mt-1 text-sm text-muted-foreground">{subtext}</p> : null}
         </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+        <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary/12 text-primary">
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -205,7 +205,7 @@ export default function PrinterDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to printer wall
       </Link>
 
-      <section className="overflow-hidden rounded-[2rem] border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-[0_24px_70px_rgba(8,17,31,0.18)]">
+      <section className="overflow-hidden rounded-lg border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-md">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -230,7 +230,7 @@ export default function PrinterDetailPage() {
                 <>
                   <button
                     onClick={testConnection}
-                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_16px_40px_rgba(34,197,94,0.28)]"
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm"
                   >
                     <PlugZap className="h-4 w-4" /> Test connection
                   </button>
@@ -258,7 +258,7 @@ export default function PrinterDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-[1.6rem] border border-white/10 bg-black/15 p-5">
+          <div className="rounded-md border border-white/10 bg-black/15 p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300/75">Current print</p>
@@ -336,7 +336,7 @@ export default function PrinterDetailPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <section className="rounded-[1.8rem] border border-border bg-card/85 p-5 shadow-[0_16px_40px_rgba(8,17,31,0.06)]">
+        <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-foreground">Live monitoring</h2>
@@ -348,25 +348,25 @@ export default function PrinterDetailPage() {
           </div>
 
           {!printer.monitor_enabled ? (
-            <div className="rounded-[1.4rem] border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
+            <div className="rounded-md border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
               Monitoring is not configured for this printer yet. The machine is still available as a static tracked record.
             </div>
           ) : (
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-[1.25rem] border border-border bg-background/60 p-4">
+                <div className="rounded-md border border-border bg-background/60 p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Provider</p>
                   <p className="mt-2 font-semibold capitalize text-foreground">{printer.monitor_provider || '—'}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{printer.monitor_poll_interval_seconds}s poll interval</p>
                 </div>
-                <div className="rounded-[1.25rem] border border-border bg-background/60 p-4">
+                <div className="rounded-md border border-border bg-background/60 p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Last event</p>
                   <p className="mt-2 font-semibold text-foreground">
                     {printer.monitor_last_event_type ? printer.monitor_last_event_type.replace('notify_', '').replaceAll('_', ' ') : '—'}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(printer.monitor_last_event_at)}</p>
                 </div>
-                <div className="rounded-[1.25rem] border border-border bg-background/60 p-4">
+                <div className="rounded-md border border-border bg-background/60 p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Last seen</p>
                   <p className="mt-2 font-semibold text-foreground">{formatDateTime(printer.monitor_last_seen_at)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -379,13 +379,13 @@ export default function PrinterDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[1.4rem] border border-border bg-background/60 p-4">
+              <div className="rounded-md border border-border bg-background/60 p-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Provider message</p>
                 <p className="mt-2 text-sm text-foreground">{printer.monitor_last_message || '—'}</p>
               </div>
 
               {printer.monitor_last_error ? (
-                <div className="rounded-[1.4rem] border border-red-300/60 bg-red-50/80 p-4 dark:border-red-500/30 dark:bg-red-500/10">
+                <div className="rounded-md border border-red-300/60 bg-red-50/80 p-4 dark:border-red-500/30 dark:bg-red-500/10">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600 dark:text-red-300" />
                     <div>
@@ -399,7 +399,7 @@ export default function PrinterDetailPage() {
           )}
         </section>
 
-        <section className="rounded-[1.8rem] border border-border bg-card/85 p-5 shadow-[0_16px_40px_rgba(8,17,31,0.06)]">
+        <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-foreground">Visual console</h2>
@@ -423,24 +423,24 @@ export default function PrinterDetailPage() {
               mseWsUrl={printer.camera_mse_ws_url}
               snapshotUrl={printer.camera_snapshot_url}
               alt={`${printer.name} camera feed`}
-              className="min-h-[280px] rounded-[1.4rem]"
+              className="min-h-[280px] rounded-md"
             />
           ) : (
             <PrinterThumbnail
               src={printer.current_print_thumbnail_url}
               alt={printer.current_print_name ? `${printer.current_print_name} thumbnail` : `${printer.name} current print thumbnail`}
-              className="min-h-[280px] rounded-[1.4rem]"
+              className="min-h-[280px] rounded-md"
               fallbackLabel={printer.current_print_name ? 'No thumbnail in G-code metadata' : 'No active print'}
             />
           )}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[1.25rem] border border-border bg-background/60 p-4">
+            <div className="rounded-md border border-border bg-background/60 p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Machine identity</p>
               <p className="mt-2 font-semibold text-foreground">{printer.manufacturer || '—'} {printer.model || ''}</p>
               <p className="mt-1 text-sm text-muted-foreground">{printer.serial_number || 'No serial number'}</p>
             </div>
-            <div className="rounded-[1.25rem] border border-border bg-background/60 p-4">
+            <div className="rounded-md border border-border bg-background/60 p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Current assignment</p>
               {activeJob ? (
                 <>
@@ -456,7 +456,7 @@ export default function PrinterDetailPage() {
           </div>
 
           {printer.notes ? (
-            <div className="mt-4 rounded-[1.25rem] border border-border bg-background/60 p-4">
+            <div className="mt-4 rounded-md border border-border bg-background/60 p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Notes</p>
               <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{printer.notes}</p>
             </div>
@@ -464,7 +464,7 @@ export default function PrinterDetailPage() {
         </section>
       </div>
 
-      <section className="rounded-[1.8rem] border border-border bg-card/85 p-5 shadow-[0_16px_40px_rgba(8,17,31,0.06)]">
+      <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">Recent floor activity</h2>
@@ -478,7 +478,7 @@ export default function PrinterDetailPage() {
         </div>
 
         {!printer.history_events.length ? (
-          <div className="rounded-[1.4rem] border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
             No printer activity has been recorded yet.
           </div>
         ) : (
@@ -490,7 +490,7 @@ export default function PrinterDetailPage() {
               const fromPrinter = formatEventMetaValue(event.metadata?.from_printer_name);
               const toPrinter = formatEventMetaValue(event.metadata?.to_printer_name);
               return (
-                <div key={event.id} className="rounded-[1.35rem] border border-border bg-background/60 p-4">
+                <div key={event.id} className="rounded-md border border-border bg-background/60 p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-medium text-foreground">{event.title}</p>
@@ -513,7 +513,7 @@ export default function PrinterDetailPage() {
         )}
       </section>
 
-      <section className="rounded-[1.8rem] border border-border bg-card/85 p-5 shadow-[0_16px_40px_rgba(8,17,31,0.06)]">
+      <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">Assigned jobs</h2>
@@ -527,11 +527,11 @@ export default function PrinterDetailPage() {
         {jobsLoading ? (
           <SkeletonTable rows={5} cols={6} />
         ) : !recentJobs.length ? (
-          <div className="rounded-[1.4rem] border border-dashed border-border bg-background/60 p-8 text-center text-muted-foreground">
+          <div className="rounded-md border border-dashed border-border bg-background/60 p-8 text-center text-muted-foreground">
             No jobs assigned to this printer yet.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-[1.4rem] border border-border bg-background/60">
+          <div className="overflow-x-auto rounded-md border border-border bg-background/60">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">

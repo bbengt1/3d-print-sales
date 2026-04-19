@@ -22,7 +22,7 @@ const ATTENTION_PRINTER_STATUSES = new Set(['paused', 'maintenance', 'offline', 
 
 function QueueStat({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+    <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
       <p className="text-xs uppercase tracking-[0.24em] text-white/55">{label}</p>
       <p className="mt-3 text-2xl font-semibold">{value}</p>
       <p className="mt-2 text-sm text-white/70">{detail}</p>
@@ -99,7 +99,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(27,55,44,0.96)_100%)] p-6 text-white shadow-sm">
+      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(27,55,44,0.96)_100%)] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.3em] text-white/65">Orders Workspace</p>
@@ -115,14 +115,14 @@ export default function OrdersPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               to="/orders/jobs/new"
-              className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90"
+              className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90"
             >
               <PackageOpen className="h-4 w-4" />
               New job
             </Link>
             <Link
               to="/orders/jobs"
-              className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
+              className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
             >
               Open jobs
             </Link>
@@ -139,7 +139,7 @@ export default function OrdersPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.92fr)]">
         <section className="space-y-6">
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -163,7 +163,7 @@ export default function OrdersPage() {
                     type="button"
                     onClick={() => setJobStatusFilter(value as typeof jobStatusFilter)}
                     className={cn(
-                      'rounded-2xl border px-4 py-3 text-left transition-colors',
+                      'rounded-md border px-4 py-3 text-left transition-colors',
                       jobStatusFilter === value
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-border bg-background hover:border-primary/35'
@@ -194,7 +194,7 @@ export default function OrdersPage() {
                 {visibleJobs.map((job: Job) => {
                   const missingAssignment = !job.printer_id && job.status !== 'completed' && job.status !== 'cancelled';
                   return (
-                    <div key={job.id} className={cn('rounded-2xl border p-4', missingAssignment ? 'border-amber-300/60 bg-amber-50/70' : 'border-border bg-background/80')}>
+                    <div key={job.id} className={cn('rounded-md border p-4', missingAssignment ? 'border-amber-300/60 bg-amber-50/70' : 'border-border bg-background/80')}>
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -245,7 +245,7 @@ export default function OrdersPage() {
             )}
           </div>
 
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export default function OrdersPage() {
               </div>
               <Link
                 to="/sell/sales"
-                className="inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
               >
                 Open sales inbox
                 <ArrowRight className="h-4 w-4" />
@@ -270,7 +270,7 @@ export default function OrdersPage() {
             ) : (
               <div className="mt-4 space-y-3">
                 {fulfillmentSales.slice(0, 8).map((sale: SaleListItem) => (
-                  <div key={sale.id} className="rounded-2xl border border-border bg-background/80 p-4">
+                  <div key={sale.id} className="rounded-md border border-border bg-background/80 p-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -298,23 +298,23 @@ export default function OrdersPage() {
         </section>
 
         <aside className="space-y-4">
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <TriangleAlert className="h-5 w-5 text-amber-600" />
               <h2 className="text-xl font-semibold">Assignment pressure</h2>
             </div>
             <div className="mt-4 space-y-3">
-              <div className="rounded-2xl bg-background px-4 py-3">
+              <div className="rounded-md bg-background px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Unassigned jobs</p>
                 <p className="mt-2 text-2xl font-semibold">{jobsNeedingAssignment.length}</p>
                 <p className="mt-1 text-sm text-muted-foreground">Jobs that need printer selection or reassignment.</p>
               </div>
-              <div className="rounded-2xl bg-background px-4 py-3">
+              <div className="rounded-md bg-background px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Ready printers</p>
                 <p className="mt-2 text-2xl font-semibold">{readyPrinters.length}</p>
                 <p className="mt-1 text-sm text-muted-foreground">Idle machines available for production work.</p>
               </div>
-              <div className="rounded-2xl bg-background px-4 py-3">
+              <div className="rounded-md bg-background px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Attention printers</p>
                 <p className="mt-2 text-2xl font-semibold">{attentionPrinters.length}</p>
                 <p className="mt-1 text-sm text-muted-foreground">Paused, offline, maintenance, or error states.</p>
@@ -322,7 +322,7 @@ export default function OrdersPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-muted-foreground" />
@@ -330,7 +330,7 @@ export default function OrdersPage() {
               </div>
               <Link
                 to="/orders/customers"
-                className="inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
               >
                 Open customers
               </Link>
@@ -345,7 +345,7 @@ export default function OrdersPage() {
             ) : (
               <div className="mt-4 space-y-3">
                 {topCustomers.map((customer) => (
-                  <div key={customer.id} className="rounded-2xl border border-border bg-background/80 px-4 py-3">
+                  <div key={customer.id} className="rounded-md border border-border bg-background/80 px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-medium">{customer.name}</p>
@@ -362,7 +362,7 @@ export default function OrdersPage() {
             )}
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <h2 className="text-xl font-semibold">Known gap</h2>
             <p className="mt-3 text-sm text-muted-foreground">
               This first pass stitches jobs, sales, printers, and customers client-side. Quote-specific queueing and a dedicated backend fulfillment queue endpoint are still separate follow-on work.

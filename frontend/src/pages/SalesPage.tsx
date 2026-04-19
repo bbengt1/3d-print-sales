@@ -59,7 +59,7 @@ export default function SalesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(22,44,64,0.96)_100%)] p-6 text-white shadow-sm">
+      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(22,44,64,0.96)_100%)] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.3em] text-white/65">Sell Workspace</p>
@@ -68,7 +68,7 @@ export default function SalesPage() {
               Review recent sales, refunds, and follow-up work without dropping back into the general dashboard.
             </p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-white/8 px-4 py-4">
+          <div className="rounded-lg border border-white/10 bg-white/8 px-4 py-4">
             <p className="text-xs uppercase tracking-[0.22em] text-white/60">Visible sales</p>
             <p className="mt-2 text-2xl font-semibold">{total}</p>
             <p className="mt-1 text-sm text-white/65">Filtered transactions in the current inbox view</p>

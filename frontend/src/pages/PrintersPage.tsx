@@ -111,7 +111,7 @@ function SummaryCard({
   emphasis?: 'default' | 'warning' | 'success';
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-border bg-card/80 p-4 shadow-[0_14px_40px_rgba(8,17,31,0.06)]">
+    <div className="rounded-md border border-border bg-card/80 p-4 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p
         className={cn(
@@ -147,7 +147,7 @@ function PrinterWallCard({
   return (
     <article
       className={cn(
-        'rounded-[1.6rem] border p-4 shadow-[0_16px_40px_rgba(8,17,31,0.06)]',
+        'rounded-md border p-4 shadow-md',
         !reducedMotion && 'transition-colors',
         needsAttention
           ? 'border-amber-300/70 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
@@ -193,14 +193,14 @@ function PrinterWallCard({
             mseWsUrl={printer.camera_mse_ws_url}
             snapshotUrl={printer.camera_snapshot_url}
             alt={`${printer.name} camera`}
-            className="h-[104px] w-[104px] rounded-[1.25rem]"
+            className="h-[104px] w-[104px] rounded-md"
             showLiveBadge={false}
           />
         ) : (
         <PrinterThumbnail
           src={printer.current_print_thumbnail_url}
           alt={printer.current_print_name ? `${printer.current_print_name} thumbnail` : `${printer.name} thumbnail`}
-          className="h-[104px] w-[104px] rounded-[1.25rem]"
+          className="h-[104px] w-[104px] rounded-md"
           imgClassName="object-cover"
           fallbackLabel={printer.current_print_name ? 'No thumbnail' : 'No active print'}
         />
@@ -256,7 +256,7 @@ function PrinterWallCard({
         </div>
       </div>
 
-      <div className="mt-4 rounded-[1.25rem] border border-border bg-background/60 p-3">
+      <div className="mt-4 rounded-md border border-border bg-background/60 p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Current job</p>
@@ -282,7 +282,7 @@ function PrinterWallCard({
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           to={`/print-floor/printers/${printer.id}`}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-[0_12px_32px_rgba(34,197,94,0.22)]"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-sm"
         >
           Open console
         </Link>
@@ -486,9 +486,9 @@ export default function PrintersPage() {
   };
 
   return (
-    <div className={cn('space-y-6', wallMode && 'rounded-[2rem] bg-[linear-gradient(180deg,#020617_0%,#08111f_100%)] p-4 text-slate-50')}>
+    <div className={cn('space-y-6', wallMode && 'rounded-lg bg-[linear-gradient(180deg,#020617_0%,#08111f_100%)] p-4 text-slate-50')}>
       <section className={cn(
-        'overflow-hidden rounded-[2rem] border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-[0_24px_70px_rgba(8,17,31,0.18)]',
+        'overflow-hidden rounded-lg border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-md',
         wallMode && 'border-slate-700/80 bg-[linear-gradient(135deg,rgba(2,6,23,0.98),rgba(8,17,31,0.96))] shadow-none'
       )}>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.65fr)]">
@@ -507,7 +507,7 @@ export default function PrintersPage() {
                 <>
                   <Link
                     to="/print-floor/printers/new"
-                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-[0_16px_40px_rgba(34,197,94,0.28)]"
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-sm"
                   >
                     <Plus className="h-4 w-4" /> Add printer
                   </Link>
@@ -586,7 +586,7 @@ export default function PrintersPage() {
       </div>
 
       {attentionPrinters.length > 0 ? (
-        <section className="rounded-[1.7rem] border border-amber-300/70 bg-amber-50/80 p-5 shadow-[0_16px_40px_rgba(8,17,31,0.06)] dark:border-amber-500/30 dark:bg-amber-500/10">
+        <section className="rounded-lg border border-amber-300/70 bg-amber-50/80 p-5 shadow-md dark:border-amber-500/30 dark:bg-amber-500/10">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -618,7 +618,7 @@ export default function PrintersPage() {
                 setPage(0);
               }}
               placeholder="Search printers by name, model, slug, or location..."
-              className="w-full rounded-[1rem] border border-input bg-card/80 py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-card/80 py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <select
@@ -627,7 +627,7 @@ export default function PrintersPage() {
               setStatus(e.target.value);
               setPage(0);
             }}
-            className="rounded-[1rem] border border-input bg-card/80 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-md border border-input bg-card/80 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">All statuses</option>
             {STATUS_OPTIONS.map((option) => (
@@ -642,7 +642,7 @@ export default function PrintersPage() {
               setActive(e.target.value);
               setPage(0);
             }}
-            className="rounded-[1rem] border border-input bg-card/80 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-md border border-input bg-card/80 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Active + inactive</option>
             <option value="true">Active only</option>
@@ -650,7 +650,7 @@ export default function PrintersPage() {
           </select>
         </div>
       ) : (
-        <section className="rounded-[1.7rem] border border-slate-700/80 bg-slate-950/80 p-5 shadow-none">
+        <section className="rounded-lg border border-slate-700/80 bg-slate-950/80 p-5 shadow-none">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-50">Wall-mode monitor behavior</h2>
@@ -673,11 +673,11 @@ export default function PrintersPage() {
       {isLoading || jobsLoading ? (
         <div className={cn('grid gap-4', wallMode ? 'xl:grid-cols-3 2xl:grid-cols-3' : 'xl:grid-cols-3')}>
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="rounded-[1.6rem] border border-border bg-card/85 p-4">
+            <div key={index} className="rounded-md border border-border bg-card/85 p-4">
               <div className="mb-4 h-6 w-44 animate-pulse rounded bg-muted" />
               <div className="space-y-3">
                 {Array.from({ length: 2 }).map((__, cardIndex) => (
-                  <div key={cardIndex} className="h-72 animate-pulse rounded-[1.4rem] border border-border bg-background/70" />
+                  <div key={cardIndex} className="h-72 animate-pulse rounded-md border border-border bg-background/70" />
                 ))}
               </div>
             </div>
@@ -704,7 +704,7 @@ export default function PrintersPage() {
             return (
               <section
                 key={group.key}
-                className={cn('rounded-[1.8rem] border p-4 shadow-[0_16px_40px_rgba(8,17,31,0.06)]', group.panelTone || 'border-border bg-card/85')}
+                className={cn('rounded-lg border p-4 shadow-md', group.panelTone || 'border-border bg-card/85')}
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
@@ -733,7 +733,7 @@ export default function PrintersPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-[1.4rem] border border-dashed border-border bg-background/60 px-4 py-12 text-center text-sm text-muted-foreground">
+                  <div className="rounded-md border border-dashed border-border bg-background/60 px-4 py-12 text-center text-sm text-muted-foreground">
                     {group.emptyText}
                   </div>
                 )}

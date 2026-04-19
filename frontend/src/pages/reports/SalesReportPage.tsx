@@ -93,7 +93,7 @@ export default function SalesReportPage() {
                   <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                   <Legend />
                   <Line type="monotone" dataKey="gross_sales" name="Gross Sales" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="gross_profit" name="Gross Profit" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="gross_profit" name="Gross Profit" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="contribution_margin" name="Contribution Margin" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -144,7 +144,7 @@ export default function SalesReportPage() {
                     <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
                     <Legend />
                     <Bar dataKey="gross_sales" name="Gross Sales" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="contribution_margin" name="Contribution Margin" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="contribution_margin" name="Contribution Margin" fill="#10b981" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="mt-4 overflow-x-auto">

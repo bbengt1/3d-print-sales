@@ -52,11 +52,11 @@ function RouteFallback() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24">
         <div className="w-full max-w-3xl animate-pulse space-y-4">
-          <div className="h-10 w-56 rounded-2xl bg-card" />
-          <div className="h-40 rounded-3xl bg-card" />
+          <div className="h-10 w-56 rounded-md bg-card" />
+          <div className="h-40 rounded-lg bg-card" />
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="h-32 rounded-3xl bg-card" />
-            <div className="h-32 rounded-3xl bg-card" />
+            <div className="h-32 rounded-lg bg-card" />
+            <div className="h-32 rounded-lg bg-card" />
           </div>
         </div>
       </div>

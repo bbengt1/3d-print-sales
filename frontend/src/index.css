@@ -1,70 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&family=Rubik:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #22c55e;
-  --color-primary-foreground: #04110a;
-  --color-secondary: #dbeafe;
-  --color-secondary-foreground: #08111f;
-  --color-destructive: #ef4444;
+  /* Colors — light */
+  --color-primary: #2563eb;              /* trust blue */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eff6ff;
+  --color-secondary-foreground: #0f172a;
+  --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
-  --color-muted: #ecf3fb;
-  --color-muted-foreground: #617892;
-  --color-accent: #e5eef8;
-  --color-accent-foreground: #08111f;
-  --color-card: rgba(255, 255, 255, 0.88);
-  --color-card-foreground: #08111f;
-  --color-border: #cad8e7;
-  --color-input: #bfd0e2;
-  --color-ring: #22c55e;
-  --color-background: #f4f8fb;
-  --color-foreground: #08111f;
-  --color-shell: #08111f;
-  --color-panel: #0f1728;
-  --color-panel-2: #152133;
+  --color-success: #10b981;              /* reserved for paid/complete status */
+  --color-success-foreground: #042f1c;
   --color-warning: #f59e0b;
-  --color-info: #38bdf8;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
+  --color-warning-foreground: #1f1300;
+  --color-info: #0ea5e9;
+  --color-info-foreground: #051f2d;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #475569;     /* 4.5:1 contrast vs muted */
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-card: #ffffff;                 /* opaque */
+  --color-card-foreground: #0f172a;
+  --color-border: #e2e8f0;
+  --color-input: #cbd5e1;
+  --color-ring: #2563eb;
+  --color-background: #f8fafc;           /* flat */
+  --color-foreground: #0f172a;
 
-  --font-sans: 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Rubik', ui-sans-serif, system-ui, sans-serif;
+  /* Retained surface tokens for legacy uses (full-bleed kiosk screens, etc.) */
+  --color-shell: #0f172a;
+  --color-panel: #1e293b;
+  --color-panel-2: #334155;
+
+  /* Radii */
+  --radius-sm: 0.375rem;  /* 6px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px — reserved for modals / full-bleed panels */
+
+  /* Shadows — flat business scale */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.12);
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 .dark {
-  --color-primary: #22c55e;
-  --color-primary-foreground: #04110a;
-  --color-secondary: #17314d;
-  --color-secondary-foreground: #eff6ff;
-  --color-destructive: #f87171;
-  --color-destructive-foreground: #120607;
-  --color-muted: #142033;
-  --color-muted-foreground: #8fa3bf;
-  --color-accent: #152133;
-  --color-accent-foreground: #eff6ff;
-  --color-card: rgba(15, 23, 40, 0.86);
-  --color-card-foreground: #eff6ff;
-  --color-border: #22324a;
-  --color-input: #2b3c56;
-  --color-ring: #22c55e;
-  --color-background: #08111f;
-  --color-foreground: #eff6ff;
-  --color-shell: #040914;
-  --color-panel: #0b1424;
-  --color-panel-2: #122038;
+  --color-primary: #3b82f6;              /* slightly brighter for dark mode */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1e293b;
+  --color-secondary-foreground: #f1f5f9;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #10b981;
+  --color-success-foreground: #d1fae5;
   --color-warning: #fbbf24;
+  --color-warning-foreground: #3b2100;
   --color-info: #38bdf8;
+  --color-info-foreground: #0c2e3f;
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #1e293b;
+  --color-accent-foreground: #f1f5f9;
+  --color-card: #0f172a;                 /* opaque */
+  --color-card-foreground: #f1f5f9;
+  --color-border: #1e293b;
+  --color-input: #334155;
+  --color-ring: #3b82f6;
+  --color-background: #020617;           /* flat */
+  --color-foreground: #f1f5f9;
+
+  --color-shell: #020617;
+  --color-panel: #0f172a;
+  --color-panel-2: #1e293b;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.40), 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.55);
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.1), transparent 22%),
-    radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 20%),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-background) 92%, white 8%) 0%, var(--color-background) 100%);
-  background-color: var(--color-background);
+  background: var(--color-background);   /* flat — no decorative gradients */
   color: var(--color-foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -81,5 +104,10 @@ h4,
 h5,
 h6 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+
+/* Tabular numerals for currency / quantities — Phase 3 will apply this widely */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

@@ -131,7 +131,7 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="mb-5 flex items-start gap-3">
-              <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+              <div className="rounded-md bg-primary/10 p-3 text-primary">
                 <Bot className="h-6 w-6" />
               </div>
               <div>
@@ -150,7 +150,7 @@ export default function SettingsPage() {
                     key={provider.value}
                     type="button"
                     onClick={() => update('ai_provider', provider.value)}
-                    className={`rounded-2xl border p-4 text-left transition-colors ${
+                    className={`rounded-md border p-4 text-left transition-colors ${
                       isActive
                         ? 'border-primary bg-primary/5'
                         : 'border-border bg-background hover:border-primary/30'
@@ -165,7 +165,7 @@ export default function SettingsPage() {
               })}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-border bg-background/70 p-5">
+            <div className="mt-6 rounded-md border border-border bg-background/70 p-5">
               <div className="mb-4 flex items-start gap-3">
                 <div className="rounded-xl bg-primary/10 p-2 text-primary">
                   <KeyRound className="h-4 w-4" />

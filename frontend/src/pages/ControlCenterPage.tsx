@@ -74,7 +74,7 @@ function ModuleCard({
   return (
     <section
       className={cn(
-        'rounded-[1.9rem] border p-5 shadow-[0_18px_50px_rgba(8,17,31,0.08)] backdrop-blur',
+        'rounded-lg border p-5 shadow-md backdrop-blur',
         tone === 'warning' && 'border-amber-300/60 bg-amber-50/90 dark:border-amber-500/30 dark:bg-amber-500/10',
         tone === 'success' && 'border-emerald-300/60 bg-emerald-50/90 dark:border-emerald-500/30 dark:bg-emerald-500/10',
         tone === 'default' && 'border-border bg-card/85'
@@ -106,7 +106,7 @@ function PriorityStat({
   emphasis?: 'default' | 'warning' | 'success';
 }) {
   return (
-    <div className="rounded-[1.6rem] border border-border bg-card/80 p-4 shadow-[0_14px_40px_rgba(8,17,31,0.06)]">
+    <div className="rounded-md border border-border bg-card/80 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -124,7 +124,7 @@ function PriorityStat({
           </p>
           {subtext ? <p className="mt-1 text-sm text-muted-foreground">{subtext}</p> : null}
         </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+        <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary/12 text-primary">
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -244,7 +244,7 @@ export default function ControlCenterPage() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-[0_24px_70px_rgba(8,17,31,0.18)]">
+      <section className="overflow-hidden rounded-lg border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-md">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
@@ -261,7 +261,7 @@ export default function ControlCenterPage() {
                 <Link
                   key={action.to}
                   to={action.to}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-[0_16px_40px_rgba(34,197,94,0.28)] transition-transform hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-sm transition-transform hover:-translate-y-0.5"
                 >
                   {action.label}
                 </Link>
@@ -343,7 +343,7 @@ export default function ControlCenterPage() {
                         key={printer.id}
                         to={`/print-floor/printers/${printer.id}`}
                         className={cn(
-                          'grid grid-cols-[88px_minmax(0,1fr)] gap-4 rounded-[1.4rem] border p-3 no-underline transition-colors',
+                          'grid grid-cols-[88px_minmax(0,1fr)] gap-4 rounded-md border p-3 no-underline transition-colors',
                           needsAttention
                             ? 'border-amber-300/70 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
                             : 'border-border bg-background/70 hover:border-primary/30'
@@ -352,7 +352,7 @@ export default function ControlCenterPage() {
                         <PrinterThumbnail
                           src={printer.current_print_thumbnail_url}
                           alt={printer.current_print_name || `${printer.name} thumbnail`}
-                          className="h-[88px] w-[88px] rounded-2xl"
+                          className="h-[88px] w-[88px] rounded-md"
                           imgClassName="object-cover"
                           fallbackLabel="No view"
                         />
@@ -438,7 +438,7 @@ export default function ControlCenterPage() {
                     <Link
                       key={`${alert.type}-${alert.id}`}
                       to={alert.type === 'product' ? `/product-studio/products/${alert.id}` : '/stock/materials'}
-                      className="flex items-center justify-between rounded-[1.25rem] border border-border bg-background/70 px-4 py-3 text-sm no-underline transition-colors hover:border-primary/30"
+                      className="flex items-center justify-between rounded-md border border-border bg-background/70 px-4 py-3 text-sm no-underline transition-colors hover:border-primary/30"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{alert.name}</p>
@@ -465,7 +465,7 @@ export default function ControlCenterPage() {
             tone={attentionPrinters.length + unassignedDraftJobs.length + blockerAlerts.length > 0 ? 'warning' : 'success'}
           >
             <div className="space-y-3">
-              <div className="rounded-[1.25rem] border border-border bg-background/70 p-4">
+              <div className="rounded-md border border-border bg-background/70 p-4">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
                   <div>
@@ -476,7 +476,7 @@ export default function ControlCenterPage() {
                   </div>
                 </div>
               </div>
-              <div className="rounded-[1.25rem] border border-border bg-background/70 p-4">
+              <div className="rounded-md border border-border bg-background/70 p-4">
                 <div className="flex items-center gap-3">
                   <Package className="h-5 w-5 text-primary" />
                   <div>
@@ -487,7 +487,7 @@ export default function ControlCenterPage() {
                   </div>
                 </div>
               </div>
-              <div className="rounded-[1.25rem] border border-border bg-background/70 p-4">
+              <div className="rounded-md border border-border bg-background/70 p-4">
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-5 w-5 text-cyan-500" />
                   <div>
@@ -522,7 +522,7 @@ export default function ControlCenterPage() {
                 />
               </div>
               {financeData ? (
-                <div className="rounded-[1.25rem] border border-border bg-background/70 p-4">
+                <div className="rounded-md border border-border bg-background/70 p-4">
                   <dl className="grid gap-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
                       <dt className="text-muted-foreground">Inventory asset value</dt>

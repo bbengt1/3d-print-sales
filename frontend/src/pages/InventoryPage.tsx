@@ -53,7 +53,7 @@ function SurfaceButton({ active, label, detail, onClick }: SurfaceButtonProps) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-2xl border px-4 py-3 text-left transition-colors',
+        'rounded-md border px-4 py-3 text-left transition-colors',
         active
           ? 'border-primary bg-primary text-primary-foreground shadow-sm'
           : 'border-border bg-background/80 text-foreground hover:border-primary/35'
@@ -73,7 +73,7 @@ interface HeroMetricProps {
 
 function HeroMetric({ label, value, detail }: HeroMetricProps) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4">
+    <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
       <p className="text-xs uppercase tracking-[0.24em] text-white/55">{label}</p>
       <p className="mt-3 text-2xl font-semibold">{value}</p>
       <p className="mt-2 text-sm text-white/70">{detail}</p>
@@ -97,7 +97,7 @@ function TaskCard({
   return (
     <div
       className={cn(
-        'rounded-3xl border p-5 shadow-sm',
+        'rounded-lg border p-5 shadow-sm',
         tone === 'warning' ? 'border-amber-300/70 bg-amber-50' : 'border-border bg-card'
       )}
     >
@@ -107,7 +107,7 @@ function TaskCard({
         type="button"
         onClick={onAction}
         className={cn(
-          'mt-4 inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition-colors',
+          'mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors',
           tone === 'warning'
             ? 'bg-amber-900 text-white hover:opacity-90'
             : 'bg-primary text-primary-foreground hover:opacity-90'
@@ -258,7 +258,7 @@ export default function InventoryPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <section className="rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(19,52,34,0.96)_100%)] p-6 text-white shadow-sm">
+      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(19,52,34,0.96)_100%)] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.3em] text-white/65">Stock Workspace</p>
@@ -275,7 +275,7 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => openReconcile()}
-              className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               <ClipboardCheck className="h-4 w-4" />
               Reconcile stock
@@ -283,7 +283,7 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => openAdjust()}
-              className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition-colors hover:bg-white/15"
+              className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition-colors hover:bg-white/15"
             >
               <Plus className="h-4 w-4" />
               Quick adjustment
@@ -320,7 +320,7 @@ export default function InventoryPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(event) => event.target === event.currentTarget && setShowReconcile(false)}
         >
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl">
+          <div className="w-full max-w-lg rounded-md border border-border bg-card p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Stock reconciliation</h2>
               <button
@@ -431,7 +431,7 @@ export default function InventoryPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(event) => event.target === event.currentTarget && setShowAdjust(false)}
         >
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Quick stock adjustment</h2>
               <button
@@ -554,7 +554,7 @@ export default function InventoryPage() {
         />
       </section>
 
-      <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Workspace Surfaces</p>
@@ -584,7 +584,7 @@ export default function InventoryPage() {
       {surface === 'exceptions' ? (
         <div className="space-y-6">
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
-            <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <TriangleAlert className="h-5 w-5 text-destructive" />
                 <h2 className="text-xl font-semibold">Product exceptions</h2>
@@ -608,7 +608,7 @@ export default function InventoryPage() {
                       <div
                         key={`${alert.type}-${alert.id}`}
                         className={cn(
-                          'rounded-2xl border p-4',
+                          'rounded-md border p-4',
                           isCritical ? 'border-destructive/35 bg-destructive/5' : 'border-amber-300/60 bg-amber-50/70'
                         )}
                       >
@@ -663,23 +663,23 @@ export default function InventoryPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+              <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
                 <div className="flex items-center gap-2">
                   <PackageSearch className="h-5 w-5 text-muted-foreground" />
                   <h2 className="text-xl font-semibold">Exception summary</h2>
                 </div>
                 <div className="mt-4 space-y-3">
-                  <div className="rounded-2xl bg-background px-4 py-3">
+                  <div className="rounded-md bg-background px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Out of stock</p>
                     <p className="mt-2 text-2xl font-semibold">{outOfStockProducts.length}</p>
                     <p className="mt-1 text-sm text-muted-foreground">Products that cannot be sold from POS right now.</p>
                   </div>
-                  <div className="rounded-2xl bg-background px-4 py-3">
+                  <div className="rounded-md bg-background px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Near reorder</p>
                     <p className="mt-2 text-2xl font-semibold">{nearReorderProducts.length}</p>
                     <p className="mt-1 text-sm text-muted-foreground">Products that still have stock but need floor attention soon.</p>
                   </div>
-                  <div className="rounded-2xl bg-background px-4 py-3">
+                  <div className="rounded-md bg-background px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Material signals</p>
                     <p className="mt-2 text-2xl font-semibold">{materialAlerts.length}</p>
                     <p className="mt-1 text-sm text-muted-foreground">Raw-material alerts kept in a separate lane.</p>
@@ -687,7 +687,7 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+              <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
                 <div className="flex items-center gap-2">
                   <ScrollText className="h-5 w-5 text-muted-foreground" />
                   <h2 className="text-xl font-semibold">Recent risky movements</h2>
@@ -698,7 +698,7 @@ export default function InventoryPage() {
                 ) : (
                   <div className="mt-4 space-y-3">
                     {recentRiskTransactions.map((transaction) => (
-                      <div key={transaction.id} className="rounded-2xl border border-border bg-background/80 px-4 py-3">
+                      <div key={transaction.id} className="rounded-md border border-border bg-background/80 px-4 py-3">
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="font-medium">{transaction.product_name || transaction.product_id}</p>
@@ -725,7 +725,7 @@ export default function InventoryPage() {
                 <button
                   type="button"
                   onClick={() => setSurface('ledger')}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
+                  className="mt-4 inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
                 >
                   Open full ledger
                   <ArrowRight className="h-4 w-4" />
@@ -735,7 +735,7 @@ export default function InventoryPage() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <TrendingDown className="h-5 w-5 text-amber-600" />
                 <h2 className="text-xl font-semibold">Materials lane</h2>
@@ -749,7 +749,7 @@ export default function InventoryPage() {
               ) : (
                 <div className="mt-4 space-y-3">
                   {materialAlerts.map((alert) => (
-                    <div key={`${alert.type}-${alert.id}`} className="rounded-2xl border border-border bg-background/80 px-4 py-3">
+                    <div key={`${alert.type}-${alert.id}`} className="rounded-md border border-border bg-background/80 px-4 py-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-medium">{alert.name}</p>
@@ -770,7 +770,7 @@ export default function InventoryPage() {
               )}
             </div>
 
-            <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <Clock3 className="h-5 w-5 text-muted-foreground" />
                 <h2 className="text-xl font-semibold">Quick reminders</h2>
@@ -785,7 +785,7 @@ export default function InventoryPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -799,7 +799,7 @@ export default function InventoryPage() {
               <button
                 type="button"
                 onClick={() => setSurface('exceptions')}
-                className="inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
               >
                 Back to exceptions
               </button>
@@ -853,11 +853,11 @@ export default function InventoryPage() {
           {isLoading ? (
             <SkeletonTable rows={8} cols={8} />
           ) : !items.length ? (
-            <div className="rounded-3xl border border-border bg-card p-8 text-center text-muted-foreground">
+            <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
               No inventory transactions found
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-3xl border border-border bg-card shadow-sm">
+            <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
