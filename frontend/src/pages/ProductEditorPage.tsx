@@ -7,7 +7,6 @@ import {
   ArrowRight,
   BadgeDollarSign,
   Boxes,
-  Package,
   ReceiptText,
   Save,
   ScanBarcode,
@@ -16,6 +15,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import PageHeader from '@/components/layout/PageHeader';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { InventoryTransaction, Material, PaginatedTransactions, Product } from '@/types';
 
@@ -148,23 +148,14 @@ export default function ProductEditorPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(24,24,27,0.96)_100%)] p-6 text-white shadow-sm">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-white/65">Product Studio</p>
-            <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold">
-              <Package className="h-8 w-8" />
-              {isCreate ? 'New product editor' : 'Product editor'}
-            </h1>
-            <p className="mt-3 text-sm text-white/80">
-              Build a sellable product with identity, pricing, material, stock policy, and readiness context visible in one workflow instead of a cramped modal.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
+      <PageHeader
+        title={isCreate ? 'New product' : product?.name || 'Product editor'}
+        description={isCreate ? 'Draft' : product?.is_active ? 'Active' : 'Archived'}
+        actions={
+          <>
             <Link
               to="/product-studio"
-              className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to catalog
@@ -172,15 +163,15 @@ export default function ProductEditorPage() {
             {!isCreate ? (
               <Link
                 to={`/product-studio/products/${id}`}
-                className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
               >
                 View record
                 <ArrowRight className="h-4 w-4" />
               </Link>
             ) : null}
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
         <section className="space-y-6">

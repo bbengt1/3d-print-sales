@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import api from '@/api/client';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
+import PageHeader from '@/components/layout/PageHeader';
 import { useAuthStore } from '@/store/auth';
 import { cn, formatCurrency, formatPercent } from '@/lib/utils';
 import type {
@@ -244,55 +245,46 @@ export default function ControlCenterPage() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-lg border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-md">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
-              {roleHeadline}
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold md:text-4xl">
-              Control Center
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200/82 md:text-base">
-              {roleDescription}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              {quickActions.map((action) => (
-                <Link
-                  key={action.to}
-                  to={action.to}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-sm transition-transform hover:-translate-y-0.5"
-                >
-                  {action.label}
-                </Link>
-              ))}
+      <PageHeader
+        title={roleHeadline || 'Control Center'}
+        description={roleDescription}
+        actions={
+          <>
+            {quickActions.map((action) => (
               <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm font-medium text-white no-underline transition-colors hover:bg-white/12"
+                key={action.to}
+                to={action.to}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
               >
-                Classic Dashboard
+                {action.label}
               </Link>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <PriorityStat
-              icon={AlertTriangle}
-              label="Needs Attention"
-              value={String(attentionPrinters.length + blockerAlerts.length)}
-              subtext={`${attentionPrinters.length} printers • ${blockerAlerts.length} stock blockers`}
-              emphasis={attentionPrinters.length + blockerAlerts.length > 0 ? 'warning' : 'success'}
-            />
-            <PriorityStat
-              icon={ClipboardList}
-              label="Draft Queue"
-              value={String(unassignedDraftJobs.length)}
-              subtext="Draft jobs without printer assignment"
-              emphasis={unassignedDraftJobs.length > 0 ? 'warning' : 'default'}
-            />
-          </div>
+            ))}
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
+            >
+              Classic Dashboard
+            </Link>
+          </>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PriorityStat
+            icon={AlertTriangle}
+            label="Needs Attention"
+            value={String(attentionPrinters.length + blockerAlerts.length)}
+            subtext={`${attentionPrinters.length} printers • ${blockerAlerts.length} stock blockers`}
+            emphasis={attentionPrinters.length + blockerAlerts.length > 0 ? 'warning' : 'success'}
+          />
+          <PriorityStat
+            icon={ClipboardList}
+            label="Draft Queue"
+            value={String(unassignedDraftJobs.length)}
+            subtext="Draft jobs without printer assignment"
+            emphasis={unassignedDraftJobs.length > 0 ? 'warning' : 'default'}
+          />
         </div>
-      </section>
+      </PageHeader>
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
         <PriorityStat

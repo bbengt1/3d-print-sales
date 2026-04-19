@@ -33,6 +33,8 @@ import {
   updateCartLineQuantity,
   type POSCartLine,
 } from '@/pages/posCart';
+import PageHeader from '@/components/layout/PageHeader';
+import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import type { Customer, PaginatedProducts, PaginatedSales, Product, Sale, SaleListItem } from '@/types';
 
 const today = new Date().toISOString().split('T')[0];
@@ -41,22 +43,6 @@ const SALES_INBOX_PAGE_SIZE = 6;
 
 type CustomerMode = 'guest' | 'existing' | 'new';
 type ProductFilter = 'all' | 'scannable' | 'low-stock' | 'in-cart';
-
-interface MetricCardProps {
-  label: string;
-  value: string;
-  detail: string;
-}
-
-function MetricCard({ label, value, detail }: MetricCardProps) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
-      <p className="text-xs uppercase tracking-[0.25em] text-white/55">{label}</p>
-      <p className="mt-3 text-2xl font-semibold">{value}</p>
-      <p className="mt-2 text-sm text-white/70">{detail}</p>
-    </div>
-  );
-}
 
 interface QuickFilterButtonProps {
   active: boolean;
@@ -452,40 +438,27 @@ export default function POSPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(19,52,34,0.96)_100%)] p-6 text-white shadow-sm">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-white/65">Sell Workspace</p>
-            <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold">
-              <Receipt className="h-8 w-8" />
-              POS register
-            </h1>
-            <p className="mt-3 text-sm text-white/80">
-              Fast counter checkout with a visible scanner lane, larger touch targets, and a sales inbox that keeps follow-up work nearby instead of hidden behind a generic sales list.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[320px]">
-            <div className="rounded-lg border border-white/10 bg-white/8 px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-white/60">Shift date</p>
-              <p className="mt-2 text-xl font-semibold">{today}</p>
-              <p className="mt-1 text-sm text-white/65">Recommended route: `/sell`</p>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-white/8 px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-white/60">Sales inbox</p>
-              <p className="mt-2 text-xl font-semibold">{salesNeedingAttention}</p>
-              <p className="mt-1 text-sm text-white/65">Pending or refunded sales needing eyes</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3 lg:grid-cols-4">
-          <MetricCard label="Cart Total" value={formatCurrency(total)} detail={`${cartUnits} units in the current basket`} />
-          <MetricCard label="Barcode Ready" value={`${scannableCount}`} detail="Active products with UPC for wedge scanners" />
-          <MetricCard label="Low Stock" value={`${lowStockCount}`} detail="Products at or below reorder point" />
-          <MetricCard label="Sales Queue" value={`${salesInbox.length}`} detail="Recent transactions one tap away" />
-        </div>
-      </section>
+      <PageHeader
+        title="Register"
+        description={`Cart: ${cartUnits} ${cartUnits === 1 ? 'unit' : 'units'} · ${formatCurrency(total)}`}
+      >
+        <KPIStrip columns={4}>
+          <KPI label="Cart total" value={formatCurrency(total)} sub={`${cartUnits} units`} />
+          <KPI label="Barcode ready" value={scannableCount} sub="Active UPC products" />
+          <KPI
+            label="Low stock"
+            value={lowStockCount}
+            sub="At or below reorder point"
+            tone={lowStockCount > 0 ? 'warning' : 'default'}
+          />
+          <KPI
+            label="Sales inbox"
+            value={salesNeedingAttention}
+            sub="Pending or refunded sales"
+            tone={salesNeedingAttention > 0 ? 'warning' : 'default'}
+          />
+        </KPIStrip>
+      </PageHeader>
 
       {successMessage ? (
         <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm" role="status">

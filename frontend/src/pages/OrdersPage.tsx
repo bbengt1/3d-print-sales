@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
   Boxes,
-  ClipboardList,
   Eye,
   PackageOpen,
   Printer,
@@ -15,20 +14,12 @@ import {
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import PageHeader from '@/components/layout/PageHeader';
+import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { Customer, Job, PaginatedJobs, PaginatedPrinters, PaginatedSales, SaleListItem } from '@/types';
 
 const ATTENTION_PRINTER_STATUSES = new Set(['paused', 'maintenance', 'offline', 'error']);
-
-function QueueStat({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
-      <p className="text-xs uppercase tracking-[0.24em] text-white/55">{label}</p>
-      <p className="mt-3 text-2xl font-semibold">{value}</p>
-      <p className="mt-2 text-sm text-white/70">{detail}</p>
-    </div>
-  );
-}
 
 function statusTone(status: string) {
   if (status === 'completed' || status === 'delivered' || status === 'shipped') {
@@ -99,43 +90,56 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(27,55,44,0.96)_100%)] p-6 text-white shadow-sm">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-white/65">Orders Workspace</p>
-            <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold">
-              <ClipboardList className="h-8 w-8" />
-              Production and fulfillment queue
-            </h1>
-            <p className="mt-3 text-sm text-white/80">
-              Bring together print jobs, fulfillment-relevant sales, and printer readiness so floor and owner workflows stop bouncing between unrelated pages.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
+      <PageHeader
+        title="Orders"
+        description={
+          jobsNeedingAssignment.length > 0
+            ? `${jobsNeedingAssignment.length} ${jobsNeedingAssignment.length === 1 ? 'job needs' : 'jobs need'} a printer assignment`
+            : 'Production and fulfillment queue'
+        }
+        actions={
+          <>
             <Link
               to="/orders/jobs/new"
-              className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
             >
               <PackageOpen className="h-4 w-4" />
               New job
             </Link>
             <Link
               to="/orders/jobs"
-              className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white no-underline transition-colors hover:bg-white/15"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
             >
               Open jobs
             </Link>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3 lg:grid-cols-4">
-          <QueueStat label="Needs Assignment" value={String(jobsNeedingAssignment.length)} detail="Jobs without a printer assignment" />
-          <QueueStat label="In Progress" value={String(productionActive.length)} detail="Jobs currently on the production floor" />
-          <QueueStat label="Fulfillment Queue" value={String(fulfillmentSales.length)} detail="Sales still pending shipment/delivery follow-up" />
-          <QueueStat label="Ready Printers" value={String(readyPrinters.length)} detail="Idle printers available for reassignment" />
-        </div>
-      </section>
+          </>
+        }
+      >
+        <KPIStrip columns={4}>
+          <KPI
+            label="Needs assignment"
+            value={jobsNeedingAssignment.length}
+            sub="Jobs missing a printer"
+            tone={jobsNeedingAssignment.length > 0 ? 'warning' : 'default'}
+          />
+          <KPI
+            label="In progress"
+            value={productionActive.length}
+            sub="Jobs on the production floor"
+          />
+          <KPI
+            label="Fulfillment queue"
+            value={fulfillmentSales.length}
+            sub="Sales pending ship/deliver"
+          />
+          <KPI
+            label="Ready printers"
+            value={readyPrinters.length}
+            sub="Idle, available for assignment"
+            tone={readyPrinters.length === 0 ? 'warning' : 'default'}
+          />
+        </KPIStrip>
+      </PageHeader>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.92fr)]">
         <section className="space-y-6">

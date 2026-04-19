@@ -20,6 +20,7 @@ import { cn, formatCurrency } from '@/lib/utils';
 import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import PageHeader from '@/components/layout/PageHeader';
 import type { Job, PaginatedJobs, Printer, PrinterConnectionTestResult } from '@/types';
 
 const statusClasses: Record<string, string> = {
@@ -205,106 +206,106 @@ export default function PrinterDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to printer wall
       </Link>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-md">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-200/75">
-                Printer console
-              </p>
-              <StatusBadge status={liveStatus} />
-              <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', printer.is_active ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200')}>
-                {printer.is_active ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-            <h1 className="mt-3 text-3xl font-semibold md:text-4xl">{printer.name}</h1>
-            <p className="mt-2 text-sm uppercase tracking-[0.16em] text-slate-300/80">
+      <PageHeader
+        title={printer.name}
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={liveStatus} />
+            <span
+              className={cn(
+                'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium',
+                printer.is_active
+                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+              )}
+            >
+              {printer.is_active ? 'Active' : 'Inactive'}
+            </span>
+            <span className="text-muted-foreground">
               {[printer.manufacturer, printer.model, printer.location].filter(Boolean).join(' • ') || printer.slug}
-            </p>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-200/82 md:text-base">
-              Live machine status, current print telemetry, recent floor activity, and assignment context in one place.
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              {printer.monitor_enabled ? (
-                <>
-                  <button
-                    onClick={testConnection}
-                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm"
-                  >
-                    <PlugZap className="h-4 w-4" /> Test connection
-                  </button>
-                  <button
-                    onClick={refreshNow}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/12"
-                  >
-                    <RefreshCw className="h-4 w-4" /> Refresh now
-                  </button>
-                </>
-              ) : null}
-              <Link
-                to={`/print-floor/printers/${printer.id}/edit`}
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm font-medium text-white no-underline transition-colors hover:bg-white/12"
-              >
-                <Edit className="h-4 w-4" /> Edit
-              </Link>
-              <button
-                onClick={toggleActive}
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/12"
-              >
-                {printer.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
-                {printer.is_active ? 'Deactivate' : 'Restore'}
-              </button>
+            </span>
+          </span>
+        }
+        actions={
+          <>
+            {printer.monitor_enabled ? (
+              <>
+                <button
+                  onClick={testConnection}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <PlugZap className="h-4 w-4" /> Test connection
+                </button>
+                <button
+                  onClick={refreshNow}
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                >
+                  <RefreshCw className="h-4 w-4" /> Refresh
+                </button>
+              </>
+            ) : null}
+            <Link
+              to={`/print-floor/printers/${printer.id}/edit`}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
+            >
+              <Edit className="h-4 w-4" /> Edit
+            </Link>
+            <button
+              onClick={toggleActive}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            >
+              {printer.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
+              {printer.is_active ? 'Deactivate' : 'Restore'}
+            </button>
+          </>
+        }
+      >
+        <div className="rounded-md border border-border bg-card p-5 shadow-xs">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Current print</p>
+              <p className="mt-1 text-base font-semibold text-foreground">{printer.current_print_name || 'No active print'}</p>
             </div>
+            <span className="text-2xl font-semibold tabular-nums">
+              {printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}
+            </span>
           </div>
 
-          <div className="rounded-md border border-white/10 bg-black/15 p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300/75">Current print</p>
-                <p className="mt-2 text-lg font-semibold text-white">{printer.current_print_name || 'No active print'}</p>
-              </div>
-              <span className="text-2xl font-semibold text-white">
-                {printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}
-              </span>
-            </div>
+          <div className="mt-4 h-2 rounded-full bg-muted">
+            <div
+              className={cn('h-2 rounded-full transition-[width]', needsAttention ? 'bg-amber-500' : 'bg-primary')}
+              style={{ width: `${Math.max(6, progress)}%` }}
+            />
+          </div>
 
-            <div className="mt-4 h-2 rounded-full bg-white/10">
-              <div
-                className={cn('h-2 rounded-full transition-[width]', needsAttention ? 'bg-amber-400' : 'bg-primary')}
-                style={{ width: `${Math.max(6, progress)}%` }}
-              />
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Layer</p>
+              <p className="mt-1 font-medium tabular-nums">{formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}</p>
             </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-300/75">Layer</p>
-                <p className="mt-1 font-medium text-white">{formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-300/75">ETA</p>
-                <p className="mt-1 font-medium text-white">{formatDuration(printer.monitor_remaining_seconds)}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-300/75">Transport</p>
-                <p className="mt-1 font-medium text-white">
-                  {printer.monitor_provider === 'moonraker'
-                    ? printer.monitor_ws_connected
-                      ? 'Socket live'
-                      : 'Polling fallback'
-                    : printer.monitor_enabled
-                      ? 'Polling'
-                      : 'Static record'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-300/75">Assignment</p>
-                <p className="mt-1 font-medium text-white">{activeJob ? activeJob.job_number : 'Unassigned'}</p>
-              </div>
+            <div>
+              <p className="text-xs text-muted-foreground">ETA</p>
+              <p className="mt-1 font-medium tabular-nums">{formatDuration(printer.monitor_remaining_seconds)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Transport</p>
+              <p className="mt-1 font-medium">
+                {printer.monitor_provider === 'moonraker'
+                  ? printer.monitor_ws_connected
+                    ? 'Socket live'
+                    : 'Polling fallback'
+                  : printer.monitor_enabled
+                    ? 'Polling'
+                    : 'Static record'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Assignment</p>
+              <p className="mt-1 font-medium">{activeJob ? activeJob.job_number : 'Unassigned'}</p>
             </div>
           </div>
         </div>
-      </section>
+      </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <ConsoleStat

@@ -24,6 +24,7 @@ import api from '@/api/client';
 import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import type { Job, PaginatedJobs, PaginatedPrinters, Printer } from '@/types';
 
@@ -487,64 +488,42 @@ export default function PrintersPage() {
 
   return (
     <div className={cn('space-y-6', wallMode && 'rounded-lg bg-[linear-gradient(180deg,#020617_0%,#08111f_100%)] p-4 text-slate-50')}>
-      <section className={cn(
-        'overflow-hidden rounded-lg border border-border bg-[linear-gradient(135deg,rgba(8,17,31,0.98),rgba(17,34,53,0.96))] px-6 py-6 text-white shadow-md',
-        wallMode && 'border-slate-700/80 bg-[linear-gradient(135deg,rgba(2,6,23,0.98),rgba(8,17,31,0.96))] shadow-none'
-      )}>
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.65fr)]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
-              {wallMode ? 'Print-floor wall mode' : 'Print-floor workspace'}
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold md:text-4xl">
-              Printer wall
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200/82 md:text-base">
-              Scan the fleet by status, jump into a live printer console, and move from machine state to job context without leaving the floor board.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              {!wallMode ? (
-                <>
-                  <Link
-                    to="/print-floor/printers/new"
-                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-sm"
-                  >
-                    <Plus className="h-4 w-4" /> Add printer
-                  </Link>
-                  <Link
-                    to="/orders"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm font-medium text-white no-underline transition-colors hover:bg-white/12"
-                  >
-                    <ArrowRight className="h-4 w-4" /> Open jobs queue
-                  </Link>
-                </>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => updateWallMode(!wallMode)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/12"
-              >
-                {wallMode ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-                {wallMode ? 'Exit wall mode' : 'Wall mode'}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <SummaryCard
-              label="Attention queue"
-              value={String(summary.attention)}
-              subtext={summary.attention ? `${summary.attention} printers need intervention` : 'No open printer exceptions'}
-              emphasis={summary.attention ? 'warning' : 'success'}
-            />
-            <SummaryCard
-              label="Utilization"
-              value={summary.total ? `${summary.utilization}%` : '—'}
-              subtext={`${summary.printing} printing • ${summary.ready} ready • ${summary.assigned} assigned`}
-            />
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        title={wallMode ? 'Print floor — wall mode' : 'Print Floor'}
+        description={
+          summary.total > 0
+            ? `${summary.printing} printing, ${summary.ready} ready${summary.attention ? `, ${summary.attention} need attention` : ''}`
+            : 'No printers configured yet'
+        }
+        actions={
+          <>
+            {!wallMode ? (
+              <>
+                <Link
+                  to="/print-floor/printers/new"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" /> Add printer
+                </Link>
+                <Link
+                  to="/orders"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
+                >
+                  <ArrowRight className="h-4 w-4" /> Open jobs queue
+                </Link>
+              </>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => updateWallMode(!wallMode)}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            >
+              {wallMode ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+              {wallMode ? 'Exit wall mode' : 'Wall mode'}
+            </button>
+          </>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryCard label="Visible active printers" value={String(summary.total)} />
