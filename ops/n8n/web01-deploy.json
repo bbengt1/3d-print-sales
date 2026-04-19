@@ -5,7 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "web01-deploy",
-        "authentication": "none",
+        "authentication": "headerAuth",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -18,7 +18,13 @@
         300
       ],
       "webhookId": "web01-deploy-webhook",
-      "notes": "POST /webhook/web01-deploy with JSON body { branch, run_migrations?, force_rebuild?, triggered_by? }. Authentication disabled; add Header Auth credential in n8n to re-enable."
+      "notes": "POST /webhook/web01-deploy with JSON body { branch, run_migrations?, force_rebuild?, triggered_by? }. Requires Authorization: Bearer <token> header (see docs/deployment_n8n_workflow.md for how to retrieve the token).",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fFUBXZdMNbsMY5ek",
+          "name": "web01-deploy-webhook-token"
+        }
+      }
     },
     {
       "parameters": {},

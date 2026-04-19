@@ -36,9 +36,9 @@ The exported workflow references credentials by both `id` and `name`. The target
 | Credential name | Type | Credential ID | Used by |
 |-----------------|------|---------------|---------|
 | `web01.bengtson.local` | SSH — Password auth (`sshPassword`) | `VIDK7yaGu0SqsBxb` | all 12 SSH nodes |
-| *(optional)* bearer-token credential | HTTP Header Auth (`httpHeaderAuth`) | — | Webhook Trigger (only if you switch auth from `none` to `headerAuth`) |
+| `web01-deploy-webhook-token` | HTTP Header Auth (`httpHeaderAuth`) | `fFUBXZdMNbsMY5ek` | Webhook Trigger |
 
-The Webhook Trigger ships with `authentication: "none"` for simplicity. To add bearer-token auth, follow the runbook at `docs/deployment_n8n_workflow.md`.
+The Webhook Trigger requires `Authorization: Bearer <token>` on every request. The token itself is stored inside the `web01-deploy-webhook-token` credential — retrieve it via the n8n UI (**Credentials → web01-deploy-webhook-token → Show value**). Rotation instructions are in the runbook.
 
 If the credential ID changes (e.g. because the credential was recreated), update every SSH node's `credentials.sshPassword.id` in `web01-deploy.json`. A quick sed works:
 
