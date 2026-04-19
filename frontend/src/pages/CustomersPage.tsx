@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, X, Search } from 'lucide-react';
+import { Edit, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import PageHeader from '@/components/layout/PageHeader';
+import DataTable, { type Column } from '@/components/data/DataTable';
+import TableToolbar from '@/components/data/TableToolbar';
+import SearchInput from '@/components/data/SearchInput';
 import type { Customer } from '@/types';
 
 const emptyForm = { name: '', email: '', phone: '', notes: '' };
@@ -58,25 +62,57 @@ export default function CustomersPage() {
     } catch { toast.error('Failed to delete'); }
   };
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Customers</h1>
-        <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
-          <Plus className="w-4 h-4" /> Add Customer
-        </button>
-      </div>
+  const columns: Column<Customer>[] = [
+    { key: 'name', header: 'Name', cell: (c) => <span className="font-medium">{c.name}</span> },
+    { key: 'email', header: 'Email', colClassName: 'hidden md:table-cell', cell: (c) => c.email || <span className="text-muted-foreground">—</span> },
+    { key: 'phone', header: 'Phone', colClassName: 'hidden lg:table-cell', cell: (c) => c.phone || <span className="text-muted-foreground">—</span> },
+    { key: 'job_count', header: 'Jobs', numeric: true, cell: (c) => c.job_count },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '80px',
+      cell: (c) => (
+        <div className="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={() => openEdit(c)}
+            aria-label={`Edit ${c.name}`}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => deleteCustomer(c)}
+            aria-label={`Delete ${c.name}`}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search customers..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
+  const total = customers?.length ?? 0;
+  const activeFilters = search ? 1 : 0;
+  const clearFilters = () => setSearch('');
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Customers"
+        description={`${total.toLocaleString()} ${total === 1 ? 'customer' : 'customers'}`}
+        actions={
+          <button
+            type="button"
+            onClick={openNew}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Add customer
+          </button>
+        }
+      />
 
       {editing !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && close()}>
@@ -99,46 +135,18 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="bg-card border border-border rounded-lg p-4 h-48 animate-pulse" />
-      ) : (
-        <div className="overflow-x-auto bg-card border border-border rounded-lg">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium text-right">Jobs</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers?.map((c) => (
-                <tr key={c.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                  <td className="px-4 py-3 font-medium">{c.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.email || '—'}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.phone || '—'}</td>
-                  <td className="px-4 py-3 text-right">{c.job_count}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit"><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => deleteCustomer(c)} className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive cursor-pointer" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {customers?.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
-                    No customers found. Add your first customer to get started.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<Customer>
+        data={customers || []}
+        columns={columns}
+        rowKey={(c) => c.id}
+        loading={isLoading}
+        emptyState={activeFilters > 0 ? 'No customers match this search.' : 'No customers yet — add your first one to get started.'}
+        toolbar={
+          <TableToolbar total={total} activeFilters={activeFilters} onClearFilters={clearFilters}>
+            <SearchInput value={search} onChange={setSearch} placeholder="Search customers…" />
+          </TableToolbar>
+        }
+      />
     </div>
   );
 }

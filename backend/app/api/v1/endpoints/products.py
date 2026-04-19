@@ -30,6 +30,12 @@ async def list_products(
     material_id: uuid.UUID | None = Query(None, description="Filter by material ID"),
     low_stock: bool | None = Query(None, description="Filter products below reorder point"),
     search: str | None = Query(None, description="Search by name, SKU, or UPC"),
+    sort_by: str = Query(
+        "name",
+        description="Sort field (allowlisted)",
+        pattern="^(name|sku|unit_price|unit_cost|stock_qty|reorder_point|created_at|updated_at)$",
+    ),
+    sort_dir: str = Query("asc", description="Sort direction", pattern="^(asc|desc)$"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(50, ge=1, le=100, description="Max records to return"),
 ):
@@ -49,7 +55,9 @@ async def list_products(
     count_stmt = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_stmt)).scalar() or 0
 
-    result = await db.execute(base.order_by(Product.name).offset(skip).limit(limit))
+    sort_column = getattr(Product, sort_by, Product.name)
+    order = sort_column.desc() if sort_dir == "desc" else sort_column.asc()
+    result = await db.execute(base.order_by(order).offset(skip).limit(limit))
     items = result.scalars().all()
 
     return PaginatedProducts(items=items, total=total, skip=skip, limit=limit)

@@ -108,6 +108,12 @@ async def list_sales(
     date_from: datetime.date | None = Query(None, description="Start date"),
     date_to: datetime.date | None = Query(None, description="End date"),
     search: str | None = Query(None, description="Search by sale number or customer name"),
+    sort_by: str = Query(
+        "date",
+        description="Sort field (allowlisted)",
+        pattern="^(date|sale_number|total|status|payment_method|created_at)$",
+    ),
+    sort_dir: str = Query("desc", description="Sort direction", pattern="^(asc|desc)$"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
@@ -135,9 +141,11 @@ async def list_sales(
     count_stmt = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_stmt)).scalar() or 0
 
+    sort_column = getattr(Sale, sort_by, Sale.date)
+    order = sort_column.desc() if sort_dir == "desc" else sort_column.asc()
     result = await db.execute(
         base.options(selectinload(Sale.items), selectinload(Sale.channel))
-        .order_by(Sale.date.desc())
+        .order_by(order)
         .offset(skip)
         .limit(limit)
     )
