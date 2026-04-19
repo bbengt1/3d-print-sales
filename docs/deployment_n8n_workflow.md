@@ -84,19 +84,37 @@ Hardening recommendations on the web01 side:
 - In `~/.ssh/authorized_keys`, constrain the key with `from="<n8n host IP>"` so it can only be used from the expected source.
 - Rotate annually.
 
-#### b) Webhook authentication (optional)
+#### b) `web01-deploy-webhook-token` (HTTP Header Auth)
 
-The exported workflow ships with Webhook Trigger `authentication: "none"` — anyone who knows the webhook URL can trigger a deploy. This is acceptable when the n8n instance itself is behind auth (e.g. SSO + Cloudflare Access on the n8n host). To add bearer-token auth:
+> **This credential is already configured on the target n8n instance** (credential ID `fFUBXZdMNbsMY5ek`, type `httpHeaderAuth`). The exported workflow JSON references it by both `id` and `name`. The token value is stored in the credential itself — to retrieve it for client callers, open **Credentials → web01-deploy-webhook-token** in the n8n UI and use **Show** on the `value` field. It is formatted as `Bearer <token>`; when calling the webhook, pass the *entire* string in the `Authorization` header.
+
+To rotate the token:
+
+1. **Credentials** → click `web01-deploy-webhook-token`.
+2. Update the `value` field to `Bearer <new-token>` (generate with e.g. `openssl rand -base64 48`).
+3. Save.
+
+No workflow change is required — the credential ID remains the same.
+
+To create the credential from scratch (disaster recovery or a fresh n8n instance):
 
 1. **Credentials** → **Add credential** → select **Header Auth**.
-2. Name header: `Authorization`.
-3. Value: `Bearer <generate-a-long-random-token>`.
-4. Name the credential (any name, e.g. `web01-deploy-webhook-token`).
-5. Save, note the credential ID.
-6. In n8n, open the `web01-deploy` workflow → click the `Webhook Trigger` node → change **Authentication** from "None" to "Header Auth" → bind the credential → save the workflow.
-7. Alternatively, update `ops/n8n/web01-deploy.json` to set `parameters.authentication: "headerAuth"` and add `credentials.httpHeaderAuth: { id: "<credId>", name: "<credName>" }` on the Webhook Trigger node, then re-import.
+2. Header name: `Authorization`.
+3. Value: `Bearer <generate-a-long-random-token>` (e.g. `openssl rand -base64 48`).
+4. Name the credential exactly `web01-deploy-webhook-token`.
+5. Save, note the new credential ID.
+6. If the new ID differs from `fFUBXZdMNbsMY5ek`, update `ops/n8n/web01-deploy.json` so the `Webhook Trigger` node references the new ID under `credentials.httpHeaderAuth.id`.
 
-Keep the token in your password manager. You will pass it in the `Authorization` header on every webhook call.
+Keep the token in your password manager. Every webhook caller must pass it:
+
+```bash
+curl -X POST "https://n8n.argusai.cc/webhook/web01-deploy" \
+  -H "Authorization: Bearer <your-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"branch": "main", "triggered_by": "cli"}'
+```
+
+Requests without a matching `Authorization` header return **401 Unauthorized**.
 
 ### 3. Import the workflow
 
