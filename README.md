@@ -266,9 +266,25 @@ docker compose up -d
 
 Baseline repository CI now lives in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
+## Deploying
+
+The canonical way to deploy this application to `web01` is the n8n workflow defined at [`ops/n8n/web01-deploy.json`](ops/n8n/web01-deploy.json). It pulls the target branch, runs migrations when needed, rebuilds containers, and verifies health — every step is observable and auditable in n8n's execution history.
+
+Trigger a deploy:
+
+```bash
+curl -X POST "$N8N_WEBHOOK" \
+  -H "Authorization: Bearer $N8N_DEPLOY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"branch": "main", "triggered_by": "cli"}'
+```
+
+Full instructions (install, credentials, troubleshooting, rollback) live in [`docs/deployment_n8n_workflow.md`](docs/deployment_n8n_workflow.md). The manual SSH flow in [`agents.md`](agents.md) remains available as a fallback if n8n is unreachable.
+
 ## Deployment Docs
 
 - [Fresh Start Guide](docs/getting_started.md)
+- [n8n Deploy Workflow](docs/deployment_n8n_workflow.md)
 - [web01 Compose Deployment](docs/deployment_web01_compose.md)
 - [web01 Environment and Storage](docs/deployment_web01_env_and_storage.md)
 - [web01 Runbook](docs/deployment_web01_runbook.md)

@@ -1,0 +1,831 @@
+{
+  "name": "web01-deploy",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "web01-deploy",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "11111111-1111-1111-1111-111111111001",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "web01-deploy-webhook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "web01-deploy-webhook-token"
+        }
+      },
+      "notes": "POST /webhook/web01-deploy with JSON body { branch, run_migrations?, force_rebuild?, triggered_by? }. Bearer token via Authorization header credential."
+    },
+    {
+      "parameters": {},
+      "id": "11111111-1111-1111-1111-111111111002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 560],
+      "notes": "Click 'Execute Workflow' for interactive deploys from the n8n UI."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Normalize input from either webhook body or manual trigger.\n// Enforces branch allowlist, applies defaults, records start time.\nconst ALLOWED_BRANCHES = ['main', 'staging'];\n\nconst raw = $input.item.json.body || $input.item.json || {};\nconst branch = (raw.branch || 'main').trim();\nif (!ALLOWED_BRANCHES.includes(branch)) {\n  throw new Error(`Branch \"${branch}\" is not in the allowlist: ${ALLOWED_BRANCHES.join(', ')}`);\n}\n\nconst runMigrations = raw.run_migrations === undefined || raw.run_migrations === null\n  ? 'auto'\n  : raw.run_migrations;\nif (!['auto', true, false].includes(runMigrations)) {\n  throw new Error(`run_migrations must be \"auto\", true, or false (got ${JSON.stringify(runMigrations)})`);\n}\n\nconst forceRebuild = raw.force_rebuild === undefined ? true : Boolean(raw.force_rebuild);\nconst triggeredBy = (raw.triggered_by || 'manual').toString().slice(0, 120);\nconst requestedCommit = raw.commit ? String(raw.commit).trim() : null;\n\nreturn {\n  json: {\n    context: {\n      branch,\n      run_migrations: runMigrations,\n      force_rebuild: forceRebuild,\n      triggered_by: triggeredBy,\n      requested_commit: requestedCommit,\n      started_at: new Date().toISOString(),\n    }\n  }\n};"
+      },
+      "id": "11111111-1111-1111-1111-111111111003",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400],
+      "notes": "Rejects unknown branches. Normalizes flags. Sets started_at."
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "echo reachable && uptime"
+      },
+      "id": "11111111-1111-1111-1111-111111111004",
+      "name": "SSH: Check reachable",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [720, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /srv/3d-print-sales/repo && git status --porcelain"
+      },
+      "id": "11111111-1111-1111-1111-111111111005",
+      "name": "SSH: Tree clean check",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [960, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Fail if git status --porcelain returned any output (working tree is dirty).\nconst stdout = ($input.item.json.stdout || '').trim();\nif (stdout.length > 0) {\n  throw new Error(`web01 working tree is dirty. git status --porcelain output:\\n${stdout}`);\n}\nreturn $input.item;"
+      },
+      "id": "11111111-1111-1111-1111-111111111006",
+      "name": "Verify Tree Clean",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /srv/3d-print-sales/repo && git rev-parse HEAD"
+      },
+      "id": "11111111-1111-1111-1111-111111111007",
+      "name": "SSH: Capture before SHA",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [1440, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "=cd /srv/3d-print-sales/repo && git fetch origin && git checkout {{ $('Validate Input').item.json.context.branch }} && git pull origin {{ $('Validate Input').item.json.context.branch }}"
+      },
+      "id": "11111111-1111-1111-1111-111111111008",
+      "name": "SSH: Fetch and checkout",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [1680, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /srv/3d-print-sales/repo && git rev-parse HEAD"
+      },
+      "id": "11111111-1111-1111-1111-111111111009",
+      "name": "SSH: Capture after SHA",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [1920, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "=cd /srv/3d-print-sales/repo && git diff --name-only {{ $('SSH: Capture before SHA').item.json.stdout.trim() }} {{ $('SSH: Capture after SHA').item.json.stdout.trim() }} -- backend/alembic/versions/ 2>/dev/null || true"
+      },
+      "id": "11111111-1111-1111-1111-111111111010",
+      "name": "SSH: Diff migrations",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [2160, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Detect whether migrations must run.\n// If the diff of backend/alembic/versions/ between before/after SHAs is non-empty,\n// OR the user explicitly requested run_migrations=true, run migrations.\nconst context = $('Validate Input').item.json.context;\nconst diffOut = ($input.item.json.stdout || '').trim();\nconst migrationFiles = diffOut ? diffOut.split(/\\r?\\n/).filter(Boolean) : [];\n\nlet needsMigration;\nif (context.run_migrations === true) {\n  needsMigration = true;\n} else if (context.run_migrations === false) {\n  needsMigration = false;\n} else {\n  needsMigration = migrationFiles.length > 0;\n}\n\nreturn {\n  json: {\n    ...$input.item.json,\n    needs_migration: needsMigration,\n    migration_files: migrationFiles,\n  }\n};"
+      },
+      "id": "11111111-1111-1111-1111-111111111011",
+      "name": "Detect Migrations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needs_migration }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "11111111-1111-1111-1111-111111111012",
+      "name": "IF Migrations Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2640, 400]
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /srv/3d-print-sales/repo && scripts/web01-compose.sh exec -T backend alembic upgrade head"
+      },
+      "id": "11111111-1111-1111-1111-111111111013",
+      "name": "SSH: Run Migrations",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [2880, 260],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /srv/3d-print-sales/repo && scripts/web01-compose.sh up -d --build"
+      },
+      "id": "11111111-1111-1111-1111-111111111014",
+      "name": "SSH: Compose up --build",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [3120, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "id": "11111111-1111-1111-1111-111111111015",
+      "name": "Wait for containers",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [3360, 400],
+      "webhookId": "web01-deploy-wait"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /srv/3d-print-sales/repo && scripts/web01-compose.sh ps --format json"
+      },
+      "id": "11111111-1111-1111-1111-111111111016",
+      "name": "SSH: Compose ps",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [3600, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse docker compose ps JSON output (can be one-per-line JSON or a JSON array).\nconst raw = ($input.item.json.stdout || '').trim();\nlet containers = [];\nif (raw.startsWith('[')) {\n  containers = JSON.parse(raw);\n} else {\n  containers = raw.split(/\\r?\\n/).filter(Boolean).map(line => JSON.parse(line));\n}\n\nconst required = ['3d-print-sales-db', '3d-print-sales-backend', '3d-print-sales-frontend'];\nconst statuses = required.map(name => {\n  const c = containers.find(c => c.Name === name || c.Names === name || c.Service === name);\n  const health = c && (c.Health || c.State);\n  return {\n    name,\n    state: c ? c.State : 'missing',\n    health: health || 'unknown',\n    found: Boolean(c),\n  };\n});\n\nconst allHealthy = statuses.every(s => s.found && (s.health === 'healthy' || s.state === 'running'));\nif (!allHealthy) {\n  throw new Error(`One or more required containers are not healthy:\\n${JSON.stringify(statuses, null, 2)}`);\n}\n\nreturn {\n  json: {\n    ...$input.item.json,\n    containers: statuses,\n    all_healthy: allHealthy,\n  }\n};"
+      },
+      "id": "11111111-1111-1111-1111-111111111017",
+      "name": "Parse Compose ps",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3840, 400]
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "curl -fsS --max-time 10 http://127.0.0.1/health"
+      },
+      "id": "11111111-1111-1111-1111-111111111018",
+      "name": "SSH: GET /health",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [4080, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "curl -fsS -I --max-time 10 http://127.0.0.1/ | head -1"
+      },
+      "id": "11111111-1111-1111-1111-111111111019",
+      "name": "SSH: GET / (frontend)",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [4320, 400],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Assemble the success response body.\nconst context = $('Validate Input').item.json.context;\nconst before = ($('SSH: Capture before SHA').item.json.stdout || '').trim();\nconst after = ($('SSH: Capture after SHA').item.json.stdout || '').trim();\nconst migrations = $('Detect Migrations').item.json;\nconst containers = $('Parse Compose ps').item.json.containers;\nconst healthOut = ($('SSH: GET /health').item.json.stdout || '').trim();\nconst frontendOut = ($('SSH: GET / (frontend)').item.json.stdout || '').trim();\n\nconst startedAt = context.started_at;\nconst finishedAt = new Date().toISOString();\nconst durationSeconds = Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000);\n\nreturn {\n  json: {\n    ok: true,\n    branch: context.branch,\n    before_sha: before.slice(0, 40),\n    after_sha: after.slice(0, 40),\n    migrations_run: migrations.needs_migration === true,\n    migration_files: migrations.migration_files || [],\n    duration_seconds: durationSeconds,\n    containers,\n    health_endpoint: healthOut,\n    frontend_endpoint: frontendOut,\n    triggered_by: context.triggered_by,\n    started_at: startedAt,\n    finished_at: finishedAt,\n  }\n};"
+      },
+      "id": "11111111-1111-1111-1111-111111111020",
+      "name": "Build Success Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4560, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.DEPLOY_NOTIFICATION_URL || '' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'success', summary: $json }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111021",
+      "name": "Notify Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4800, 400],
+      "continueOnFail": true,
+      "notes": "Set n8n variable DEPLOY_NOTIFICATION_URL to an inbound webhook (Slack/Discord/Mattermost/custom). When unset, this node is a no-op."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($('Build Success Summary').item.json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111022",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [5040, 400]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Capture which step failed. Uses the special $input.item.error object populated\n// by nodes configured with onError='continueErrorOutput'.\nconst context = ($('Validate Input').item && $('Validate Input').item.json && $('Validate Input').item.json.context) || {};\nconst err = $input.item.error || $input.item.json || {};\nconst failedStep = err.node && err.node.name ? err.node.name : (err.step || 'unknown');\nconst message = err.message || JSON.stringify(err).slice(0, 500);\n\nreturn {\n  json: {\n    context,\n    failed_at_step: failedStep,\n    error: message,\n    captured_at: new Date().toISOString(),\n  }\n};"
+      },
+      "id": "11111111-1111-1111-1111-111111111023",
+      "name": "Handle Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4080, 700]
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /srv/3d-print-sales/repo && scripts/web01-compose.sh logs --tail=50 backend frontend 2>&1 || true"
+      },
+      "id": "11111111-1111-1111-1111-111111111024",
+      "name": "SSH: Log tail (best effort)",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [4320, 700],
+      "credentials": {
+        "sshPrivateKey": {
+          "name": "web01.bengtson.local"
+        }
+      },
+      "continueOnFail": true,
+      "notes": "Best effort - if SSH itself is down (e.g. host unreachable) we still want the notification to fire."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Assemble failure response body.\nconst errorInfo = $('Handle Error').item.json;\nconst context = errorInfo.context || {};\nconst logTail = ($input.item.json && $input.item.json.stdout) || '';\n\nconst startedAt = context.started_at || new Date().toISOString();\nconst finishedAt = new Date().toISOString();\nconst durationSeconds = Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000);\n\nreturn {\n  json: {\n    ok: false,\n    branch: context.branch,\n    failed_at_step: errorInfo.failed_at_step,\n    error: errorInfo.error,\n    log_tail: logTail.slice(-4000),\n    duration_seconds: durationSeconds,\n    triggered_by: context.triggered_by,\n    started_at: startedAt,\n    finished_at: finishedAt,\n  }\n};"
+      },
+      "id": "11111111-1111-1111-1111-111111111025",
+      "name": "Build Failure Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4560, 700]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.DEPLOY_NOTIFICATION_URL || '' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'failure', summary: $json }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111026",
+      "name": "Notify Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4800, 700],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($('Build Failure Summary').item.json) }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111027",
+      "name": "Respond Failure",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [5040, 700]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "SSH: Check reachable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Check reachable": {
+      "main": [
+        [
+          {
+            "node": "SSH: Tree clean check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Tree clean check": {
+      "main": [
+        [
+          {
+            "node": "Verify Tree Clean",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Tree Clean": {
+      "main": [
+        [
+          {
+            "node": "SSH: Capture before SHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Capture before SHA": {
+      "main": [
+        [
+          {
+            "node": "SSH: Fetch and checkout",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Fetch and checkout": {
+      "main": [
+        [
+          {
+            "node": "SSH: Capture after SHA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Capture after SHA": {
+      "main": [
+        [
+          {
+            "node": "SSH: Diff migrations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Diff migrations": {
+      "main": [
+        [
+          {
+            "node": "Detect Migrations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Migrations": {
+      "main": [
+        [
+          {
+            "node": "IF Migrations Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Migrations Needed": {
+      "main": [
+        [
+          {
+            "node": "SSH: Run Migrations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SSH: Compose up --build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Run Migrations": {
+      "main": [
+        [
+          {
+            "node": "SSH: Compose up --build",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Compose up --build": {
+      "main": [
+        [
+          {
+            "node": "Wait for containers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for containers": {
+      "main": [
+        [
+          {
+            "node": "SSH: Compose ps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Compose ps": {
+      "main": [
+        [
+          {
+            "node": "Parse Compose ps",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Compose ps": {
+      "main": [
+        [
+          {
+            "node": "SSH: GET /health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: GET /health": {
+      "main": [
+        [
+          {
+            "node": "SSH: GET / (frontend)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: GET / (frontend)": {
+      "main": [
+        [
+          {
+            "node": "Build Success Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Success Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Success": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Error": {
+      "main": [
+        [
+          {
+            "node": "SSH: Log tail (best effort)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH: Log tail (best effort)": {
+      "main": [
+        [
+          {
+            "node": "Build Failure Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Failure Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Failure": {
+      "main": [
+        [
+          {
+            "node": "Respond Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "timezone": "America/Chicago",
+    "executionTimeout": 600,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    { "name": "deploy" },
+    { "name": "web01" }
+  ]
+}
