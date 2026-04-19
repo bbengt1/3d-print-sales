@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
-  Boxes,
   ClipboardCheck,
   Clock3,
   PackageSearch,
@@ -17,6 +16,8 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import PageHeader from '@/components/layout/PageHeader';
+import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { InventoryAlert, InventoryReconcileResponse, PaginatedProducts, PaginatedTransactions } from '@/types';
 
@@ -65,21 +66,6 @@ function SurfaceButton({ active, label, detail, onClick }: SurfaceButtonProps) {
   );
 }
 
-interface HeroMetricProps {
-  label: string;
-  value: string;
-  detail: string;
-}
-
-function HeroMetric({ label, value, detail }: HeroMetricProps) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
-      <p className="text-xs uppercase tracking-[0.24em] text-white/55">{label}</p>
-      <p className="mt-3 text-2xl font-semibold">{value}</p>
-      <p className="mt-2 text-sm text-white/70">{detail}</p>
-    </div>
-  );
-}
 
 function TaskCard({
   title,
@@ -258,24 +244,19 @@ export default function InventoryPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(19,52,34,0.96)_100%)] p-6 text-white shadow-sm">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-white/65">Stock Workspace</p>
-            <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold">
-              <Boxes className="h-8 w-8" />
-              Exceptions first
-            </h1>
-            <p className="mt-3 text-sm text-white/80">
-              Lead with stock problems that affect selling and fulfillment. The ledger is still here, but it no longer gets the best seat in the room.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
+      <PageHeader
+        title="Inventory"
+        description={
+          productAlerts.length > 0
+            ? `${productAlerts.length} ${productAlerts.length === 1 ? 'item needs' : 'items need'} attention`
+            : 'Exceptions first — stock problems affecting selling and fulfillment'
+        }
+        actions={
+          <>
             <button
               type="button"
               onClick={() => openReconcile()}
-              className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <ClipboardCheck className="h-4 w-4" />
               Reconcile stock
@@ -283,37 +264,40 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => openAdjust()}
-              className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition-colors hover:bg-white/15"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
             >
               <Plus className="h-4 w-4" />
               Quick adjustment
             </button>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3 lg:grid-cols-4">
-          <HeroMetric
-            label="Product Alerts"
-            value={String(productAlerts.length)}
-            detail="POS and finished-goods issues requiring action"
+          </>
+        }
+      >
+        <KPIStrip columns={4}>
+          <KPI
+            label="Product alerts"
+            value={productAlerts.length}
+            sub="POS and finished-goods issues"
+            tone={productAlerts.length > 0 ? 'warning' : 'default'}
           />
-          <HeroMetric
-            label="Critical Stockouts"
-            value={String(criticalProductAlerts.length)}
-            detail="Products already at zero stock"
+          <KPI
+            label="Critical stockouts"
+            value={criticalProductAlerts.length}
+            sub="Products at zero stock"
+            tone={criticalProductAlerts.length > 0 ? 'destructive' : 'default'}
           />
-          <HeroMetric
-            label="Near Reorder"
-            value={String(nearReorderProducts.length)}
-            detail="Products still sellable but nearing depletion"
+          <KPI
+            label="Near reorder"
+            value={nearReorderProducts.length}
+            sub="Nearing depletion"
+            tone={nearReorderProducts.length > 0 ? 'warning' : 'default'}
           />
-          <HeroMetric
-            label="Material Signals"
-            value={String(materialAlerts.length)}
-            detail="Lower-priority material stock issues"
+          <KPI
+            label="Material signals"
+            value={materialAlerts.length}
+            sub="Lower-priority issues"
           />
-        </div>
-      </section>
+        </KPIStrip>
+      </PageHeader>
 
       {showReconcile ? (
         <div

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import PageHeader from '@/components/layout/PageHeader';
 import { formatCurrency } from '@/lib/utils';
 import type { PaginatedProducts, Product } from '@/types';
 
@@ -24,7 +25,6 @@ export default function ProductsPage() {
   const total = data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const lowStockCount = products.filter((product) => product.stock_qty <= product.reorder_point).length;
-  const barcodeReadyCount = products.filter((product) => product.upc).length;
 
   const toggleActive = async (product: Product) => {
     const action = product.is_active ? 'archive' : 'restore';
@@ -52,44 +52,28 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_rgba(8,17,31,1),_rgba(16,33,52,0.98)_48%,_rgba(24,24,27,0.96)_100%)] p-6 text-white shadow-sm">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-white/65">Product Studio</p>
-            <h1 className="mt-3 text-3xl font-bold">Catalog and authoring workflow</h1>
-            <p className="mt-3 text-sm text-white/80">
-              Browse the catalog, watch sellability signals, and move straight into the full-page editor when a product needs real setup work.
-            </p>
-          </div>
-
+      <PageHeader
+        title="Products"
+        description={
+          <>
+            <span className="tabular-nums">{total.toLocaleString()} total</span>
+            {lowStockCount > 0 ? (
+              <span className="ml-3 text-warning">
+                · {lowStockCount} low stock
+              </span>
+            ) : null}
+          </>
+        }
+        actions={
           <Link
             to="/product-studio/products/new"
-            className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
             New product
           </Link>
-        </div>
-
-        <div className="mt-6 grid gap-3 lg:grid-cols-4">
-          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.24em] text-white/55">Visible products</p>
-            <p className="mt-3 text-2xl font-semibold">{total}</p>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.24em] text-white/55">Low stock</p>
-            <p className="mt-3 text-2xl font-semibold">{lowStockCount}</p>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.24em] text-white/55">Barcode ready</p>
-            <p className="mt-3 text-2xl font-semibold">{barcodeReadyCount}</p>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.24em] text-white/55">Authoring route</p>
-            <p className="mt-3 text-lg font-semibold">/product-studio/products/new</p>
-          </div>
-        </div>
-      </section>
+        }
+      />
 
       <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
