@@ -207,7 +207,7 @@ export default function CamerasPage() {
       />
 
       <Dialog open={Boolean(modal)} onOpenChange={(o) => !o && closeModal()}>
-        <DialogContent className="max-w-lg">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>{modal === 'create' ? 'Add camera' : 'Edit camera'}</DialogTitle>
           </DialogHeader>

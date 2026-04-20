@@ -130,7 +130,7 @@ export default function CustomersPage() {
       />
 
       <Dialog open={editing !== null} onOpenChange={(open) => !open && close()}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{editing === 'new' ? 'Add customer' : 'Edit customer'}</DialogTitle>
           </DialogHeader>

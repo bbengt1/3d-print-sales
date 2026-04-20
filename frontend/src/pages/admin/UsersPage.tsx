@@ -105,7 +105,7 @@ export default function UsersPage() {
       </div>
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{editing === 'new' ? 'Add user' : 'Edit user'}</DialogTitle>
           </DialogHeader>

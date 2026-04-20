@@ -86,7 +86,7 @@ export default function SalesChannelsPage() {
       />
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{editing === 'new' ? 'Add channel' : 'Edit channel'}</DialogTitle>
           </DialogHeader>

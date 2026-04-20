@@ -139,7 +139,7 @@ export default function RatesPage() {
       />
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{editing === 'new' ? 'Add rate' : 'Edit rate'}</DialogTitle>
           </DialogHeader>

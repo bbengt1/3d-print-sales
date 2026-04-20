@@ -405,7 +405,7 @@ export default function InventoryPage() {
 
       {/* Reconcile dialog */}
       <Dialog open={showReconcile} onOpenChange={(open) => !open && setShowReconcile(false)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Stock reconciliation</DialogTitle>
           </DialogHeader>
@@ -495,7 +495,7 @@ export default function InventoryPage() {
 
       {/* Adjust dialog */}
       <Dialog open={showAdjust} onOpenChange={(open) => !open && setShowAdjust(false)}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Quick stock adjustment</DialogTitle>
           </DialogHeader>

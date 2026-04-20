@@ -221,7 +221,7 @@ export default function ProductDetailPage() {
 
       {/* Zero Stock Modal */}
       <Dialog open={showZeroStock} onOpenChange={(open) => !open && setShowZeroStock(false)}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Set stock to 0</DialogTitle>
           </DialogHeader>
@@ -265,7 +265,7 @@ export default function ProductDetailPage() {
 
       {/* Adjustment Modal */}
       <Dialog open={showAdjust} onOpenChange={(open) => !open && setShowAdjust(false)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Adjust stock</DialogTitle>
           </DialogHeader>
