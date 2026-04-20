@@ -262,14 +262,10 @@ export default function InventoryPage() {
         }
         actions={
           <>
-            <button
-              type="button"
-              onClick={() => openReconcile()}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-            >
+            <Button type="button" onClick={() => openReconcile()}>
               <ClipboardCheck className="h-4 w-4" />
               Reconcile stock
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => openAdjust()}
@@ -576,13 +572,9 @@ export default function InventoryPage() {
                           </div>
 
                           <div className="flex flex-wrap gap-2 text-sm">
-                            <button
-                              type="button"
-                              onClick={() => openAdjust(alert.id)}
-                              className="rounded-xl bg-primary px-3 py-2 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                            >
+                            <Button type="button" onClick={() => openAdjust(alert.id)}>
                               Adjust
-                            </button>
+                            </Button>
                             <button
                               type="button"
                               onClick={() => openReconcile(alert.id)}

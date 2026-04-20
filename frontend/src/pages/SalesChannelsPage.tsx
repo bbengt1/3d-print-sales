@@ -75,9 +75,9 @@ export default function SalesChannelsPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Sales Channels</h1>
-        <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
-          <Plus className="w-4 h-4" /> Add Channel
-        </button>
+        <Button onClick={openNew}>
+          <Plus className="h-4 w-4" /> Add Channel
+        </Button>
       </div>
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
@@ -131,9 +131,9 @@ export default function SalesChannelsPage() {
           title="No sales channels"
           description="Add a sales channel to track platform fees."
           action={
-            <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 cursor-pointer">
-              <Plus className="w-4 h-4" /> Add Channel
-            </button>
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" /> Add Channel
+            </Button>
           }
         />
       ) : (

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bot, KeyRound, Settings, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import type { Setting } from '@/types';
 
 const groups: Record<string, { keys: string[]; description: string }> = {
@@ -110,14 +111,10 @@ export default function SettingsPage() {
           </div>
         </div>
         {dirty && (
-          <button
-            onClick={saveAll}
-            disabled={saving}
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
+          <Button onClick={saveAll} disabled={saving}>
+            <Save className="h-4 w-4" />
             {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+          </Button>
         )}
       </div>
 

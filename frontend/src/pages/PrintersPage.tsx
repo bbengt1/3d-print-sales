@@ -24,6 +24,7 @@ import api from '@/api/client';
 import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import EmptyState from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import type { Job, PaginatedJobs, PaginatedPrinters, Printer } from '@/types';
@@ -281,12 +282,9 @@ function PrinterWallCard({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          to={`/print-floor/printers/${printer.id}`}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline shadow-sm"
-        >
-          Open console
-        </Link>
+        <Button asChild>
+          <Link to={`/print-floor/printers/${printer.id}`}>Open console</Link>
+        </Button>
         {!wallMode ? (
           <Link
             to={`/print-floor/printers/${printer.id}/edit`}
@@ -499,12 +497,11 @@ export default function PrintersPage() {
           <>
             {!wallMode ? (
               <>
-                <Link
-                  to="/print-floor/printers/new"
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
-                >
-                  <Plus className="h-4 w-4" /> Add printer
-                </Link>
+                <Button asChild>
+                  <Link to="/print-floor/printers/new">
+                    <Plus className="h-4 w-4" /> Add printer
+                  </Link>
+                </Button>
                 <Link
                   to="/orders"
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
@@ -667,12 +664,11 @@ export default function PrintersPage() {
           title="No printers found"
           description="Add your first printer to start tracking the print floor, machine status, and assignment context."
           action={
-            <Link
-              to="/print-floor/printers/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground no-underline hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" /> Add printer
-            </Link>
+            <Button asChild>
+              <Link to="/print-floor/printers/new">
+                <Plus className="h-4 w-4" /> Add printer
+              </Link>
+            </Button>
           }
         />
       ) : (

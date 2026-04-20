@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
 import type { SalesChannel, PaginatedProducts, Customer } from '@/types';
 
@@ -346,13 +347,9 @@ export default function SaleFormPage() {
           </div>
 
           {/* Submit */}
-          <button
-            onClick={save}
-            disabled={saving}
-            className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer"
-          >
+          <Button onClick={save} disabled={saving} className="w-full">
             {saving ? 'Creating...' : 'Create Sale'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

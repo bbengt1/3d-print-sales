@@ -126,13 +126,9 @@ export default function RatesPage() {
         title="Rates"
         description={`${total.toLocaleString()} ${total === 1 ? 'rate' : 'rates'}`}
         actions={
-          <button
-            type="button"
-            onClick={openNew}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
+          <Button type="button" onClick={openNew}>
             <Plus className="h-4 w-4" /> Add rate
-          </button>
+          </Button>
         }
       />
 

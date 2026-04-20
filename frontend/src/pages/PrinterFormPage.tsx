@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, PlugZap } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import type { Printer, PrinterConnectionTestResult } from '@/types';
 
 const STATUS_OPTIONS = ['idle', 'printing', 'paused', 'maintenance', 'offline', 'error'] as const;
@@ -345,9 +346,9 @@ export default function PrinterFormPage() {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="cursor-pointer rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+            <Button type="submit" disabled={saving}>
               {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Printer'}
-            </button>
+            </Button>
             <button type="button" onClick={() => navigate(isEdit && id ? `/printers/${id}` : '/printers')} className="cursor-pointer rounded-md border border-border px-4 py-2 hover:bg-accent">
               Cancel
             </button>

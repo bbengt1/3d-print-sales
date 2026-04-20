@@ -4,6 +4,7 @@ import { Printer } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Moon, Sun } from 'lucide-react';
@@ -113,11 +114,7 @@ export default function LoginPage() {
                 <p className="text-destructive text-xs mt-1">{errors.password}</p>
               )}
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -126,7 +123,7 @@ export default function LoginPage() {
               ) : (
                 'Sign In'
               )}
-            </button>
+            </Button>
           </form>
         </div>
         <p className="text-center text-xs text-muted-foreground mt-4">

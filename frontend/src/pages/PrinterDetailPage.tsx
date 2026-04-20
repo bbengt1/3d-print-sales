@@ -20,6 +20,7 @@ import { cn, formatCurrency } from '@/lib/utils';
 import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/layout/PageHeader';
 import type { Job, PaginatedJobs, Printer, PrinterConnectionTestResult } from '@/types';
 
@@ -230,12 +231,9 @@ export default function PrinterDetailPage() {
           <>
             {printer.monitor_enabled ? (
               <>
-                <button
-                  onClick={testConnection}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                >
+                <Button onClick={testConnection}>
                   <PlugZap className="h-4 w-4" /> Test connection
-                </button>
+                </Button>
                 <button
                   onClick={refreshNow}
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"

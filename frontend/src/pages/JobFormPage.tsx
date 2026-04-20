@@ -464,13 +464,9 @@ export default function JobFormPage() {
           </div>
 
           <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
-            >
+            <Button type="submit" disabled={saving} size="lg">
               {saving ? 'Saving...' : isEdit ? 'Update Job' : 'Create Job'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => navigate('/jobs')}

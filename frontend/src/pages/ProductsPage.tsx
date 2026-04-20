@@ -10,6 +10,7 @@ import StatusBadge from '@/components/data/StatusBadge';
 import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
 import Pagination from '@/components/data/Pagination';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
 import type { PaginatedProducts, Product } from '@/types';
 
@@ -189,13 +190,12 @@ export default function ProductsPage() {
           </>
         }
         actions={
-          <Link
-            to="/product-studio/products/new"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            New product
-          </Link>
+          <Button asChild>
+            <Link to="/product-studio/products/new">
+              <Plus className="h-4 w-4" />
+              New product
+            </Link>
+          </Button>
         }
       />
 
@@ -281,13 +281,12 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="mt-4 flex gap-2">
-              <Link
-                to={`/product-studio/products/${product.id}/edit`}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-medium text-primary-foreground no-underline"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Link>
+              <Button asChild className="flex-1">
+                <Link to={`/product-studio/products/${product.id}/edit`}>
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </Link>
+              </Button>
               <button
                 type="button"
                 onClick={() => navigate(`/product-studio/products/${product.id}`)}
