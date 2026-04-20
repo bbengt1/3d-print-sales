@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit, Plus, X } from 'lucide-react';
+import { Edit, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
@@ -8,6 +8,10 @@ import PageHeader from '@/components/layout/PageHeader';
 import DataTable, { type Column } from '@/components/data/DataTable';
 import StatusBadge from '@/components/data/StatusBadge';
 import TableToolbar from '@/components/data/TableToolbar';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import type { Material } from '@/types';
 
 const emptyForm = { name: '', brand: '', spool_weight_g: 1000, spool_price: 20, net_usable_g: 950, notes: '', spools_in_stock: 0, reorder_point: 2 };
@@ -74,9 +78,6 @@ export default function MaterialsPage() {
       queryClient.invalidateQueries({ queryKey: ['materials'] });
     } catch { toast.error('Failed to update'); }
   };
-
-  const inputCls = (field: string) =>
-    `w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${formErrors[field] ? 'border-destructive' : 'border-input'}`;
 
   const columns: Column<Material>[] = [
     { key: 'name', header: 'Name', cell: (m) => <span className="font-medium">{m.name}</span> },
@@ -157,64 +158,112 @@ export default function MaterialsPage() {
         }
       />
 
-      {/* Modal */}
-      {editing !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && close()}>
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{editing === 'new' ? 'Add Material' : 'Edit Material'}</h3>
-              <button onClick={close} className="p-1 hover:bg-accent rounded-md"><X className="w-5 h-5" /></button>
+      <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing === 'new' ? 'Add material' : 'Edit material'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="mat-name">Name *</Label>
+              <Input
+                id="mat-name"
+                value={form.name}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  setFormErrors({ ...formErrors, name: '' });
+                }}
+                invalid={Boolean(formErrors.name)}
+              />
+              {formErrors.name && <p className="text-destructive text-xs">{formErrors.name}</p>}
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
-                <input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormErrors({ ...formErrors, name: '' }); }} className={inputCls('name')} />
-                {formErrors.name && <p className="text-destructive text-xs mt-1">{formErrors.name}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Brand *</label>
-                <input value={form.brand} onChange={(e) => { setForm({ ...form, brand: e.target.value }); setFormErrors({ ...formErrors, brand: '' }); }} className={inputCls('brand')} />
-                {formErrors.brand && <p className="text-destructive text-xs mt-1">{formErrors.brand}</p>}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Spool (g) *</label>
-                  <input type="number" value={form.spool_weight_g} onChange={(e) => setForm({ ...form, spool_weight_g: Number(e.target.value) })} className={inputCls('spool_weight_g')} />
-                  {formErrors.spool_weight_g && <p className="text-destructive text-xs mt-1">{formErrors.spool_weight_g}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Price ($) *</label>
-                  <input type="number" step="0.01" value={form.spool_price} onChange={(e) => setForm({ ...form, spool_price: Number(e.target.value) })} className={inputCls('spool_price')} />
-                  {formErrors.spool_price && <p className="text-destructive text-xs mt-1">{formErrors.spool_price}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Usable (g) *</label>
-                  <input type="number" value={form.net_usable_g} onChange={(e) => setForm({ ...form, net_usable_g: Number(e.target.value) })} className={inputCls('net_usable_g')} />
-                  {formErrors.net_usable_g && <p className="text-destructive text-xs mt-1">{formErrors.net_usable_g}</p>}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Spools in Stock</label>
-                  <input type="number" min="0" value={form.spools_in_stock} onChange={(e) => setForm({ ...form, spools_in_stock: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Reorder Point</label>
-                  <input type="number" min="0" value={form.reorder_point} onChange={(e) => setForm({ ...form, reorder_point: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-              </div>
-              <div><label className="block text-sm font-medium mb-1">Notes</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-              {form.net_usable_g > 0 && (
-                <p className="text-sm text-muted-foreground">Cost/g: ${(form.spool_price / form.net_usable_g).toFixed(4)}</p>
-              )}
+            <div className="space-y-1.5">
+              <Label htmlFor="mat-brand">Brand *</Label>
+              <Input
+                id="mat-brand"
+                value={form.brand}
+                onChange={(e) => {
+                  setForm({ ...form, brand: e.target.value });
+                  setFormErrors({ ...formErrors, brand: '' });
+                }}
+                invalid={Boolean(formErrors.brand)}
+              />
+              {formErrors.brand && <p className="text-destructive text-xs">{formErrors.brand}</p>}
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={save} disabled={saving} className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer">{saving ? 'Saving...' : 'Save'}</button>
-              <button onClick={close} className="px-4 py-2 border border-border rounded-md hover:bg-accent cursor-pointer">Cancel</button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="mat-weight">Spool (g) *</Label>
+                <Input
+                  id="mat-weight"
+                  type="number"
+                  value={form.spool_weight_g}
+                  onChange={(e) => setForm({ ...form, spool_weight_g: Number(e.target.value) })}
+                  invalid={Boolean(formErrors.spool_weight_g)}
+                />
+                {formErrors.spool_weight_g && <p className="text-destructive text-xs">{formErrors.spool_weight_g}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="mat-price">Price ($) *</Label>
+                <Input
+                  id="mat-price"
+                  type="number"
+                  step="0.01"
+                  value={form.spool_price}
+                  onChange={(e) => setForm({ ...form, spool_price: Number(e.target.value) })}
+                  invalid={Boolean(formErrors.spool_price)}
+                />
+                {formErrors.spool_price && <p className="text-destructive text-xs">{formErrors.spool_price}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="mat-usable">Usable (g) *</Label>
+                <Input
+                  id="mat-usable"
+                  type="number"
+                  value={form.net_usable_g}
+                  onChange={(e) => setForm({ ...form, net_usable_g: Number(e.target.value) })}
+                  invalid={Boolean(formErrors.net_usable_g)}
+                />
+                {formErrors.net_usable_g && <p className="text-destructive text-xs">{formErrors.net_usable_g}</p>}
+              </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="mat-stock">Spools in stock</Label>
+                <Input
+                  id="mat-stock"
+                  type="number"
+                  min="0"
+                  value={form.spools_in_stock}
+                  onChange={(e) => setForm({ ...form, spools_in_stock: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="mat-reorder">Reorder point</Label>
+                <Input
+                  id="mat-reorder"
+                  type="number"
+                  min="0"
+                  value={form.reorder_point}
+                  onChange={(e) => setForm({ ...form, reorder_point: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="mat-notes">Notes</Label>
+              <Input id="mat-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+            </div>
+            {form.net_usable_g > 0 && (
+              <p className="text-sm text-muted-foreground tabular-nums">
+                Cost/g: ${(form.spool_price / form.net_usable_g).toFixed(4)}
+              </p>
+            )}
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>Cancel</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Desktop table */}
       <div className="hidden md:block">

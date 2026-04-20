@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit, Plus, X } from 'lucide-react';
+import { Edit, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import PageHeader from '@/components/layout/PageHeader';
 import DataTable, { type Column } from '@/components/data/DataTable';
 import StatusBadge from '@/components/data/StatusBadge';
 import TableToolbar from '@/components/data/TableToolbar';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import type { Rate } from '@/types';
 
 const emptyForm = { name: '', value: 0, unit: '$/hour', notes: '' };
@@ -71,9 +75,6 @@ export default function RatesPage() {
     } catch { toast.error('Failed to update'); }
   };
 
-  const inputCls = (field: string) =>
-    `w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${formErrors[field] ? 'border-destructive' : 'border-input'}`;
-
   const columns: Column<Rate>[] = [
     { key: 'name', header: 'Name', cell: (r) => <span className="font-medium">{r.name}</span> },
     { key: 'value', header: 'Value', numeric: true, cell: (r) => Number(r.value).toFixed(2) },
@@ -135,43 +136,63 @@ export default function RatesPage() {
         }
       />
 
-      {editing !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && close()}>
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{editing === 'new' ? 'Add Rate' : 'Edit Rate'}</h3>
-              <button onClick={close} className="p-1 hover:bg-accent rounded-md"><X className="w-5 h-5" /></button>
+      <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing === 'new' ? 'Add rate' : 'Edit rate'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="rate-name">Name *</Label>
+              <Input
+                id="rate-name"
+                value={form.name}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  setFormErrors({ ...formErrors, name: '' });
+                }}
+                invalid={Boolean(formErrors.name)}
+              />
+              {formErrors.name && <p className="text-destructive text-xs">{formErrors.name}</p>}
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
-                <input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormErrors({ ...formErrors, name: '' }); }} className={inputCls('name')} />
-                {formErrors.name && <p className="text-destructive text-xs mt-1">{formErrors.name}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="rate-value">Value *</Label>
+                <Input
+                  id="rate-value"
+                  type="number"
+                  step="0.01"
+                  value={form.value}
+                  onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
+                  invalid={Boolean(formErrors.value)}
+                />
+                {formErrors.value && <p className="text-destructive text-xs">{formErrors.value}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Value *</label>
-                  <input type="number" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: Number(e.target.value) })} className={inputCls('value')} />
-                  {formErrors.value && <p className="text-destructive text-xs mt-1">{formErrors.value}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Unit *</label>
-                  <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    <option value="$/hour">$/hour</option>
-                    <option value="$/order">$/order</option>
-                    <option value="%">%</option>
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="rate-unit">Unit *</Label>
+                <select
+                  id="rate-unit"
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="$/hour">$/hour</option>
+                  <option value="$/order">$/order</option>
+                  <option value="%">%</option>
+                </select>
               </div>
-              <div><label className="block text-sm font-medium mb-1">Notes</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" /></div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={save} disabled={saving} className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer">{saving ? 'Saving...' : 'Save'}</button>
-              <button onClick={close} className="px-4 py-2 border border-border rounded-md hover:bg-accent cursor-pointer">Cancel</button>
+            <div className="space-y-1.5">
+              <Label htmlFor="rate-notes">Notes</Label>
+              <Input id="rate-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>Cancel</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="hidden md:block">
         <DataTable<Rate>

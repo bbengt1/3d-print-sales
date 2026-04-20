@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { formatCurrency } from '@/lib/utils';
 import type { Material, Job, CalculateResponse, PaginatedProducts, PaginatedPrinters, Product } from '@/types';
 
@@ -274,75 +276,72 @@ export default function JobFormPage() {
     <div className="max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">{isEdit ? 'Edit Job' : 'New Job'}</h1>
 
-      {showCreateProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && setShowCreateProduct(false)}>
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Create and Link Product</h3>
-              <button type="button" onClick={() => setShowCreateProduct(false)} className="p-1 hover:bg-accent rounded-md cursor-pointer"><X className="w-5 h-5" /></button>
+      <Dialog open={showCreateProduct} onOpenChange={(open) => !open && setShowCreateProduct(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create and link product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name *</label>
+              <input
+                value={productForm.name}
+                onChange={(e) => updateProductForm('name', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.name ? 'border-destructive' : 'border-input'}`}
+              />
+              {productErrors.name && <p className="text-destructive text-xs mt-1">{productErrors.name}</p>}
             </div>
-            <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <input
+                value={productForm.description}
+                onChange={(e) => updateProductForm('description', e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Material *</label>
+              <select
+                value={productForm.material_id}
+                onChange={(e) => updateProductForm('material_id', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.material_id ? 'border-destructive' : 'border-input'}`}
+              >
+                <option value="">Select material...</option>
+                {materials?.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name} ({m.brand})</option>
+                ))}
+              </select>
+              {productErrors.material_id && <p className="text-destructive text-xs mt-1">{productErrors.material_id}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
-                <input
-                  value={productForm.name}
-                  onChange={(e) => updateProductForm('name', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.name ? 'border-destructive' : 'border-input'}`}
-                />
-                {productErrors.name && <p className="text-destructive text-xs mt-1">{productErrors.name}</p>}
+                <label className="block text-sm font-medium mb-1">Unit Cost ($)</label>
+                <input type="number" min="0" step="0.01" value={productForm.unit_cost} onChange={(e) => updateProductForm('unit_cost', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <input
-                  value={productForm.description}
-                  onChange={(e) => updateProductForm('description', e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Material *</label>
-                <select
-                  value={productForm.material_id}
-                  onChange={(e) => updateProductForm('material_id', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.material_id ? 'border-destructive' : 'border-input'}`}
-                >
-                  <option value="">Select material...</option>
-                  {materials?.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name} ({m.brand})</option>
-                  ))}
-                </select>
-                {productErrors.material_id && <p className="text-destructive text-xs mt-1">{productErrors.material_id}</p>}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Unit Cost ($)</label>
-                  <input type="number" min="0" step="0.01" value={productForm.unit_cost} onChange={(e) => updateProductForm('unit_cost', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Unit Price ($)</label>
-                  <input type="number" min="0" step="0.01" value={productForm.unit_price} onChange={(e) => updateProductForm('unit_price', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Reorder Point</label>
-                  <input type="number" min="0" value={productForm.reorder_point} onChange={(e) => updateProductForm('reorder_point', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">UPC/EAN</label>
-                  <input value={productForm.upc} onChange={(e) => updateProductForm('upc', e.target.value)} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
+                <label className="block text-sm font-medium mb-1">Unit Price ($)</label>
+                <input type="number" min="0" step="0.01" value={productForm.unit_price} onChange={(e) => updateProductForm('unit_price', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button type="button" onClick={handleCreateProduct} disabled={creatingProduct} className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer">
-                {creatingProduct ? 'Creating...' : 'Create & Link'}
-              </button>
-              <button type="button" onClick={() => setShowCreateProduct(false)} className="px-4 py-2 border border-border rounded-md hover:bg-accent cursor-pointer">Cancel</button>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Reorder Point</label>
+                <input type="number" min="0" value={productForm.reorder_point} onChange={(e) => updateProductForm('reorder_point', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">UPC/EAN</label>
+                <input value={productForm.upc} onChange={(e) => updateProductForm('upc', e.target.value)} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateProduct(false)}>Cancel</Button>
+            <Button onClick={handleCreateProduct} disabled={creatingProduct}>
+              {creatingProduct ? 'Creating…' : 'Create & link'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
