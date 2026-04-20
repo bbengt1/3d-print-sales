@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,6 +22,7 @@ import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import PageHeader from '@/components/layout/PageHeader';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
@@ -115,16 +117,10 @@ export default function PrinterDetailPage() {
     enabled: Boolean(id),
   });
 
+  const [confirmToggle, setConfirmToggle] = useState(false);
+
   const toggleActive = async () => {
     if (!printer) return;
-    const confirmed = window.confirm(
-      printer.is_active
-        ? `Deactivate ${printer.name}?\n\nThis preserves historical assignments and removes it from active use.`
-        : `Restore ${printer.name} to active printers?`
-    );
-
-    if (!confirmed) return;
-
     try {
       if (printer.is_active) {
         await api.delete(`/printers/${printer.id}`);
@@ -220,7 +216,7 @@ export default function PrinterDetailPage() {
                 <Edit className="h-4 w-4" /> Edit
               </Link>
             </Button>
-            <Button variant="outline" onClick={toggleActive}>
+            <Button variant="outline" onClick={() => setConfirmToggle(true)}>
               {printer.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
               {printer.is_active ? 'Deactivate' : 'Restore'}
             </Button>
@@ -536,6 +532,20 @@ export default function PrinterDetailPage() {
           </div>
         )}
       </section>
+
+      <ConfirmDialog
+        open={confirmToggle}
+        onOpenChange={setConfirmToggle}
+        title={printer.is_active ? 'Deactivate printer?' : 'Restore printer?'}
+        description={
+          printer.is_active
+            ? `${printer.name} will preserve historical assignments and be removed from active use.`
+            : `${printer.name} will be restored to active printers.`
+        }
+        confirmLabel={printer.is_active ? 'Deactivate' : 'Restore'}
+        tone={printer.is_active ? 'destructive' : 'default'}
+        onConfirm={toggleActive}
+      />
     </div>
   );
 }

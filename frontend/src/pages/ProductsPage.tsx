@@ -11,6 +11,7 @@ import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
 import Pagination from '@/components/data/Pagination';
 import { Button } from '@/components/ui/Button';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { formatCurrency } from '@/lib/utils';
 import type { PaginatedProducts, Product } from '@/types';
@@ -22,6 +23,7 @@ export default function ProductsPage() {
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
 
   const { data, isLoading, refetch } = useQuery<PaginatedProducts>({
     queryKey: ['products', search, sortKey, sortDir, page, pageSize],
@@ -45,12 +47,6 @@ export default function ProductsPage() {
 
   const toggleActive = async (product: Product) => {
     const action = product.is_active ? 'archive' : 'restore';
-    const confirmed = window.confirm(
-      product.is_active
-        ? `Archive ${product.name}?\n\nThis removes it from active selling while preserving history.`
-        : `Restore ${product.name} to active products?`,
-    );
-    if (!confirmed) return;
     try {
       if (product.is_active) {
         await api.delete(`/products/${product.id}`);
@@ -177,7 +173,7 @@ export default function ProductsPage() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => toggleActive(p)}
+                onClick={() => setPendingToggle(p)}
                 aria-label={p.is_active ? `Archive ${p.name}` : `Restore ${p.name}`}
               >
                 {p.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
@@ -312,6 +308,24 @@ export default function ProductsPage() {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={pendingToggle !== null}
+        onOpenChange={(open) => !open && setPendingToggle(null)}
+        title={pendingToggle?.is_active ? 'Archive product?' : 'Restore product?'}
+        description={
+          pendingToggle
+            ? pendingToggle.is_active
+              ? `${pendingToggle.name} will be removed from active selling. History is preserved.`
+              : `${pendingToggle.name} will be restored to active products.`
+            : undefined
+        }
+        confirmLabel={pendingToggle?.is_active ? 'Archive' : 'Restore'}
+        tone={pendingToggle?.is_active ? 'destructive' : 'default'}
+        onConfirm={async () => {
+          if (pendingToggle) await toggleActive(pendingToggle);
+        }}
+      />
     </div>
   );
 }

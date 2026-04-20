@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import type { Customer } from '@/types';
 
@@ -32,6 +33,7 @@ export default function CustomersPage() {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Customer | null>(null);
 
   const openNew = () => { setForm(emptyForm); setEditing('new'); };
   const openEdit = (c: Customer) => {
@@ -60,7 +62,6 @@ export default function CustomersPage() {
   };
 
   const deleteCustomer = async (c: Customer) => {
-    if (!confirm(`Delete ${c.name}?`)) return;
     try {
       await api.delete(`/customers/${c.id}`);
       toast.success('Customer deleted');
@@ -99,7 +100,7 @@ export default function CustomersPage() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => deleteCustomer(c)}
+                onClick={() => setPendingDelete(c)}
                 aria-label={`Delete ${c.name}`}
               >
                 <Trash2 className="h-4 w-4" />
@@ -169,6 +170,18 @@ export default function CustomersPage() {
             <SearchInput value={search} onChange={setSearch} placeholder="Search customers…" />
           </TableToolbar>
         }
+      />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Delete customer?"
+        description={pendingDelete ? `${pendingDelete.name} will be removed. This cannot be undone.` : undefined}
+        confirmLabel="Delete"
+        tone="destructive"
+        onConfirm={async () => {
+          if (pendingDelete) await deleteCustomer(pendingDelete);
+        }}
       />
     </div>
   );

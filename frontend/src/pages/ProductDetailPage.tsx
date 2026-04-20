@@ -7,6 +7,7 @@ import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
@@ -43,6 +44,7 @@ export default function ProductDetailPage() {
   const [adjForm, setAdjForm] = useState({ type: 'adjustment', quantity: 0, notes: '' });
   const [zeroReason, setZeroReason] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmToggle, setConfirmToggle] = useState(false);
 
   const submitAdjustment = async () => {
     if (adjForm.quantity === 0) { toast.error('Quantity cannot be 0'); return; }
@@ -68,14 +70,6 @@ export default function ProductDetailPage() {
   };
 
   const toggleActive = async () => {
-    const confirmed = window.confirm(
-      currentProduct.is_active
-        ? `Archive ${currentProduct.name}?\n\nThis keeps historical records and inventory history, but removes the product from active use.`
-        : `Restore ${currentProduct.name} to active products?`
-    );
-
-    if (!confirmed) return;
-
     setSaving(true);
     try {
       if (currentProduct.is_active) {
@@ -165,7 +159,7 @@ export default function ProductDetailPage() {
                 Open Editor
               </Link>
             </Button>
-            <Button variant="outline" onClick={toggleActive} disabled={saving}>
+            <Button variant="outline" onClick={() => setConfirmToggle(true)} disabled={saving}>
               {currentProduct.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
               {currentProduct.is_active ? 'Archive Product' : 'Restore Product'}
             </Button>
@@ -338,6 +332,20 @@ export default function ProductDetailPage() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmToggle}
+        onOpenChange={setConfirmToggle}
+        title={currentProduct.is_active ? 'Archive product?' : 'Restore product?'}
+        description={
+          currentProduct.is_active
+            ? `${currentProduct.name} will be kept in historical records and inventory history, but removed from active use.`
+            : `${currentProduct.name} will be restored to active products.`
+        }
+        confirmLabel={currentProduct.is_active ? 'Archive' : 'Restore'}
+        tone={currentProduct.is_active ? 'destructive' : 'default'}
+        onConfirm={toggleActive}
+      />
     </div>
   );
 }

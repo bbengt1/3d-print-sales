@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import StatusBadge from '@/components/data/StatusBadge';
 import DataTable, { type Column } from '@/components/data/DataTable';
@@ -35,6 +36,7 @@ export default function UsersPage() {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [pendingDeactivate, setPendingDeactivate] = useState<UserRecord | null>(null);
 
   const openNew = () => { setForm(emptyForm); setEditing('new'); };
   const openEdit = (u: UserRecord) => {
@@ -68,7 +70,6 @@ export default function UsersPage() {
   };
 
   const deactivate = async (u: UserRecord) => {
-    if (!confirm(`Deactivate ${u.full_name}?`)) return;
     try {
       await api.delete(`/auth/users/${u.id}`);
       toast.success(`${u.full_name} deactivated`);
@@ -154,8 +155,24 @@ export default function UsersPage() {
         isLoading={isLoading}
         currentUserId={currentUser?.id}
         onEdit={openEdit}
-        onDeactivate={deactivate}
+        onDeactivate={setPendingDeactivate}
         onReactivate={reactivate}
+      />
+
+      <ConfirmDialog
+        open={pendingDeactivate !== null}
+        onOpenChange={(open) => !open && setPendingDeactivate(null)}
+        title="Deactivate user?"
+        description={
+          pendingDeactivate
+            ? `${pendingDeactivate.full_name} will lose access to the app. You can reactivate them later.`
+            : undefined
+        }
+        confirmLabel="Deactivate"
+        tone="destructive"
+        onConfirm={async () => {
+          if (pendingDeactivate) await deactivate(pendingDeactivate);
+        }}
       />
     </div>
   );
