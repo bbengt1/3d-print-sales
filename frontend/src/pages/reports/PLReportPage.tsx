@@ -5,7 +5,8 @@ import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
-import type { PLReport } from '@/types';
+import DataTable from '@/components/data/DataTable';
+import type { PLReport, PLRow } from '@/types';
 
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
   const normalized = Array.isArray(value) ? value[0] : value;
@@ -130,42 +131,81 @@ export default function PLReportPage() {
 
           {/* Period table */}
           {data.period_data.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">Period Detail</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="px-3 py-2 font-medium">Period</th>
-                      <th className="px-3 py-2 font-medium text-right">Sales Rev</th>
-                      <th className="px-3 py-2 font-medium text-right">Prod Estimate</th>
-                      <th className="px-3 py-2 font-medium text-right">Materials</th>
-                      <th className="px-3 py-2 font-medium text-right">Labor</th>
-                      <th className="px-3 py-2 font-medium text-right">Machine</th>
-                      <th className="px-3 py-2 font-medium text-right">Overhead</th>
-                      <th className="px-3 py-2 font-medium text-right">Fees</th>
-                      <th className="px-3 py-2 font-medium text-right">Gross Profit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.period_data.map((row) => (
-                      <tr key={row.period} className="border-b border-border last:border-0 hover:bg-accent/50">
-                        <td className="px-3 py-2 font-medium">{row.period}</td>
-                        <td className="px-3 py-2 text-right">{formatCurrency(row.sales_revenue)}</td>
-                        <td className="px-3 py-2 text-right text-muted-foreground">{formatCurrency(row.operational_production_estimate)}</td>
-                        <td className="px-3 py-2 text-right">{formatCurrency(row.material_costs)}</td>
-                        <td className="px-3 py-2 text-right">{formatCurrency(row.labor_costs)}</td>
-                        <td className="px-3 py-2 text-right">{formatCurrency(row.machine_costs)}</td>
-                        <td className="px-3 py-2 text-right">{formatCurrency(row.overhead_costs)}</td>
-                        <td className="px-3 py-2 text-right">{formatCurrency(row.platform_fees)}</td>
-                        <td className={`px-3 py-2 text-right font-semibold ${row.gross_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {formatCurrency(row.gross_profit)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold">Period Detail</h3>
+              <DataTable<PLRow>
+                data={data.period_data}
+                rowKey={(row) => row.period}
+                columns={[
+                  {
+                    key: 'period',
+                    header: 'Period',
+                    cell: (row) => <span className="font-medium">{row.period}</span>,
+                  },
+                  {
+                    key: 'sales_revenue',
+                    header: 'Sales Rev',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.sales_revenue),
+                  },
+                  {
+                    key: 'operational_production_estimate',
+                    header: 'Prod Estimate',
+                    numeric: true,
+                    cell: (row) => (
+                      <span className="text-muted-foreground">
+                        {formatCurrency(row.operational_production_estimate)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'material_costs',
+                    header: 'Materials',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.material_costs),
+                  },
+                  {
+                    key: 'labor_costs',
+                    header: 'Labor',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.labor_costs),
+                  },
+                  {
+                    key: 'machine_costs',
+                    header: 'Machine',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.machine_costs),
+                  },
+                  {
+                    key: 'overhead_costs',
+                    header: 'Overhead',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.overhead_costs),
+                  },
+                  {
+                    key: 'platform_fees',
+                    header: 'Fees',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.platform_fees),
+                  },
+                  {
+                    key: 'gross_profit',
+                    header: 'Gross Profit',
+                    numeric: true,
+                    cell: (row) => (
+                      <span
+                        className={`font-semibold ${
+                          row.gross_profit >= 0
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}
+                      >
+                        {formatCurrency(row.gross_profit)}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             </div>
           )}
         </div>

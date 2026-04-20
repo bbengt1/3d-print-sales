@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import StatusBadge from '@/components/data/StatusBadge';
+import DataTable, { type Column } from '@/components/data/DataTable';
 
 interface UserRecord {
   id: string;
@@ -147,66 +148,119 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
-      {isLoading ? (
-        <div className="bg-card border border-border rounded-lg p-4 h-48 animate-pulse" />
-      ) : (
-        <div className="overflow-x-auto bg-card border border-border rounded-lg">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Created</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users?.map((u) => (
-                <tr key={u.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                  <td className="px-4 py-3 font-medium">
-                    {u.full_name}
-                    {u.id === currentUser?.id && (
-                      <span className="ml-2 text-xs text-muted-foreground">(you)</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge tone={u.role === 'admin' ? 'info' : 'neutral'}>{u.role}</StatusBadge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge tone={u.is_active ? 'success' : 'destructive'}>
-                      {u.is_active ? 'Active' : 'Inactive'}
-                    </StatusBadge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      {u.id !== currentUser?.id && (
-                        u.is_active ? (
-                          <button onClick={() => deactivate(u)} className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive cursor-pointer" title="Deactivate">
-                            <UserX className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button onClick={() => reactivate(u)} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-md text-muted-foreground hover:text-green-600 cursor-pointer" title="Reactivate">
-                            <Users className="w-4 h-4" />
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <UsersTable
+        users={users || []}
+        isLoading={isLoading}
+        currentUserId={currentUser?.id}
+        onEdit={openEdit}
+        onDeactivate={deactivate}
+        onReactivate={reactivate}
+      />
     </div>
+  );
+}
+
+interface UsersTableProps {
+  users: UserRecord[];
+  isLoading: boolean;
+  currentUserId?: string;
+  onEdit: (u: UserRecord) => void;
+  onDeactivate: (u: UserRecord) => void;
+  onReactivate: (u: UserRecord) => void;
+}
+
+function UsersTable({ users, isLoading, currentUserId, onEdit, onDeactivate, onReactivate }: UsersTableProps) {
+  const columns: Column<UserRecord>[] = [
+    {
+      key: 'full_name',
+      header: 'Name',
+      cell: (u) => (
+        <div className="font-medium">
+          {u.full_name}
+          {u.id === currentUserId && (
+            <span className="ml-2 text-xs text-muted-foreground">(you)</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      cell: (u) => <span className="text-muted-foreground">{u.email}</span>,
+    },
+    {
+      key: 'role',
+      header: 'Role',
+      cell: (u) => <StatusBadge tone={u.role === 'admin' ? 'info' : 'neutral'}>{u.role}</StatusBadge>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (u) => (
+        <StatusBadge tone={u.is_active ? 'success' : 'destructive'}>
+          {u.is_active ? 'Active' : 'Inactive'}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Created',
+      cell: (u) => (
+        <span className="text-xs text-muted-foreground">
+          {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '96px',
+      cell: (u) => (
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => onEdit(u)}
+            aria-label={`Edit ${u.full_name}`}
+            title="Edit"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted cursor-pointer"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+          {u.id !== currentUserId && (
+            u.is_active ? (
+              <button
+                type="button"
+                onClick={() => onDeactivate(u)}
+                aria-label={`Deactivate ${u.full_name}`}
+                title="Deactivate"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+              >
+                <UserX className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onReactivate(u)}
+                aria-label={`Reactivate ${u.full_name}`}
+                title="Reactivate"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-green-100 dark:hover:bg-green-900/20 hover:text-green-600 cursor-pointer"
+              >
+                <Users className="h-4 w-4" />
+              </button>
+            )
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable<UserRecord>
+      data={users}
+      columns={columns}
+      rowKey={(u) => u.id}
+      loading={isLoading}
+      emptyState="No users yet."
+    />
   );
 }

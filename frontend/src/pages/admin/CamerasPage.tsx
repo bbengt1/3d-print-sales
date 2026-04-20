@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Camera as CameraIcon, Link2, Link2Off, Pencil, Plus, Trash2, Video } from 'lucide-react';
+import { Link2, Link2Off, Pencil, Plus, Trash2, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
+import DataTable, { type Column } from '@/components/data/DataTable';
 import type { Camera, PaginatedCameras, PaginatedPrinters } from '@/types';
 
 type ModalMode = 'create' | 'edit' | null;
@@ -196,93 +197,12 @@ export default function CamerasPage() {
         </Button>
       </div>
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="animate-pulse space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 bg-muted/50 rounded-lg" />
-          ))}
-        </div>
-      ) : cameras.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <CameraIcon className="h-12 w-12 mx-auto mb-3 opacity-40" />
-          <p className="text-lg font-medium">No cameras yet</p>
-          <p className="text-sm mt-1">Add your first camera to start monitoring printers with live video.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left px-4 py-3 font-medium">Name</th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Stream</th>
-                <th className="text-left px-4 py-3 font-medium">Printer</th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Status</th>
-                <th className="text-right px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cameras.map((cam) => (
-                <tr key={cam.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Video className="h-4 w-4 text-info shrink-0" />
-                      <span className="font-medium">{cam.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <code className="text-xs bg-muted/50 px-1.5 py-0.5 rounded">{cam.stream_name}</code>
-                  </td>
-                  <td className="px-4 py-3">
-                    {cam.printer_name ? (
-                      <span className="flex items-center gap-1 text-primary">
-                        <Link2 className="h-3 w-3" />
-                        {cam.printer_name}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <Link2Off className="h-3 w-3" />
-                        Unassigned
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        cam.is_active
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {cam.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(cam)}
-                        className="p-1.5 rounded hover:bg-muted transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteMutation.mutate(cam.id)}
-                        className="p-1.5 rounded hover:bg-danger/10 text-danger transition-colors"
-                        title="Deactivate"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <CamerasTable
+        cameras={cameras}
+        isLoading={isLoading}
+        onEdit={openEdit}
+        onDeactivate={(id) => deleteMutation.mutate(id)}
+      />
 
       <Dialog open={Boolean(modal)} onOpenChange={(o) => !o && closeModal()}>
         <DialogContent className="max-w-lg">
@@ -448,5 +368,103 @@ export default function CamerasPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+interface CamerasTableProps {
+  cameras: Camera[];
+  isLoading: boolean;
+  onEdit: (cam: Camera) => void;
+  onDeactivate: (id: string) => void;
+}
+
+function CamerasTable({ cameras, isLoading, onEdit, onDeactivate }: CamerasTableProps) {
+  const columns: Column<Camera>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      cell: (cam) => (
+        <div className="flex items-center gap-2">
+          <Video className="h-4 w-4 text-info shrink-0" />
+          <span className="font-medium">{cam.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'stream',
+      header: 'Stream',
+      colClassName: 'hidden md:table-cell',
+      cell: (cam) => (
+        <code className="text-xs bg-muted/50 px-1.5 py-0.5 rounded">{cam.stream_name}</code>
+      ),
+    },
+    {
+      key: 'printer',
+      header: 'Printer',
+      cell: (cam) =>
+        cam.printer_name ? (
+          <span className="inline-flex items-center gap-1 text-primary">
+            <Link2 className="h-3 w-3" />
+            {cam.printer_name}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <Link2Off className="h-3 w-3" />
+            Unassigned
+          </span>
+        ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      colClassName: 'hidden sm:table-cell',
+      cell: (cam) => (
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+            cam.is_active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          {cam.is_active ? 'Active' : 'Inactive'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      align: 'right',
+      width: '96px',
+      cell: (cam) => (
+        <div className="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={() => onEdit(cam)}
+            aria-label={`Edit ${cam.name}`}
+            title="Edit"
+            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted transition-colors"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDeactivate(cam.id)}
+            aria-label={`Deactivate ${cam.name}`}
+            title="Deactivate"
+            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-danger/10 text-danger transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable<Camera>
+      data={cameras}
+      columns={columns}
+      rowKey={(cam) => cam.id}
+      loading={isLoading}
+      emptyState="No cameras yet — add your first camera to start monitoring printers with live video."
+    />
   );
 }
