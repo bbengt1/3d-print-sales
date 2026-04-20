@@ -3,13 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Edit, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
-import { SkeletonTable } from '@/components/ui/Skeleton';
-import EmptyState from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import StatusBadge from '@/components/data/StatusBadge';
+import DataTable, { type Column } from '@/components/data/DataTable';
 import type { SalesChannel } from '@/types';
 
 const emptyForm = { name: '', platform_fee_pct: 0, fixed_fee: 0, is_active: true };
@@ -124,55 +123,83 @@ export default function SalesChannelsPage() {
         </DialogContent>
       </Dialog>
 
-      {isLoading ? (
-        <SkeletonTable rows={4} cols={5} />
-      ) : !channels?.length ? (
-        <EmptyState
-          icon="default"
-          title="No sales channels"
-          description="Add a sales channel to track platform fees."
-          action={
-            <Button onClick={openNew}>
-              <Plus className="h-4 w-4" /> Add Channel
-            </Button>
-          }
-        />
-      ) : (
-        <div className="overflow-x-auto bg-card border border-border rounded-lg">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium text-right">Platform Fee %</th>
-                <th className="px-4 py-3 font-medium text-right">Fixed Fee</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {channels.map((ch) => (
-                <tr key={ch.id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                  <td className="px-4 py-3 font-medium">{ch.name}</td>
-                  <td className="px-4 py-3 text-right">{Number(ch.platform_fee_pct).toFixed(1)}%</td>
-                  <td className="px-4 py-3 text-right">${Number(ch.fixed_fee).toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleActive(ch)} className="cursor-pointer">
-                      <StatusBadge tone={ch.is_active ? 'success' : 'destructive'}>
-                        {ch.is_active ? 'Active' : 'Inactive'}
-                      </StatusBadge>
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => openEdit(ch)} className="p-1.5 hover:bg-accent rounded-md text-muted-foreground cursor-pointer" title="Edit">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <SalesChannelsTable
+        channels={channels || []}
+        isLoading={isLoading}
+        onEdit={openEdit}
+        onToggleActive={toggleActive}
+      />
     </div>
+  );
+}
+
+interface SalesChannelsTableProps {
+  channels: SalesChannel[];
+  isLoading: boolean;
+  onEdit: (ch: SalesChannel) => void;
+  onToggleActive: (ch: SalesChannel) => void;
+}
+
+function SalesChannelsTable({ channels, isLoading, onEdit, onToggleActive }: SalesChannelsTableProps) {
+  const columns: Column<SalesChannel>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      cell: (ch) => <span className="font-medium">{ch.name}</span>,
+    },
+    {
+      key: 'platform_fee_pct',
+      header: 'Platform Fee %',
+      numeric: true,
+      cell: (ch) => `${Number(ch.platform_fee_pct).toFixed(1)}%`,
+    },
+    {
+      key: 'fixed_fee',
+      header: 'Fixed Fee',
+      numeric: true,
+      cell: (ch) => `$${Number(ch.fixed_fee).toFixed(2)}`,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (ch) => (
+        <button
+          type="button"
+          onClick={() => onToggleActive(ch)}
+          aria-label={ch.is_active ? `Deactivate ${ch.name}` : `Activate ${ch.name}`}
+          className="cursor-pointer"
+        >
+          <StatusBadge tone={ch.is_active ? 'success' : 'destructive'}>
+            {ch.is_active ? 'Active' : 'Inactive'}
+          </StatusBadge>
+        </button>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '96px',
+      cell: (ch) => (
+        <button
+          type="button"
+          onClick={() => onEdit(ch)}
+          aria-label={`Edit ${ch.name}`}
+          title="Edit"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted cursor-pointer"
+        >
+          <Edit className="h-4 w-4" />
+        </button>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable<SalesChannel>
+      data={channels}
+      columns={columns}
+      rowKey={(ch) => ch.id}
+      loading={isLoading}
+      emptyState="No sales channels"
+    />
   );
 }

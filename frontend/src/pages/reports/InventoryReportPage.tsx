@@ -5,7 +5,8 @@ import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
-import type { InventoryReport } from '@/types';
+import DataTable from '@/components/data/DataTable';
+import type { InventoryReport, StockLevelRow } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#e0e7ff'];
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
@@ -67,36 +68,54 @@ export default function InventoryReportPage() {
 
           {/* Stock levels table */}
           {data.stock_levels.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">Stock Levels</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="px-4 py-2 font-medium">SKU</th>
-                      <th className="px-4 py-2 font-medium">Product</th>
-                      <th className="px-4 py-2 font-medium text-right">Stock</th>
-                      <th className="px-4 py-2 font-medium text-right">Unit Cost</th>
-                      <th className="px-4 py-2 font-medium text-right">Value</th>
-                      <th className="px-4 py-2 font-medium text-right">Reorder</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.stock_levels.map((row) => (
-                      <tr key={row.product_id} className="border-b border-border last:border-0 hover:bg-accent/50">
-                        <td className="px-4 py-2 font-mono text-xs">{row.sku}</td>
-                        <td className="px-4 py-2">{row.name}</td>
-                        <td className={`px-4 py-2 text-right ${row.is_low_stock ? 'text-amber-600 dark:text-amber-400 font-bold' : ''}`}>
-                          {row.stock_qty}
-                        </td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(row.unit_cost)}</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(row.stock_value)}</td>
-                        <td className="px-4 py-2 text-right text-muted-foreground">{row.reorder_point}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold">Stock Levels</h3>
+              <DataTable<StockLevelRow>
+                data={data.stock_levels}
+                rowKey={(row) => row.product_id}
+                columns={[
+                  {
+                    key: 'sku',
+                    header: 'SKU',
+                    cell: (row) => <span className="font-mono text-xs">{row.sku}</span>,
+                  },
+                  { key: 'name', header: 'Product', cell: (row) => row.name },
+                  {
+                    key: 'stock_qty',
+                    header: 'Stock',
+                    numeric: true,
+                    cell: (row) => (
+                      <span
+                        className={
+                          row.is_low_stock ? 'text-amber-600 dark:text-amber-400 font-bold' : ''
+                        }
+                      >
+                        {row.stock_qty}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'unit_cost',
+                    header: 'Unit Cost',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.unit_cost),
+                  },
+                  {
+                    key: 'stock_value',
+                    header: 'Value',
+                    numeric: true,
+                    cell: (row) => formatCurrency(row.stock_value),
+                  },
+                  {
+                    key: 'reorder_point',
+                    header: 'Reorder',
+                    numeric: true,
+                    cell: (row) => (
+                      <span className="text-muted-foreground">{row.reorder_point}</span>
+                    ),
+                  },
+                ]}
+              />
             </div>
           )}
 

@@ -5,7 +5,8 @@ import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
-import type { SalesReport } from '@/types';
+import DataTable from '@/components/data/DataTable';
+import type { SalesReport, ProductRanking, ChannelBreakdown } from '@/types';
 
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
   const normalized = Array.isArray(value) ? value[0] : value;
@@ -103,32 +104,38 @@ export default function SalesReportPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Top products */}
             {data.top_products.length > 0 && (
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Top Products</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left text-muted-foreground">
-                        <th className="pb-2 font-medium">Product</th>
-                        <th className="pb-2 font-medium text-right">Units</th>
-                        <th className="pb-2 font-medium text-right">Gross Sales</th>
-                        <th className="pb-2 font-medium text-right">Contribution</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.top_products.map((p, i) => (
-                        <tr key={i} className="border-b border-border last:border-0">
-                          <td className="py-2">{p.description}</td>
-                          <td className="py-2 text-right">{p.units_sold}</td>
-                          <td className="py-2 text-right">{formatCurrency(p.gross_sales)}</td>
-                          <td className={`py-2 text-right ${p.contribution_margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                            {formatCurrency(p.contribution_margin)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Top Products</h3>
+                <DataTable<ProductRanking & { _idx: number }>
+                  data={data.top_products.map((p, i) => ({ ...p, _idx: i }))}
+                  rowKey={(p) => String(p._idx)}
+                  columns={[
+                    { key: 'description', header: 'Product', cell: (p) => p.description },
+                    { key: 'units_sold', header: 'Units', numeric: true, cell: (p) => p.units_sold },
+                    {
+                      key: 'gross_sales',
+                      header: 'Gross Sales',
+                      numeric: true,
+                      cell: (p) => formatCurrency(p.gross_sales),
+                    },
+                    {
+                      key: 'contribution_margin',
+                      header: 'Contribution',
+                      numeric: true,
+                      cell: (p) => (
+                        <span
+                          className={
+                            p.contribution_margin >= 0
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-red-600 dark:text-red-400'
+                          }
+                        >
+                          {formatCurrency(p.contribution_margin)}
+                        </span>
+                      ),
+                    },
+                  ]}
+                />
               </div>
             )}
 
@@ -147,33 +154,49 @@ export default function SalesReportPage() {
                     <Bar dataKey="contribution_margin" name="Contribution Margin" fill="#10b981" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left text-muted-foreground">
-                        <th className="pb-2 font-medium">Channel</th>
-                        <th className="pb-2 font-medium text-right">Orders</th>
-                        <th className="pb-2 font-medium text-right">Gross Sales</th>
-                        <th className="pb-2 font-medium text-right">Gross Profit</th>
-                        <th className="pb-2 font-medium text-right">Fees</th>
-                        <th className="pb-2 font-medium text-right">Shipping</th>
-                        <th className="pb-2 font-medium text-right">Contribution</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.channel_breakdown.map((ch, i) => (
-                        <tr key={i} className="border-b border-border last:border-0">
-                          <td className="py-2">{ch.channel_name}</td>
-                          <td className="py-2 text-right">{ch.order_count}</td>
-                          <td className="py-2 text-right">{formatCurrency(ch.gross_sales)}</td>
-                          <td className="py-2 text-right">{formatCurrency(ch.gross_profit)}</td>
-                          <td className="py-2 text-right text-muted-foreground">{formatCurrency(ch.platform_fees)}</td>
-                          <td className="py-2 text-right text-muted-foreground">{formatCurrency(ch.shipping_costs)}</td>
-                          <td className="py-2 text-right">{formatCurrency(ch.contribution_margin)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="mt-4">
+                  <DataTable<ChannelBreakdown & { _idx: number }>
+                    data={data.channel_breakdown.map((ch, i) => ({ ...ch, _idx: i }))}
+                    rowKey={(ch) => String(ch._idx)}
+                    columns={[
+                      { key: 'channel_name', header: 'Channel', cell: (ch) => ch.channel_name },
+                      { key: 'order_count', header: 'Orders', numeric: true, cell: (ch) => ch.order_count },
+                      {
+                        key: 'gross_sales',
+                        header: 'Gross Sales',
+                        numeric: true,
+                        cell: (ch) => formatCurrency(ch.gross_sales),
+                      },
+                      {
+                        key: 'gross_profit',
+                        header: 'Gross Profit',
+                        numeric: true,
+                        cell: (ch) => formatCurrency(ch.gross_profit),
+                      },
+                      {
+                        key: 'platform_fees',
+                        header: 'Fees',
+                        numeric: true,
+                        cell: (ch) => (
+                          <span className="text-muted-foreground">{formatCurrency(ch.platform_fees)}</span>
+                        ),
+                      },
+                      {
+                        key: 'shipping_costs',
+                        header: 'Shipping',
+                        numeric: true,
+                        cell: (ch) => (
+                          <span className="text-muted-foreground">{formatCurrency(ch.shipping_costs)}</span>
+                        ),
+                      },
+                      {
+                        key: 'contribution_margin',
+                        header: 'Contribution',
+                        numeric: true,
+                        cell: (ch) => formatCurrency(ch.contribution_margin),
+                      },
+                    ]}
+                  />
                 </div>
               </div>
             )}
