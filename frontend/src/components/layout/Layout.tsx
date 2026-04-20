@@ -1,49 +1,21 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { ChevronLeft, PanelsTopLeft, X } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import WorkspaceLocalNav from './WorkspaceLocalNav';
-import { getVisibleWorkspaces, getWorkspaceForPath, isWorkspaceLinkActive } from './workspaces';
+import { getVisibleWorkspaces, isWorkspaceLinkActive } from './workspaces';
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuthStore();
   const location = useLocation();
-  const activeWorkspace = getWorkspaceForPath(location.pathname);
   const visibleWorkspaces = getVisibleWorkspaces(user?.role);
 
   return (
     <div className="flex h-full flex-col">
-      <div className="px-3 pb-4">
-        <div className="rounded-md border border-border bg-background/70 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
-              <PanelsTopLeft className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">
-                Active Workspace
-              </p>
-              <p className="mt-1 font-display text-base font-semibold text-foreground">
-                {activeWorkspace.label}
-              </p>
-            </div>
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {activeWorkspace.description}
-          </p>
-        </div>
-      </div>
-
-      <div className="px-3 pb-2">
-        <p className="px-3 text-xs font-medium text-muted-foreground">
-          Workspaces
-        </p>
-      </div>
-
-      <nav className="space-y-1 px-3">
+      <nav className="space-y-1 px-1">
         {visibleWorkspaces.map(({ key, to, label, icon: Icon, matchPrefixes }) => (
           <NavLink
             key={key}
@@ -51,23 +23,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={() =>
               cn(
-                'flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors no-underline',
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors no-underline',
                 isWorkspaceLinkActive(location.pathname, matchPrefixes)
-                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               )
             }
           >
-            <span
-              className={cn(
-                'flex h-9 w-9 items-center justify-center rounded-xl border transition-colors',
-                isWorkspaceLinkActive(location.pathname, matchPrefixes)
-                  ? 'border-primary-foreground/15 bg-primary-foreground/10'
-                  : 'border-border bg-background/70'
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-            </span>
+            <Icon className="h-4 w-4 shrink-0" />
             <span>{label}</span>
           </NavLink>
         ))}
@@ -86,7 +49,7 @@ export default function Layout() {
       <div className="mx-auto flex-1 w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="flex min-h-full gap-6 lg:gap-8">
           <aside className="hidden w-80 shrink-0 xl:block">
-            <div className="sticky top-24 rounded-lg border border-border bg-card/80 p-3 shadow-md backdrop-blur">
+            <div className="sticky top-24 rounded-md border border-border bg-card p-2 shadow-xs">
               <SidebarContent />
             </div>
           </aside>
