@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import type { Product, PaginatedTransactions } from '@/types';
 
 const TXN_TYPES = [
@@ -17,14 +18,6 @@ const TXN_TYPES = [
   { value: 'return', label: 'Return' },
   { value: 'waste', label: 'Waste' },
 ];
-
-const TYPE_COLORS: Record<string, string> = {
-  production: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  sale: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  adjustment: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  return: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  waste: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -151,9 +144,9 @@ export default function ProductDetailPage() {
             {!currentProduct.is_active && <p className="text-sm text-muted-foreground mt-2">This product is archived. Historical records and inventory history are preserved.</p>}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentProduct.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+            <StatusBadge tone={currentProduct.is_active ? 'success' : 'warning'}>
               {currentProduct.is_active ? 'Active' : 'Archived'}
-            </span>
+            </StatusBadge>
             <Link
               to={`/product-studio/products/${currentProduct.id}/edit`}
               className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent no-underline text-foreground"
@@ -322,9 +315,7 @@ export default function ProductDetailPage() {
                 <tr key={t.id} className="border-b border-border last:border-0 hover:bg-accent/50">
                   <td className="px-4 py-3 text-xs">{t.created_at ? new Date(t.created_at).toLocaleString() : '-'}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[t.type] || ''}`}>
-                      {t.type}
-                    </span>
+                    <StatusBadge tone={defaultStatusTone(t.type)}>{t.type}</StatusBadge>
                   </td>
                   <td className={`px-4 py-3 text-right font-medium ${t.quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {t.quantity > 0 ? '+' : ''}{t.quantity}

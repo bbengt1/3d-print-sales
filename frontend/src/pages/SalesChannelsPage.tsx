@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import StatusBadge from '@/components/data/StatusBadge';
 import type { SalesChannel } from '@/types';
 
 const emptyForm = { name: '', platform_fee_pct: 0, fixed_fee: 0, is_active: true };
@@ -155,8 +156,10 @@ export default function SalesChannelsPage() {
                   <td className="px-4 py-3 text-right">{Number(ch.platform_fee_pct).toFixed(1)}%</td>
                   <td className="px-4 py-3 text-right">${Number(ch.fixed_fee).toFixed(2)}</td>
                   <td className="px-4 py-3">
-                    <button onClick={() => toggleActive(ch)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${ch.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                      {ch.is_active ? 'Active' : 'Inactive'}
+                    <button onClick={() => toggleActive(ch)} className="cursor-pointer">
+                      <StatusBadge tone={ch.is_active ? 'success' : 'destructive'}>
+                        {ch.is_active ? 'Active' : 'Inactive'}
+                      </StatusBadge>
                     </button>
                   </td>
                   <td className="px-4 py-3">

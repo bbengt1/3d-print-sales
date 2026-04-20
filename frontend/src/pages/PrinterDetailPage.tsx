@@ -22,36 +22,8 @@ import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/layout/PageHeader';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import type { Job, PaginatedJobs, Printer, PrinterConnectionTestResult } from '@/types';
-
-const statusClasses: Record<string, string> = {
-  idle: 'bg-slate-100 text-slate-800 dark:bg-slate-800/60 dark:text-slate-200',
-  printing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  paused: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  maintenance: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  offline: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-300',
-  error: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
-
-const jobStatusClasses: Record<string, string> = {
-  completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  draft: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-        statusClasses[status] || 'bg-primary/10 text-primary'
-      )}
-    >
-      {status.replace('_', ' ')}
-    </span>
-  );
-}
 
 function formatDateTime(value: string | null) {
   if (!value) return '—';
@@ -211,17 +183,12 @@ export default function PrinterDetailPage() {
         title={printer.name}
         description={
           <span className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={liveStatus} />
-            <span
-              className={cn(
-                'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium',
-                printer.is_active
-                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-              )}
-            >
+            <StatusBadge tone={defaultStatusTone(liveStatus)}>
+              <span className="capitalize">{liveStatus.replace('_', ' ')}</span>
+            </StatusBadge>
+            <StatusBadge tone={printer.is_active ? 'success' : 'warning'}>
               {printer.is_active ? 'Active' : 'Inactive'}
-            </span>
+            </StatusBadge>
             <span className="text-muted-foreground">
               {[printer.manufacturer, printer.model, printer.location].filter(Boolean).join(' • ') || printer.slug}
             </span>
@@ -343,7 +310,9 @@ export default function PrinterDetailPage() {
                 A denser, operator-friendly view of the current telemetry from the configured monitoring provider.
               </p>
             </div>
-            {printer.monitor_enabled ? <StatusBadge status={liveStatus} /> : null}
+            {printer.monitor_enabled ? <StatusBadge tone={defaultStatusTone(liveStatus)}>
+              <span className="capitalize">{liveStatus.replace('_', ' ')}</span>
+            </StatusBadge> : null}
           </div>
 
           {!printer.monitor_enabled ? (
@@ -555,14 +524,9 @@ export default function PrinterDetailPage() {
                     <td className="px-4 py-3 text-right">{job.total_pieces}</td>
                     <td className="px-4 py-3 text-right">{formatCurrency(job.total_revenue)}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-                          jobStatusClasses[job.status] || 'bg-primary/10 text-primary'
-                        )}
-                      >
-                        {job.status.replace('_', ' ')}
-                      </span>
+                      <StatusBadge tone={defaultStatusTone(job.status)}>
+                        <span className="capitalize">{job.status.replace('_', ' ')}</span>
+                      </StatusBadge>
                     </td>
                   </tr>
                 ))}

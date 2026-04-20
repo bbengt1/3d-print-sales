@@ -26,54 +26,13 @@ import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import EmptyState from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/layout/PageHeader';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { cn } from '@/lib/utils';
 import type { Job, PaginatedJobs, PaginatedPrinters, Printer } from '@/types';
 
 const STATUS_OPTIONS = ['idle', 'printing', 'paused', 'maintenance', 'offline', 'error'] as const;
 const ACTIVE_ASSIGNMENT_STATUSES = new Set(['draft', 'in_progress']);
 const ATTENTION_STATUSES = new Set(['paused', 'maintenance', 'offline', 'error']);
-
-const statusClasses: Record<string, string> = {
-  idle: 'bg-slate-100 text-slate-800 dark:bg-slate-800/60 dark:text-slate-200',
-  printing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  paused: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  maintenance: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  offline: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-300',
-  error: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
-
-const jobStatusClasses: Record<string, string> = {
-  completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  draft: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-        statusClasses[status] || 'bg-primary/10 text-primary'
-      )}
-    >
-      {status.replace('_', ' ')}
-    </span>
-  );
-}
-
-function JobStatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-        jobStatusClasses[status] || 'bg-primary/10 text-primary'
-      )}
-    >
-      {status.replace('_', ' ')}
-    </span>
-  );
-}
 
 function formatDuration(seconds: number | null | undefined) {
   if (seconds == null || Number.isNaN(seconds)) return '—';
@@ -167,8 +126,10 @@ function PrinterWallCard({
             >
               {printer.name}
             </Link>
-            <StatusBadge status={liveStatus} />
-            {!printer.is_active ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Inactive</span> : null}
+            <StatusBadge tone={defaultStatusTone(liveStatus)}>
+              <span className="capitalize">{liveStatus.replace('_', ' ')}</span>
+            </StatusBadge>
+            {!printer.is_active ? <StatusBadge tone="warning">Inactive</StatusBadge> : null}
           </div>
           <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
             {[printer.manufacturer, printer.model, printer.location].filter(Boolean).join(' • ') || 'Printer details pending'}
@@ -277,7 +238,11 @@ function PrinterWallCard({
               <p className="mt-1 text-sm text-muted-foreground">No active or draft job is assigned.</p>
             )}
           </div>
-          {currentJob ? <JobStatusBadge status={currentJob.status} /> : null}
+          {currentJob ? (
+            <StatusBadge tone={defaultStatusTone(currentJob.status)}>
+              <span className="capitalize">{currentJob.status.replace('_', ' ')}</span>
+            </StatusBadge>
+          ) : null}
         </div>
       </div>
 

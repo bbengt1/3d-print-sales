@@ -5,18 +5,10 @@ import { ArrowLeft, Printer, RefreshCw, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
 import type { Sale, SalesChannel } from '@/types';
-
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  paid: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  shipped: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  delivered: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-  refunded: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  cancelled: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-};
 
 export default function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -208,9 +200,9 @@ export default function SaleDetailPage() {
           <h1 className="text-3xl font-bold">{sale.sale_number}</h1>
           <p className="text-muted-foreground">{sale.date} &middot; {sale.customer_name || 'No customer'}</p>
         </div>
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[sale.status] || statusColors.pending}`}>
-          {sale.status}
-        </span>
+        <StatusBadge tone={defaultStatusTone(sale.status)} className="text-sm">
+          <span className="capitalize">{sale.status}</span>
+        </StatusBadge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
