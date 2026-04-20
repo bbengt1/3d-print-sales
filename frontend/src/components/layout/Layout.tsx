@@ -7,6 +7,10 @@ import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import WorkspaceLocalNav from './WorkspaceLocalNav';
 import QueryErrorBoundary from '@/components/ui/QueryErrorBoundary';
+import CommandPalette, {
+  useCommandPaletteShortcuts,
+  useDefaultCommandGroups,
+} from '@/components/ui/CommandPalette';
 import { getVisibleWorkspaces, isWorkspaceLinkActive } from './workspaces';
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -42,14 +46,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export default function Layout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPaletteShortcuts();
+  const commandGroups = useDefaultCommandGroups();
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-sm text-foreground">
-      <Header onOpenMobileNav={() => setMobileNavOpen(true)} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} groups={commandGroups} />
+      <Header onOpenMobileNav={() => setMobileNavOpen(true)} onOpenCommandPalette={() => setPaletteOpen(true)} />
 
       <div className="mx-auto flex-1 w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="flex min-h-full gap-6 lg:gap-8">
-          <aside className="hidden w-80 shrink-0 xl:block">
+          <aside className="hidden w-72 shrink-0 lg:block xl:w-80">
             <div className="sticky top-24 rounded-md border border-border bg-card p-2 shadow-xs">
               <SidebarContent />
             </div>

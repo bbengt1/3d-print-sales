@@ -1,14 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Moon, Sun, Printer, LogOut, Menu, User } from 'lucide-react';
+import { Moon, Sun, Printer, LogOut, Menu, Search, User } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/Button';
 
 interface HeaderProps {
   onOpenMobileNav?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
-export default function Header({ onOpenMobileNav }: HeaderProps) {
+export default function Header({ onOpenMobileNav, onOpenCommandPalette }: HeaderProps) {
   const { dark, toggle } = useTheme();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -44,6 +45,32 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            {onOpenCommandPalette ? (
+              <button
+                type="button"
+                onClick={onOpenCommandPalette}
+                aria-label="Open command palette"
+                title="Search (⌘K)"
+                className="hidden min-w-[240px] items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted md:flex"
+              >
+                <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="flex-1 text-left">Search…</span>
+                <kbd className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-medium">
+                  ⌘K
+                </kbd>
+              </button>
+            ) : null}
+            {onOpenCommandPalette ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenCommandPalette}
+                aria-label="Open command palette"
+                className="md:hidden"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            ) : null}
             <Button
               variant="ghost"
               size="icon"
