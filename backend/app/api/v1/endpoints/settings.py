@@ -40,27 +40,6 @@ async def get_setting(key: str, admin: CurrentAdmin, db: DB):
 
 
 @router.put(
-    "/{key}",
-    response_model=SettingResponse,
-    summary="Update a setting",
-    description="Admin-only. Update the value of an existing configuration setting.",
-)
-async def update_setting(key: str, body: SettingUpdate, admin: CurrentAdmin, db: DB):
-    from app.models.setting import Setting
-
-    result = await db.execute(select(Setting).where(Setting.key == key))
-    setting = result.scalar_one_or_none()
-    if not setting:
-        raise HTTPException(status_code=404, detail=f"Setting '{key}' not found")
-    before = {"key": setting.key, "value": setting.value}
-    setting.value = body.value
-    await create_audit_log(db, actor_user_id=admin.id, entity_type="setting", entity_id=setting.key, action="update", before_snapshot=before, after_snapshot={"key": setting.key, "value": setting.value})
-    await db.commit()
-    await db.refresh(setting)
-    return setting
-
-
-@router.put(
     "/bulk",
     response_model=list[SettingResponse],
     summary="Bulk update settings",
@@ -80,3 +59,24 @@ async def bulk_update_settings(body: BulkSettingUpdate, admin: CurrentAdmin, db:
             updated.append(setting)
     await db.commit()
     return updated
+
+
+@router.put(
+    "/{key}",
+    response_model=SettingResponse,
+    summary="Update a setting",
+    description="Admin-only. Update the value of an existing configuration setting.",
+)
+async def update_setting(key: str, body: SettingUpdate, admin: CurrentAdmin, db: DB):
+    from app.models.setting import Setting
+
+    result = await db.execute(select(Setting).where(Setting.key == key))
+    setting = result.scalar_one_or_none()
+    if not setting:
+        raise HTTPException(status_code=404, detail=f"Setting '{key}' not found")
+    before = {"key": setting.key, "value": setting.value}
+    setting.value = body.value
+    await create_audit_log(db, actor_user_id=admin.id, entity_type="setting", entity_id=setting.key, action="update", before_snapshot=before, after_snapshot={"key": setting.key, "value": setting.value})
+    await db.commit()
+    await db.refresh(setting)
+    return setting
