@@ -19,6 +19,7 @@ const RatesPage = lazy(() => import('@/pages/RatesPage'));
 const CustomersPage = lazy(() => import('@/pages/CustomersPage'));
 const ProductsPage = lazy(() => import('@/pages/ProductsPage'));
 const ProductEditorPage = lazy(() => import('@/pages/ProductEditorPage'));
+const ProductLabelsPage = lazy(() => import('@/pages/ProductLabelsPage'));
 const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const PrintersPage = lazy(() => import('@/pages/PrintersPage'));
 const PrinterDetailPage = lazy(() => import('@/pages/PrinterDetailPage'));
@@ -116,6 +117,7 @@ export default function App() {
                 <Route path="/product-studio/products/:id/edit" element={<ProductEditorPage />} />
                 <Route path="/product-studio/calculator" element={<CalculatorPage />} />
                 <Route path="/product-studio/rates" element={<RatesPage />} />
+                <Route path="/product-studio/labels" element={<ProductLabelsPage />} />
 
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="/orders/jobs" element={<JobsPage />} />

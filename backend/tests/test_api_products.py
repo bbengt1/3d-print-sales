@@ -186,3 +186,82 @@ async def test_sku_auto_generation(client: AsyncClient, auth_headers: dict, seed
     )
     assert resp1.json()["sku"] == "PRD-PLA-0001"
     assert resp2.json()["sku"] == "PRD-PLA-0002"
+
+
+def _make_product_body(name: str, material_id: str, upc: str | None = None) -> dict:
+    body: dict = {"name": name, "material_id": material_id}
+    if upc is not None:
+        body["upc"] = upc
+    return body
+
+
+@pytest.mark.asyncio
+async def test_product_barcode_default_code128(
+    client: AsyncClient, auth_headers: dict, seed_material: Material
+):
+    create = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json=_make_product_body("Barcode target", str(seed_material.id)),
+    )
+    product_id = create.json()["id"]
+
+    resp = await client.get(
+        f"/api/v1/products/{product_id}/barcode", headers=auth_headers
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.headers["content-type"] == "image/png"
+    assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
+    assert "max-age" in resp.headers.get("cache-control", "")
+
+
+@pytest.mark.asyncio
+async def test_product_barcode_qr(
+    client: AsyncClient, auth_headers: dict, seed_material: Material
+):
+    create = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json=_make_product_body("QR target", str(seed_material.id)),
+    )
+    product_id = create.json()["id"]
+
+    resp = await client.get(
+        f"/api/v1/products/{product_id}/barcode",
+        params={"format": "qr"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.headers["content-type"] == "image/png"
+    assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+@pytest.mark.asyncio
+async def test_product_barcode_upc_without_upc_returns_400(
+    client: AsyncClient, auth_headers: dict, seed_material: Material
+):
+    create = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json=_make_product_body("No UPC here", str(seed_material.id)),
+    )
+    product_id = create.json()["id"]
+
+    resp = await client.get(
+        f"/api/v1/products/{product_id}/barcode",
+        params={"format": "upc"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 400
+    assert "UPC" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_product_barcode_missing_product_returns_404(
+    client: AsyncClient, auth_headers: dict
+):
+    resp = await client.get(
+        "/api/v1/products/00000000-0000-0000-0000-000000000000/barcode",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 404

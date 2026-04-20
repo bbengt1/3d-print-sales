@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Plus, Archive, ArchiveRestore, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, Archive, ArchiveRestore, Printer, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { printProductLabels } from '@/lib/printLabels';
+import { useLabelSettings } from '@/hooks/useLabelSettings';
+import ProductLabel from '@/components/labels/ProductLabel';
+import type { BarcodeFormat } from '@/lib/barcode';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -46,6 +50,8 @@ export default function ProductDetailPage() {
   const [zeroReason, setZeroReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmToggle, setConfirmToggle] = useState(false);
+  const labelSettings = useLabelSettings();
+  const [labelFormat, setLabelFormat] = useState<BarcodeFormat | null>(null);
 
   const submitAdjustment = async () => {
     if (adjForm.quantity === 0) { toast.error('Quantity cannot be 0'); return; }
@@ -195,6 +201,56 @@ export default function ProductDetailPage() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Label preview */}
+      <div className="mb-6 rounded-md border border-border bg-card p-5 shadow-xs">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Label</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Print a barcode or QR label for this product. Format defaults come from Admin → Settings.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(['code128', 'upc', 'qr'] as const).map((fmt) => {
+              const active = (labelFormat ?? labelSettings.defaultFormat) === fmt;
+              const disabled = fmt === 'upc' && !currentProduct.upc;
+              return (
+                <Button
+                  key={fmt}
+                  variant={active ? 'primary' : 'outline'}
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => setLabelFormat(fmt)}
+                  title={disabled ? 'Product has no UPC assigned' : undefined}
+                >
+                  {fmt === 'qr' ? 'QR' : fmt === 'upc' ? 'UPC' : 'Code128'}
+                </Button>
+              );
+            })}
+            <Button
+              size="sm"
+              onClick={() =>
+                printProductLabels([currentProduct], {
+                  format: labelFormat ?? labelSettings.defaultFormat,
+                  includePrice: labelSettings.includePrice,
+                })
+              }
+            >
+              <Printer className="h-3.5 w-3.5" /> Print label
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <ProductLabel
+            product={currentProduct}
+            format={labelFormat ?? labelSettings.defaultFormat}
+            includePrice={labelSettings.includePrice}
+            className="w-full max-w-sm"
+          />
+        </div>
       </div>
 
       {/* Adjust Stock */}

@@ -21,4 +21,10 @@ AI_SETTINGS_DATA = [
     ("ai_grok_api_key", "", "xAI API key for Grok insights."),
 ]
 
-SETTINGS_DATA = BUSINESS_SETTINGS_DATA + AI_SETTINGS_DATA
+LABEL_SETTINGS_DATA = [
+    ("barcode_default_format", "code128", "Default barcode format: code128, upc, or qr."),
+    ("barcode_label_template", "avery_5160", "Label sheet template: avery_5160 or continuous_roll_2x1."),
+    ("barcode_include_price", "false", "Include unit price on printed labels."),
+]
+
+SETTINGS_DATA = BUSINESS_SETTINGS_DATA + AI_SETTINGS_DATA + LABEL_SETTINGS_DATA

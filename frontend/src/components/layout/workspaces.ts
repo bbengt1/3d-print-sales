@@ -102,6 +102,7 @@ export const workspaces: WorkspaceDefinition[] = [
       { to: '/product-studio', label: 'Products', matchPrefixes: ['/product-studio', '/products'] },
       { to: '/product-studio/calculator', label: 'Calculator', matchPrefixes: ['/product-studio/calculator', '/calculator'] },
       { to: '/product-studio/rates', label: 'Rates', matchPrefixes: ['/product-studio/rates', '/rates'] },
+      { to: '/product-studio/labels', label: 'Labels', matchPrefixes: ['/product-studio/labels'] },
     ],
   },
   {
