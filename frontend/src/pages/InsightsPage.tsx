@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Bot, BrainCircuit, LoaderCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { Bot, LoaderCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
+import StatusBadge, { type StatusTone } from '@/components/data/StatusBadge';
 import { useAuthStore } from '@/store/auth';
 import type { AIInsightStatus, AIInsightSummary } from '@/types';
 
@@ -14,20 +18,11 @@ const presetQuestions = [
   'Where is margin weak or slipping?',
 ];
 
-function PriorityBadge({ value }: { value: 'high' | 'medium' | 'low' }) {
-  const classes =
-    value === 'high'
-      ? 'border-red-300 bg-red-50 text-red-800'
-      : value === 'medium'
-        ? 'border-amber-300 bg-amber-50 text-amber-800'
-        : 'border-emerald-300 bg-emerald-50 text-emerald-800';
-
-  return (
-    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${classes}`}>
-      {value}
-    </span>
-  );
-}
+const priorityToTone: Record<'high' | 'medium' | 'low', StatusTone> = {
+  high: 'destructive',
+  medium: 'warning',
+  low: 'success',
+};
 
 export default function InsightsPage() {
   const { user } = useAuthStore();
@@ -59,205 +54,247 @@ export default function InsightsPage() {
   };
 
   if (statusLoading) {
-    return <div className="space-y-6"><div className="h-12 w-72 animate-pulse rounded-md bg-card" /><div className="h-64 animate-pulse rounded-lg bg-card" /></div>;
+    return (
+      <div className="space-y-6">
+        <div className="h-12 w-72 animate-pulse rounded-md bg-card" />
+        <div className="h-64 animate-pulse rounded-md bg-card" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              <BrainCircuit className="h-4 w-4" />
-              AI Insights
-            </div>
-            <h1 className="mt-4 text-3xl font-bold">Read-only business intelligence</h1>
-            <p className="mt-3 text-base text-muted-foreground">
-              Ask for explainable recommendations grounded in your app data. This surface is analysis only: no autonomous writes, no silent pricing changes, and no hidden inventory actions.
-            </p>
-          </div>
-          <div className="rounded-md border border-border bg-background/80 p-4 text-sm">
-            <p className="font-semibold text-foreground">Active provider</p>
-            <p className="mt-2 text-lg font-semibold capitalize">{status?.provider || 'Unavailable'}</p>
-            <p className="text-muted-foreground">{status?.model || 'No model selected'}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {status?.available_providers.map((provider) => {
-                const isActive = provider === status.provider;
-                return (
-                  <span
-                    key={provider}
-                    className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${
-                      isActive
-                        ? 'border-primary/30 bg-primary/10 text-primary'
-                        : 'border-border bg-card text-muted-foreground'
-                    }`}
-                  >
-                    {provider}
-                  </span>
-                );
-              })}
-            </div>
-            <div className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{status?.note}</span>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="space-y-6">
+      <PageHeader
+        title="AI Insights"
+        description="Read-only business intelligence — explainable recommendations grounded in your app data. Analysis only, no autonomous writes."
+      />
 
-      <section className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
-        <div className="flex flex-col gap-4">
+      {/* Provider summary */}
+      <section className="rounded-md border border-border bg-card p-4 shadow-xs">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold">Ask a focused question</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Hick&apos;s Law applies here: start from one clear question instead of dumping every business concern into one prompt.
-            </p>
+            <p className="text-xs text-muted-foreground">Active provider</p>
+            <p className="mt-0.5 text-base font-semibold capitalize">{status?.provider || 'Unavailable'}</p>
+            <p className="text-sm text-muted-foreground">{status?.model || 'No model selected'}</p>
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            {presetQuestions.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => {
-                  setQuestion(item);
-                  void handleGenerate(item);
-                }}
-                className="rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors hover:border-primary/35 hover:bg-primary/5"
+          <div className="flex flex-wrap gap-1.5">
+            {status?.available_providers.map((provider) => (
+              <StatusBadge
+                key={provider}
+                tone={provider === status.provider ? 'info' : 'neutral'}
+                hideDot
               >
-                {item}
-              </button>
+                <span className="capitalize">{provider}</span>
+              </StatusBadge>
             ))}
           </div>
+        </div>
+        {status?.note ? (
+          <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{status.note}</span>
+          </p>
+        ) : null}
+      </section>
 
-          <textarea
+      {/* Ask question */}
+      <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+        <h2 className="text-base font-semibold">Ask a focused question</h2>
+
+        <div className="flex flex-wrap gap-2">
+          {presetQuestions.map((item) => (
+            <Button
+              key={item}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setQuestion(item);
+                void handleGenerate(item);
+              }}
+              disabled={summaryMutation.isPending}
+            >
+              {item}
+            </Button>
+          ))}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="insights-question" className="sr-only">
+            Your question
+          </Label>
+          <Textarea
+            id="insights-question"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             rows={4}
             placeholder="Example: What should I print more of before the next market and what inventory is at risk?"
-            className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              onClick={() => void handleGenerate()}
-              disabled={summaryMutation.isPending || !status?.configured}
-              size="lg"
-              className="min-h-12 font-semibold"
-            >
-              {summaryMutation.isPending ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-              {summaryMutation.isPending ? 'Generating insights...' : 'Generate Insight Summary'}
-            </Button>
-            {!status?.configured ? (
-              <p className="text-sm text-muted-foreground">
-                {isAdmin ? (
-                  <>
-                    Configure a provider in <Link to="/admin/settings" className="text-primary no-underline hover:underline">Admin Settings</Link> first.
-                  </>
-                ) : (
-                  'An admin must configure an AI provider before this workspace can generate insights.'
-                )}
-              </p>
-            ) : null}
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => void handleGenerate()}
+            disabled={summaryMutation.isPending || !status?.configured}
+          >
+            {summaryMutation.isPending ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {summaryMutation.isPending ? 'Generating insights…' : 'Generate Insight Summary'}
+          </Button>
+          {!status?.configured ? (
+            <p className="text-sm text-muted-foreground">
+              {isAdmin ? (
+                <>
+                  Configure a provider in{' '}
+                  <Link to="/admin/settings" className="text-primary no-underline hover:underline">
+                    Admin Settings
+                  </Link>{' '}
+                  first.
+                </>
+              ) : (
+                'An admin must configure an AI provider before this workspace can generate insights.'
+              )}
+            </p>
+          ) : null}
         </div>
       </section>
 
       {summary ? (
         <>
-          <section className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-primary/12 text-primary">
-                <Bot className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {summary.provider} • {summary.model}
+          {/* Summary header */}
+          <section className="rounded-md border border-border bg-card p-5 shadow-xs">
+            <div className="flex items-start gap-3">
+              <Bot className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">
+                  {summary.provider} · {summary.model}
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold">{summary.title}</h2>
-                <p className="mt-3 text-base text-muted-foreground">{summary.summary}</p>
-                <p className="mt-3 text-xs text-muted-foreground">
+                <h2 className="mt-1 text-lg font-semibold">{summary.title}</h2>
+                <p className="mt-2 text-sm text-muted-foreground">{summary.summary}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
                   Generated {new Date(summary.generated_at).toLocaleString()}
                 </p>
                 {summary.question ? (
-                  <p className="mt-4 text-sm text-muted-foreground">Question: {summary.question}</p>
+                  <p className="mt-3 text-sm text-muted-foreground">Question: {summary.question}</p>
                 ) : null}
               </div>
             </div>
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
-              <h3 className="text-xl font-semibold">Recommendations</h3>
-              <div className="mt-4 space-y-4">
-                {summary.recommendations.length ? summary.recommendations.map((item, index) => (
-                  <article key={`${item.title}-${index}`} className="rounded-md border border-border bg-background/80 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="font-semibold">{item.title}</h4>
-                      <PriorityBadge value={item.priority} />
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
-                    {item.recommended_action ? <p className="mt-3 text-sm font-medium text-foreground">Action: {item.recommended_action}</p> : null}
-                    {item.evidence.length ? <p className="mt-3 text-xs text-muted-foreground">Evidence: {item.evidence.join(' • ')}</p> : null}
-                  </article>
-                )) : <p className="text-sm text-muted-foreground">No recommendations returned.</p>}
-              </div>
-            </div>
+          {/* Recommendations + Risks */}
+          <div className="grid gap-6 xl:grid-cols-2">
+            <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+              <h2 className="text-base font-semibold">Recommendations</h2>
+              {summary.recommendations.length ? (
+                <div className="space-y-3">
+                  {summary.recommendations.map((item, index) => (
+                    <article
+                      key={`${item.title}-${index}`}
+                      className="rounded-md border border-border bg-background p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-sm font-semibold">{item.title}</h3>
+                        <StatusBadge tone={priorityToTone[item.priority]} hideDot>
+                          <span className="capitalize">{item.priority}</span>
+                        </StatusBadge>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
+                      {item.recommended_action ? (
+                        <p className="mt-3 text-sm font-medium">Action: {item.recommended_action}</p>
+                      ) : null}
+                      {item.evidence.length ? (
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Evidence: {item.evidence.join(' · ')}
+                        </p>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No recommendations returned.</p>
+              )}
+            </section>
 
-            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
-              <h3 className="text-xl font-semibold">Risks</h3>
-              <div className="mt-4 space-y-4">
-                {summary.risks.length ? summary.risks.map((item, index) => (
-                  <article key={`${item.title}-${index}`} className="rounded-md border border-border bg-background/80 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="font-semibold">{item.title}</h4>
-                      <PriorityBadge value={item.priority} />
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
-                    {item.recommended_action ? <p className="mt-3 text-sm font-medium text-foreground">Action: {item.recommended_action}</p> : null}
-                    {item.evidence.length ? <p className="mt-3 text-xs text-muted-foreground">Evidence: {item.evidence.join(' • ')}</p> : null}
-                  </article>
-                )) : <p className="text-sm text-muted-foreground">No risks returned.</p>}
-              </div>
-            </div>
-          </section>
+            <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+              <h2 className="text-base font-semibold">Risks</h2>
+              {summary.risks.length ? (
+                <div className="space-y-3">
+                  {summary.risks.map((item, index) => (
+                    <article
+                      key={`${item.title}-${index}`}
+                      className="rounded-md border border-border bg-background p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-sm font-semibold">{item.title}</h3>
+                        <StatusBadge tone={priorityToTone[item.priority]} hideDot>
+                          <span className="capitalize">{item.priority}</span>
+                        </StatusBadge>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
+                      {item.recommended_action ? (
+                        <p className="mt-3 text-sm font-medium">Action: {item.recommended_action}</p>
+                      ) : null}
+                      {item.evidence.length ? (
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Evidence: {item.evidence.join(' · ')}
+                        </p>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No risks returned.</p>
+              )}
+            </section>
+          </div>
 
-          <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
-              <h3 className="text-xl font-semibold">Evidence metrics</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Jakob&apos;s Law and Common Region: the recommendation copy stays separate from the source-of-truth numbers it references.
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {/* Evidence + follow-ups */}
+          <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+            <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+              <h2 className="text-base font-semibold">Evidence metrics</h2>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {summary.evidence_metrics.map((metric) => (
-                  <div key={metric.key} className="rounded-md border border-border bg-background/80 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{metric.label}</p>
-                    <p className="mt-2 text-xl font-semibold">{metric.value}</p>
+                  <div
+                    key={metric.key}
+                    className="rounded-md border border-border bg-background p-3"
+                  >
+                    <p className="text-xs text-muted-foreground">{metric.label}</p>
+                    <p className="mt-0.5 text-lg font-semibold tabular-nums">{metric.value}</p>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="rounded-lg border border-border bg-card/90 p-6 shadow-md">
-              <h3 className="text-xl font-semibold">Suggested follow-ups</h3>
-              <div className="mt-4 space-y-3">
-                {summary.suggested_questions.length ? summary.suggested_questions.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => {
-                      setQuestion(item);
-                      void handleGenerate(item);
-                    }}
-                    className="block w-full rounded-md border border-border bg-background/80 px-4 py-3 text-left text-sm font-medium transition-colors hover:border-primary/35 hover:bg-primary/5"
-                  >
-                    {item}
-                  </button>
-                )) : <p className="text-sm text-muted-foreground">No follow-up questions returned.</p>}
-              </div>
-            </div>
-          </section>
+            <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-3">
+              <h2 className="text-base font-semibold">Suggested follow-ups</h2>
+              {summary.suggested_questions.length ? (
+                <div className="flex flex-col gap-2">
+                  {summary.suggested_questions.map((item) => (
+                    <Button
+                      key={item}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start text-left font-normal"
+                      onClick={() => {
+                        setQuestion(item);
+                        void handleGenerate(item);
+                      }}
+                      disabled={summaryMutation.isPending}
+                    >
+                      {item}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No follow-up questions returned.</p>
+              )}
+            </section>
+          </div>
         </>
       ) : null}
     </div>

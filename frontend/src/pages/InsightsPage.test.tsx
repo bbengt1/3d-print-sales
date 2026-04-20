@@ -68,7 +68,7 @@ describe('InsightsPage', () => {
 
     renderInsightsPage();
 
-    expect(await screen.findByText('Read-only business intelligence')).toBeInTheDocument();
+    expect(await screen.findByText('AI Insights')).toBeInTheDocument();
     expect(screen.getByText(/Configure a provider in/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Admin Settings' })).toHaveAttribute('href', '/admin/settings');
     expect(screen.getByRole('button', { name: 'Generate Insight Summary' })).toBeDisabled();
@@ -113,7 +113,7 @@ describe('InsightsPage', () => {
 
     renderInsightsPage();
 
-    await screen.findByText('Read-only business intelligence');
+    await screen.findByText('AI Insights');
     await user.type(
       screen.getByPlaceholderText('Example: What should I print more of before the next market and what inventory is at risk?'),
       'What should I print more of before the next craft fair?'
