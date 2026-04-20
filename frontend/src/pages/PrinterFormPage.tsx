@@ -203,12 +203,11 @@ export default function PrinterFormPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="printer-name">Name *</Label>
-              <Input id="printer-name" value={form.name} onChange={(e) => update('name', e.target.value)} invalid={Boolean(errors.name)} placeholder="Bambu X1C #1" />
-              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+              <Label htmlFor="printer-name" required>Name</Label>
+              <Input id="printer-name" value={form.name} onChange={(e) => update('name', e.target.value)} error={errors.name} placeholder="Bambu X1C #1" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="printer-slug">Slug *</Label>
+              <Label htmlFor="printer-slug" required>Slug</Label>
               <Input
                 id="printer-slug"
                 value={form.slug}
@@ -216,10 +215,9 @@ export default function PrinterFormPage() {
                   setSlugTouched(true);
                   update('slug', slugify(e.target.value));
                 }}
-                invalid={Boolean(errors.slug)}
+                error={errors.slug}
                 placeholder="bambu-x1c-1"
               />
-              {errors.slug && <p className="text-xs text-destructive">{errors.slug}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="printer-manufacturer">Manufacturer</Label>
@@ -281,18 +279,16 @@ export default function PrinterFormPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="printer-monitor-poll">Poll interval (seconds)</Label>
-                    <Input id="printer-monitor-poll" type="number" min={5} max={3600} value={form.monitor_poll_interval_seconds} onChange={(e) => update('monitor_poll_interval_seconds', Number(e.target.value) || 30)} invalid={Boolean(errors.monitor_poll_interval_seconds)} />
-                    {errors.monitor_poll_interval_seconds && <p className="text-xs text-destructive">{errors.monitor_poll_interval_seconds}</p>}
+                    <Input id="printer-monitor-poll" type="number" min={5} max={3600} value={form.monitor_poll_interval_seconds} onChange={(e) => update('monitor_poll_interval_seconds', Number(e.target.value) || 30)} error={errors.monitor_poll_interval_seconds} />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="printer-monitor-base-url">Base URL *</Label>
-                  <Input id="printer-monitor-base-url" value={form.monitor_base_url} onChange={(e) => update('monitor_base_url', e.target.value)} invalid={Boolean(errors.monitor_base_url)} placeholder={selectedProvider.placeholder} />
+                  <Label htmlFor="printer-monitor-base-url" required>Base URL</Label>
+                  <Input id="printer-monitor-base-url" value={form.monitor_base_url} onChange={(e) => update('monitor_base_url', e.target.value)} error={errors.monitor_base_url} placeholder={selectedProvider.placeholder} />
                   <p className="text-xs text-muted-foreground">
                     {form.monitor_provider === 'moonraker' ? 'Use the Moonraker API URL, typically port 7125.' : 'Use the OctoPrint base URL hosting the API.'}
                   </p>
-                  {errors.monitor_base_url && <p className="text-xs text-destructive">{errors.monitor_base_url}</p>}
                 </div>
 
                 <div className="space-y-1.5">

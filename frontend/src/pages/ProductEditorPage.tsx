@@ -186,7 +186,7 @@ export default function ProductEditorPage() {
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
               <div className="lg:col-span-2 space-y-1.5">
-                <Label htmlFor="product-name">Product name *</Label>
+                <Label htmlFor="product-name" required>Product name</Label>
                 <Input
                   id="product-name"
                   value={form.name}
@@ -194,10 +194,9 @@ export default function ProductEditorPage() {
                     setForm((current) => ({ ...current, name: event.target.value }));
                     setFormErrors((current) => ({ ...current, name: '' }));
                   }}
-                  invalid={Boolean(formErrors.name)}
+                  error={formErrors.name}
                   placeholder="Desk Dragon, Tool Holder, Display Plaque..."
                 />
-                {formErrors.name ? <p className="text-xs text-destructive">{formErrors.name}</p> : null}
               </div>
 
               <div className="lg:col-span-2 space-y-1.5">
@@ -233,7 +232,7 @@ export default function ProductEditorPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="product-material">Material *</Label>
+                <Label htmlFor="product-material" required>Material</Label>
                 <select
                   id="product-material"
                   value={form.material_id}
@@ -262,9 +261,8 @@ export default function ProductEditorPage() {
                   step="0.01"
                   value={form.unit_price}
                   onChange={(event) => setForm((current) => ({ ...current, unit_price: Number(event.target.value) }))}
-                  invalid={Boolean(formErrors.unit_price)}
+                  error={formErrors.unit_price}
                 />
-                {formErrors.unit_price ? <p className="text-xs text-destructive">{formErrors.unit_price}</p> : null}
               </div>
 
               <div className="space-y-1.5">
@@ -275,9 +273,8 @@ export default function ProductEditorPage() {
                   min="0"
                   value={form.reorder_point}
                   onChange={(event) => setForm((current) => ({ ...current, reorder_point: Number(event.target.value) }))}
-                  invalid={Boolean(formErrors.reorder_point)}
+                  error={formErrors.reorder_point}
                 />
-                {formErrors.reorder_point ? <p className="text-xs text-destructive">{formErrors.reorder_point}</p> : null}
               </div>
             </div>
 

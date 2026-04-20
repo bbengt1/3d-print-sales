@@ -222,9 +222,8 @@ export default function CamerasPage() {
                   value={form.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="Wyze Cam - Bay 1"
-                  invalid={Boolean(errors.name)}
+                  error={errors.name}
                 />
-                {errors.name && <p className="text-xs text-danger">{errors.name}</p>}
               </div>
 
               {/* Slug */}
@@ -236,9 +235,8 @@ export default function CamerasPage() {
                   value={form.slug}
                   onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
                   placeholder="wyze-cam-bay-1"
-                  invalid={Boolean(errors.slug)}
+                  error={errors.slug}
                 />
-                {errors.slug && <p className="text-xs text-danger">{errors.slug}</p>}
               </div>
 
               {/* go2rtc Base URL */}
@@ -251,11 +249,8 @@ export default function CamerasPage() {
                   onChange={(e) => setForm((f) => ({ ...f, go2rtc_base_url: e.target.value }))}
                   placeholder="http://192.168.1.50:1984"
                   className="font-mono"
-                  invalid={Boolean(errors.go2rtc_base_url)}
+                  error={errors.go2rtc_base_url}
                 />
-                {errors.go2rtc_base_url && (
-                  <p className="text-xs text-danger">{errors.go2rtc_base_url}</p>
-                )}
               </div>
 
               {/* Stream Name */}
@@ -268,11 +263,8 @@ export default function CamerasPage() {
                   onChange={(e) => setForm((f) => ({ ...f, stream_name: e.target.value }))}
                   placeholder="wyze_printer_1"
                   className="font-mono"
-                  invalid={Boolean(errors.stream_name)}
+                  error={errors.stream_name}
                 />
-                {errors.stream_name && (
-                  <p className="text-xs text-danger">{errors.stream_name}</p>
-                )}
               </div>
 
               {/* Snapshot Preview */}
@@ -298,7 +290,7 @@ export default function CamerasPage() {
                     )}
                     {!previewLoading && previewError && (
                       <div className="text-center px-4">
-                        <p className="text-danger text-sm">{previewError}</p>
+                        <p className="text-destructive text-sm">{previewError}</p>
                         <button
                           type="button"
                           onClick={fetchPreview}

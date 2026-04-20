@@ -59,7 +59,7 @@ export default function PrinterMonitorPage() {
     status === 'printing'
       ? 'text-primary'
       : status === 'error'
-        ? 'text-danger'
+        ? 'text-destructive'
         : status === 'paused'
           ? 'text-warning'
           : 'text-muted-foreground';
@@ -147,7 +147,7 @@ export default function PrinterMonitorPage() {
 
             {/* Nozzle temp */}
             <div className="flex items-center gap-1.5 text-white/70" title="Nozzle">
-              <Thermometer className="h-4 w-4 text-danger/70" />
+              <Thermometer className="h-4 w-4 text-destructive/70" />
               <span className="text-sm">{formatTemp(printer.monitor_tool_temp_c)}</span>
             </div>
 

@@ -145,7 +145,7 @@ export default function RatesPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="rate-name">Name *</Label>
+              <Label htmlFor="rate-name" required>Name</Label>
               <Input
                 id="rate-name"
                 value={form.name}
@@ -153,25 +153,23 @@ export default function RatesPage() {
                   setForm({ ...form, name: e.target.value });
                   setFormErrors({ ...formErrors, name: '' });
                 }}
-                invalid={Boolean(formErrors.name)}
+                error={formErrors.name}
               />
-              {formErrors.name && <p className="text-destructive text-xs">{formErrors.name}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rate-value">Value *</Label>
+                <Label htmlFor="rate-value" required>Value</Label>
                 <Input
                   id="rate-value"
                   type="number"
                   step="0.01"
                   value={form.value}
                   onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
-                  invalid={Boolean(formErrors.value)}
+                  error={formErrors.value}
                 />
-                {formErrors.value && <p className="text-destructive text-xs">{formErrors.value}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="rate-unit">Unit *</Label>
+                <Label htmlFor="rate-unit" required>Unit</Label>
                 <select
                   id="rate-unit"
                   value={form.unit}

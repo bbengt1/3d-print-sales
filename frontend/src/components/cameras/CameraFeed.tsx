@@ -267,7 +267,7 @@ export default function CameraFeed({
     return (
       <div className={`flex items-center justify-center bg-black/60 text-muted-foreground ${className}`}>
         <div className="flex flex-col items-center gap-2">
-          <VideoOff className="h-8 w-8 text-danger opacity-70" />
+          <VideoOff className="h-8 w-8 text-destructive opacity-70" />
           <span className="text-xs">Camera offline</span>
           <button
             type="button"

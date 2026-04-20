@@ -136,7 +136,7 @@ export default function CustomersPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="cust-name">Name *</Label>
+              <Label htmlFor="cust-name" required>Name</Label>
               <Input id="cust-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div className="space-y-1.5">
