@@ -39,7 +39,7 @@ export default function PLReportPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-6">Profit & Loss</h2>
+      <h2 className="text-base font-semibold mb-6">Profit & Loss</h2>
 
       <ReportControls
         dateFrom={dateFrom}
@@ -82,7 +82,7 @@ export default function PLReportPage() {
 
           {/* Cost breakdown */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Cost Breakdown</h3>
+            <h3 className="text-base font-semibold mb-4">Cost Breakdown</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
                 { label: 'Materials', value: s.material_costs },
@@ -106,7 +106,7 @@ export default function PLReportPage() {
           {/* Trend chart */}
           {data.period_data.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">P&L Trend</h3>
+              <h3 className="text-base font-semibold mb-4">P&L Trend</h3>
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={data.period_data}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -127,7 +127,7 @@ export default function PLReportPage() {
           {/* Period table */}
           {data.period_data.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold">Period Detail</h3>
+              <h3 className="text-base font-semibold">Period Detail</h3>
               <DataTable<PLRow>
                 data={data.period_data}
                 rowKey={(row) => row.period}

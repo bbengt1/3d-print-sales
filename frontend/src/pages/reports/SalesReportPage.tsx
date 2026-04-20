@@ -35,7 +35,7 @@ export default function SalesReportPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-6">Sales Report</h2>
+      <h2 className="text-base font-semibold mb-6">Sales Report</h2>
 
       <ReportControls
         dateFrom={dateFrom}
@@ -75,7 +75,7 @@ export default function SalesReportPage() {
           {/* Revenue over time chart */}
           {data.period_data.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">Revenue Over Time</h3>
+              <h3 className="text-base font-semibold mb-4">Revenue Over Time</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data.period_data}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -95,7 +95,7 @@ export default function SalesReportPage() {
             {/* Top products */}
             {data.top_products.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold">Top Products</h3>
+                <h3 className="text-base font-semibold">Top Products</h3>
                 <DataTable<ProductRanking & { _idx: number }>
                   data={data.top_products.map((p, i) => ({ ...p, _idx: i }))}
                   rowKey={(p) => String(p._idx)}
@@ -132,7 +132,7 @@ export default function SalesReportPage() {
             {/* Channel breakdown */}
             {data.channel_breakdown.length > 0 && (
               <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Channel Breakdown</h3>
+                <h3 className="text-base font-semibold mb-4">Channel Breakdown</h3>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={data.channel_breakdown}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />

@@ -175,7 +175,7 @@ export default function InsightsPage() {
                 <p className="text-xs text-muted-foreground">
                   {summary.provider} · {summary.model}
                 </p>
-                <h2 className="mt-1 text-lg font-semibold">{summary.title}</h2>
+                <h2 className="mt-1 text-base font-semibold">{summary.title}</h2>
                 <p className="mt-2 text-sm text-muted-foreground">{summary.summary}</p>
                 <p className="mt-2 text-xs text-muted-foreground">
                   Generated {new Date(summary.generated_at).toLocaleString()}

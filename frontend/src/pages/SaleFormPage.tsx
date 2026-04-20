@@ -152,7 +152,7 @@ export default function SaleFormPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Header info */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Sale Details</h2>
+            <h2 className="text-base font-semibold mb-4">Sale Details</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="sale-date">Date *</Label>
@@ -218,7 +218,7 @@ export default function SaleFormPage() {
           </div>
 
           <div className="bg-card border border-border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Shipment Label</h2>
+            <h2 className="text-base font-semibold mb-4">Shipment Label</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="sale-ship-recipient">Recipient</Label>
@@ -261,7 +261,7 @@ export default function SaleFormPage() {
           {/* Line items */}
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Line Items</h2>
+              <h2 className="text-base font-semibold">Line Items</h2>
               <button onClick={addItem} className="inline-flex items-center gap-1 text-sm text-primary hover:opacity-80">
                 <Plus className="w-4 h-4" /> Add Item
               </button>
@@ -314,7 +314,7 @@ export default function SaleFormPage() {
         <div className="space-y-6">
           {/* Shipping & Tax */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Shipping & Tax</h2>
+            <h2 className="text-base font-semibold mb-4">Shipping & Tax</h2>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="sale-shipping-charged">Shipping Charged</Label>
@@ -333,7 +333,7 @@ export default function SaleFormPage() {
 
           {/* Order Total */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Order Total</h2>
+            <h2 className="text-base font-semibold mb-4">Order Total</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
