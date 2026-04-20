@@ -7,6 +7,9 @@ import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import type { Product, PaginatedTransactions } from '@/types';
@@ -242,13 +245,13 @@ export default function ProductDetailPage() {
             <p className="text-sm text-muted-foreground">
               This creates an inventory adjustment record and preserves audit history. A reason is required.
             </p>
-            <div>
-              <label className="block text-sm font-medium mb-1">Reason</label>
-              <textarea
+            <div className="space-y-1.5">
+              <Label htmlFor="zero-stock-reason">Reason</Label>
+              <Textarea
+                id="zero-stock-reason"
                 value={zeroReason}
                 onChange={(e) => setZeroReason(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Why is stock being reset to zero?"
               />
             </div>
@@ -269,19 +272,24 @@ export default function ProductDetailPage() {
             <DialogTitle>Adjust stock</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
-              <select value={adjForm.type} onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+            <div className="space-y-1.5">
+              <Label htmlFor="adjust-type-detail">Type</Label>
+              <select
+                id="adjust-type-detail"
+                value={adjForm.type}
+                onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
                 {TXN_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Quantity</label>
-              <input type="number" value={adjForm.quantity} onChange={(e) => setAdjForm({ ...adjForm, quantity: Number(e.target.value) })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Positive to add, negative to remove" />
+            <div className="space-y-1.5">
+              <Label htmlFor="adjust-qty-detail">Quantity</Label>
+              <Input id="adjust-qty-detail" type="number" value={adjForm.quantity} onChange={(e) => setAdjForm({ ...adjForm, quantity: Number(e.target.value) })} placeholder="Positive to add, negative to remove" />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Notes</label>
-              <input value={adjForm.notes} onChange={(e) => setAdjForm({ ...adjForm, notes: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Optional" />
+            <div className="space-y-1.5">
+              <Label htmlFor="adjust-notes-detail">Notes</Label>
+              <Input id="adjust-notes-detail" value={adjForm.notes} onChange={(e) => setAdjForm({ ...adjForm, notes: e.target.value })} placeholder="Optional" />
             </div>
           </div>
           <DialogFooter>

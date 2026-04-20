@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Moon, Sun } from 'lucide-react';
@@ -84,34 +86,32 @@ export default function LoginPage() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Email</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.email ? 'border-destructive' : 'border-input'
-                }`}
                 placeholder="admin@example.com"
+                invalid={Boolean(errors.email)}
               />
               {errors.email && (
-                <p className="text-destructive text-xs mt-1">{errors.email}</p>
+                <p className="text-destructive text-xs">{errors.email}</p>
               )}
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Password</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.password ? 'border-destructive' : 'border-input'
-                }`}
                 placeholder="Enter your password"
+                invalid={Boolean(errors.password)}
               />
               {errors.password && (
-                <p className="text-destructive text-xs mt-1">{errors.password}</p>
+                <p className="text-destructive text-xs">{errors.password}</p>
               )}
             </div>
             <Button type="submit" disabled={loading} className="w-full">

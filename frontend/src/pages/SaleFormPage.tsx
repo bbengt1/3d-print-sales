@@ -5,6 +5,9 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import { formatCurrency } from '@/lib/utils';
 import type { SalesChannel, PaginatedProducts, Customer } from '@/types';
 
@@ -128,8 +131,8 @@ export default function SaleFormPage() {
     }
   };
 
-  const inputCls =
-    'w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring';
+  const selectCls =
+    'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
   return (
     <div>
@@ -147,21 +150,22 @@ export default function SaleFormPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Sale Details</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Date *</label>
-                <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-date">Date *</Label>
+                <Input id="sale-date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputCls}>
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-status">Status</Label>
+                <select id="sale-status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={selectCls}>
                   {['pending', 'paid', 'shipped', 'delivered'].map((s) => (
                     <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Customer</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-customer">Customer</Label>
+                <Input
+                  id="sale-customer"
                   list="customer-list"
                   value={form.customer_name}
                   onChange={(e) =>
@@ -172,7 +176,6 @@ export default function SaleFormPage() {
                     }))
                   }
                   placeholder="Customer name..."
-                  className={inputCls}
                 />
                 <datalist id="customer-list">
                   {customers?.map((c) => (
@@ -180,18 +183,18 @@ export default function SaleFormPage() {
                   ))}
                 </datalist>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Sales Channel</label>
-                <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })} className={inputCls}>
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-channel">Sales Channel</Label>
+                <select id="sale-channel" value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })} className={selectCls}>
                   <option value="">Direct Sale</option>
                   {channels?.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Payment Method</label>
-                <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })} className={inputCls}>
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-payment">Payment Method</Label>
+                <select id="sale-payment" value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })} className={selectCls}>
                   <option value="card">Card</option>
                   <option value="cash">Cash</option>
                   <option value="paypal">PayPal</option>
@@ -199,51 +202,51 @@ export default function SaleFormPage() {
                   <option value="other">Other</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tracking Number</label>
-                <input value={form.tracking_number} onChange={(e) => setForm({ ...form, tracking_number: e.target.value })} placeholder="Optional" className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-tracking">Tracking Number</Label>
+                <Input id="sale-tracking" value={form.tracking_number} onChange={(e) => setForm({ ...form, tracking_number: e.target.value })} placeholder="Optional" />
               </div>
             </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium mb-1">Notes</label>
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className={inputCls} />
+            <div className="mt-4 space-y-1.5">
+              <Label htmlFor="sale-notes">Notes</Label>
+              <Textarea id="sale-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
             </div>
           </div>
 
           <div className="bg-card border border-border rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Shipment Label</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Recipient</label>
-                <input value={form.shipping_recipient_name} onChange={(e) => setForm({ ...form, shipping_recipient_name: e.target.value })} placeholder="Customer or recipient name" className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-ship-recipient">Recipient</Label>
+                <Input id="sale-ship-recipient" value={form.shipping_recipient_name} onChange={(e) => setForm({ ...form, shipping_recipient_name: e.target.value })} placeholder="Customer or recipient name" />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Company</label>
-                <input value={form.shipping_company} onChange={(e) => setForm({ ...form, shipping_company: e.target.value })} placeholder="Optional" className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-ship-company">Company</Label>
+                <Input id="sale-ship-company" value={form.shipping_company} onChange={(e) => setForm({ ...form, shipping_company: e.target.value })} placeholder="Optional" />
               </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium mb-1">Address Line 1</label>
-                <input value={form.shipping_address_line1} onChange={(e) => setForm({ ...form, shipping_address_line1: e.target.value })} placeholder="Street address" className={inputCls} />
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label htmlFor="sale-ship-address1">Address Line 1</Label>
+                <Input id="sale-ship-address1" value={form.shipping_address_line1} onChange={(e) => setForm({ ...form, shipping_address_line1: e.target.value })} placeholder="Street address" />
               </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium mb-1">Address Line 2</label>
-                <input value={form.shipping_address_line2} onChange={(e) => setForm({ ...form, shipping_address_line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" className={inputCls} />
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label htmlFor="sale-ship-address2">Address Line 2</Label>
+                <Input id="sale-ship-address2" value={form.shipping_address_line2} onChange={(e) => setForm({ ...form, shipping_address_line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">City</label>
-                <input value={form.shipping_city} onChange={(e) => setForm({ ...form, shipping_city: e.target.value })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-ship-city">City</Label>
+                <Input id="sale-ship-city" value={form.shipping_city} onChange={(e) => setForm({ ...form, shipping_city: e.target.value })} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">State / Region</label>
-                <input value={form.shipping_state} onChange={(e) => setForm({ ...form, shipping_state: e.target.value })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-ship-state">State / Region</Label>
+                <Input id="sale-ship-state" value={form.shipping_state} onChange={(e) => setForm({ ...form, shipping_state: e.target.value })} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Postal Code</label>
-                <input value={form.shipping_postal_code} onChange={(e) => setForm({ ...form, shipping_postal_code: e.target.value })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-ship-postal">Postal Code</Label>
+                <Input id="sale-ship-postal" value={form.shipping_postal_code} onChange={(e) => setForm({ ...form, shipping_postal_code: e.target.value })} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Country</label>
-                <input value={form.shipping_country} onChange={(e) => setForm({ ...form, shipping_country: e.target.value })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-ship-country">Country</Label>
+                <Input id="sale-ship-country" value={form.shipping_country} onChange={(e) => setForm({ ...form, shipping_country: e.target.value })} />
               </div>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
@@ -262,12 +265,13 @@ export default function SaleFormPage() {
             <div className="space-y-4">
               {items.map((item, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-12 sm:col-span-3">
-                    <label className="block text-xs text-muted-foreground mb-1">Product</label>
+                  <div className="col-span-12 sm:col-span-3 space-y-1.5">
+                    <Label htmlFor={`sale-item-${idx}-product`} className="text-xs text-muted-foreground">Product</Label>
                     <select
+                      id={`sale-item-${idx}-product`}
                       value={item.product_id}
                       onChange={(e) => selectProduct(idx, e.target.value)}
-                      className="w-full px-2 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className={selectCls}
                     >
                       <option value="">Custom item...</option>
                       {products.map((p) => (
@@ -275,21 +279,21 @@ export default function SaleFormPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-span-12 sm:col-span-3">
-                    <label className="block text-xs text-muted-foreground mb-1">Description *</label>
-                    <input value={item.description} onChange={(e) => updateItem(idx, { description: e.target.value })} className="w-full px-2 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <div className="col-span-12 sm:col-span-3 space-y-1.5">
+                    <Label htmlFor={`sale-item-${idx}-description`} className="text-xs text-muted-foreground">Description *</Label>
+                    <Input id={`sale-item-${idx}-description`} value={item.description} onChange={(e) => updateItem(idx, { description: e.target.value })} />
                   </div>
-                  <div className="col-span-4 sm:col-span-1">
-                    <label className="block text-xs text-muted-foreground mb-1">Qty</label>
-                    <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })} className="w-full px-2 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <div className="col-span-4 sm:col-span-1 space-y-1.5">
+                    <Label htmlFor={`sale-item-${idx}-qty`} className="text-xs text-muted-foreground">Qty</Label>
+                    <Input id={`sale-item-${idx}-qty`} type="number" min="1" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })} />
                   </div>
-                  <div className="col-span-4 sm:col-span-2">
-                    <label className="block text-xs text-muted-foreground mb-1">Price ($)</label>
-                    <input type="number" step="0.01" min="0" value={item.unit_price} onChange={(e) => updateItem(idx, { unit_price: Number(e.target.value) })} className="w-full px-2 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <div className="col-span-4 sm:col-span-2 space-y-1.5">
+                    <Label htmlFor={`sale-item-${idx}-price`} className="text-xs text-muted-foreground">Price ($)</Label>
+                    <Input id={`sale-item-${idx}-price`} type="number" step="0.01" min="0" value={item.unit_price} onChange={(e) => updateItem(idx, { unit_price: Number(e.target.value) })} />
                   </div>
-                  <div className="col-span-3 sm:col-span-2">
-                    <label className="block text-xs text-muted-foreground mb-1">Cost ($)</label>
-                    <input type="number" step="0.01" min="0" value={item.unit_cost} onChange={(e) => updateItem(idx, { unit_cost: Number(e.target.value) })} className="w-full px-2 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <div className="col-span-3 sm:col-span-2 space-y-1.5">
+                    <Label htmlFor={`sale-item-${idx}-cost`} className="text-xs text-muted-foreground">Cost ($)</Label>
+                    <Input id={`sale-item-${idx}-cost`} type="number" step="0.01" min="0" value={item.unit_cost} onChange={(e) => updateItem(idx, { unit_cost: Number(e.target.value) })} />
                   </div>
                   <div className="col-span-1 flex justify-end">
                     <button onClick={() => removeItem(idx)} disabled={items.length === 1} className="p-2 hover:bg-accent rounded-md text-muted-foreground disabled:opacity-30 cursor-pointer">
@@ -308,17 +312,17 @@ export default function SaleFormPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Shipping & Tax</h2>
             <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Shipping Charged</label>
-                <input type="number" step="0.01" min="0" value={form.shipping_charged} onChange={(e) => setForm({ ...form, shipping_charged: Number(e.target.value) })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-shipping-charged">Shipping Charged</Label>
+                <Input id="sale-shipping-charged" type="number" step="0.01" min="0" value={form.shipping_charged} onChange={(e) => setForm({ ...form, shipping_charged: Number(e.target.value) })} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Shipping Cost</label>
-                <input type="number" step="0.01" min="0" value={form.shipping_cost} onChange={(e) => setForm({ ...form, shipping_cost: Number(e.target.value) })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-shipping-cost">Shipping Cost</Label>
+                <Input id="sale-shipping-cost" type="number" step="0.01" min="0" value={form.shipping_cost} onChange={(e) => setForm({ ...form, shipping_cost: Number(e.target.value) })} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tax Collected</label>
-                <input type="number" step="0.01" min="0" value={form.tax_collected} onChange={(e) => setForm({ ...form, tax_collected: Number(e.target.value) })} className={inputCls} />
+              <div className="space-y-1.5">
+                <Label htmlFor="sale-tax">Tax Collected</Label>
+                <Input id="sale-tax" type="number" step="0.01" min="0" value={form.tax_collected} onChange={(e) => setForm({ ...form, tax_collected: Number(e.target.value) })} />
               </div>
             </div>
           </div>

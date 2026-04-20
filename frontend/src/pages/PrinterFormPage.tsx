@@ -5,6 +5,9 @@ import { ArrowLeft, PlugZap } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import type { Printer, PrinterConnectionTestResult } from '@/types';
 
 const STATUS_OPTIONS = ['idle', 'printing', 'paused', 'maintenance', 'offline', 'error'] as const;
@@ -183,7 +186,7 @@ export default function PrinterFormPage() {
     return <p className="py-16 text-center text-muted-foreground">Printer not found</p>;
   }
 
-  const inputClass = (field: string) => `w-full rounded-md border px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-ring ${errors[field] ? 'border-destructive' : 'border-input'}`;
+  const selectClass = (field: string) => `flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${errors[field] ? 'border-destructive' : 'border-input'}`;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -199,43 +202,44 @@ export default function PrinterFormPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Name *</label>
-              <input value={form.name} onChange={(e) => update('name', e.target.value)} className={inputClass('name')} placeholder="Bambu X1C #1" />
-              {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
+            <div className="space-y-1.5">
+              <Label htmlFor="printer-name">Name *</Label>
+              <Input id="printer-name" value={form.name} onChange={(e) => update('name', e.target.value)} invalid={Boolean(errors.name)} placeholder="Bambu X1C #1" />
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Slug *</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="printer-slug">Slug *</Label>
+              <Input
+                id="printer-slug"
                 value={form.slug}
                 onChange={(e) => {
                   setSlugTouched(true);
                   update('slug', slugify(e.target.value));
                 }}
-                className={inputClass('slug')}
+                invalid={Boolean(errors.slug)}
                 placeholder="bambu-x1c-1"
               />
-              {errors.slug && <p className="mt-1 text-xs text-destructive">{errors.slug}</p>}
+              {errors.slug && <p className="text-xs text-destructive">{errors.slug}</p>}
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Manufacturer</label>
-              <input value={form.manufacturer} onChange={(e) => update('manufacturer', e.target.value)} className={inputClass('manufacturer')} placeholder="Bambu Lab" />
+            <div className="space-y-1.5">
+              <Label htmlFor="printer-manufacturer">Manufacturer</Label>
+              <Input id="printer-manufacturer" value={form.manufacturer} onChange={(e) => update('manufacturer', e.target.value)} placeholder="Bambu Lab" />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Model</label>
-              <input value={form.model} onChange={(e) => update('model', e.target.value)} className={inputClass('model')} placeholder="X1 Carbon" />
+            <div className="space-y-1.5">
+              <Label htmlFor="printer-model">Model</Label>
+              <Input id="printer-model" value={form.model} onChange={(e) => update('model', e.target.value)} placeholder="X1 Carbon" />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Serial Number</label>
-              <input value={form.serial_number} onChange={(e) => update('serial_number', e.target.value)} className={inputClass('serial_number')} placeholder="Optional" />
+            <div className="space-y-1.5">
+              <Label htmlFor="printer-serial">Serial Number</Label>
+              <Input id="printer-serial" value={form.serial_number} onChange={(e) => update('serial_number', e.target.value)} placeholder="Optional" />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Location</label>
-              <input value={form.location} onChange={(e) => update('location', e.target.value)} className={inputClass('location')} placeholder="Print room shelf A" />
+            <div className="space-y-1.5">
+              <Label htmlFor="printer-location">Location</Label>
+              <Input id="printer-location" value={form.location} onChange={(e) => update('location', e.target.value)} placeholder="Print room shelf A" />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Status</label>
-              <select value={form.status} onChange={(e) => update('status', e.target.value)} className={inputClass('status')}>
+            <div className="space-y-1.5">
+              <Label htmlFor="printer-status">Status</Label>
+              <select id="printer-status" value={form.status} onChange={(e) => update('status', e.target.value)} className={selectClass('status')}>
                 {STATUS_OPTIONS.map((option) => (
                   <option key={option} value={option}>{option.replace('_', ' ')}</option>
                 ))}
@@ -267,40 +271,41 @@ export default function PrinterFormPage() {
             {form.monitor_enabled ? (
               <>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Provider</label>
-                    <select value={form.monitor_provider} onChange={(e) => update('monitor_provider', e.target.value)} className={inputClass('monitor_provider')}>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="printer-monitor-provider">Provider</Label>
+                    <select id="printer-monitor-provider" value={form.monitor_provider} onChange={(e) => update('monitor_provider', e.target.value)} className={selectClass('monitor_provider')}>
                       {MONITOR_PROVIDER_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Poll interval (seconds)</label>
-                    <input type="number" min={5} max={3600} value={form.monitor_poll_interval_seconds} onChange={(e) => update('monitor_poll_interval_seconds', Number(e.target.value) || 30)} className={inputClass('monitor_poll_interval_seconds')} />
-                    {errors.monitor_poll_interval_seconds && <p className="mt-1 text-xs text-destructive">{errors.monitor_poll_interval_seconds}</p>}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="printer-monitor-poll">Poll interval (seconds)</Label>
+                    <Input id="printer-monitor-poll" type="number" min={5} max={3600} value={form.monitor_poll_interval_seconds} onChange={(e) => update('monitor_poll_interval_seconds', Number(e.target.value) || 30)} invalid={Boolean(errors.monitor_poll_interval_seconds)} />
+                    {errors.monitor_poll_interval_seconds && <p className="text-xs text-destructive">{errors.monitor_poll_interval_seconds}</p>}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Base URL *</label>
-                  <input value={form.monitor_base_url} onChange={(e) => update('monitor_base_url', e.target.value)} className={inputClass('monitor_base_url')} placeholder={selectedProvider.placeholder} />
-                  <p className="mt-1 text-xs text-muted-foreground">
+                <div className="space-y-1.5">
+                  <Label htmlFor="printer-monitor-base-url">Base URL *</Label>
+                  <Input id="printer-monitor-base-url" value={form.monitor_base_url} onChange={(e) => update('monitor_base_url', e.target.value)} invalid={Boolean(errors.monitor_base_url)} placeholder={selectedProvider.placeholder} />
+                  <p className="text-xs text-muted-foreground">
                     {form.monitor_provider === 'moonraker' ? 'Use the Moonraker API URL, typically port 7125.' : 'Use the OctoPrint base URL hosting the API.'}
                   </p>
-                  {errors.monitor_base_url && <p className="mt-1 text-xs text-destructive">{errors.monitor_base_url}</p>}
+                  {errors.monitor_base_url && <p className="text-xs text-destructive">{errors.monitor_base_url}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">API key / token</label>
-                  <input
+                <div className="space-y-1.5">
+                  <Label htmlFor="printer-monitor-api-key">API key / token</Label>
+                  <Input
+                    id="printer-monitor-api-key"
                     type="password"
                     value={form.monitor_api_key}
                     onChange={(e) => {
                       update('monitor_api_key', e.target.value);
                       if (e.target.value) update('clear_monitor_api_key', false);
                     }}
-                    className={inputClass('monitor_api_key')}
+                    invalid={Boolean(errors.monitor_api_key)}
                     placeholder={isEdit ? 'Enter a new key to replace the saved value' : 'Optional if your provider requires auth'}
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -334,13 +339,13 @@ export default function PrinterFormPage() {
             ) : null}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Notes</label>
-            <textarea
+          <div className="space-y-1.5">
+            <Label htmlFor="printer-notes">Notes</Label>
+            <Textarea
+              id="printer-notes"
               value={form.notes}
               onChange={(e) => update('notes', e.target.value)}
               rows={5}
-              className={inputClass('notes')}
               placeholder="Nozzle size, preferred materials, maintenance notes, quirks, etc."
             />
           </div>
