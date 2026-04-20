@@ -7,6 +7,7 @@ import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import { Button } from '@/components/ui/Button';
+import { Callout, calloutToneClasses } from '@/components/ui/Callout';
 import { useAuthStore } from '@/store/auth';
 import { cn, formatCurrency, formatPercent } from '@/lib/utils';
 import type {
@@ -197,76 +198,76 @@ export default function ControlCenterPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
         <div className="space-y-6">
-          {(roleMode === 'floor' || roleMode === 'admin' || roleMode === 'general') && (
-            <section
-              className={cn(
-                'rounded-md border p-5 shadow-xs space-y-4',
-                attentionPrinters.length > 0
-                  ? 'border-amber-300/60 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
-                  : 'border-border bg-card'
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="text-base font-semibold">Print-floor priorities</h2>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/print-floor">
-                    Open Print Floor <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
-              </div>
-              {!printers.length ? (
-                <p className="text-sm text-muted-foreground">No active printers are available.</p>
-              ) : (
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {printers.slice(0, 4).map((printer) => {
-                    const needsAttention = ATTENTION_STATUSES.has(printer.monitor_status || printer.status);
-                    return (
-                      <Link
-                        key={printer.id}
-                        to={`/print-floor/printers/${printer.id}`}
-                        className={cn(
-                          'grid grid-cols-[88px_minmax(0,1fr)] gap-4 rounded-md border p-3 no-underline transition-colors',
-                          needsAttention
-                            ? 'border-amber-300/70 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
-                            : 'border-border bg-background hover:bg-muted'
-                        )}
-                      >
-                        <PrinterThumbnail
-                          src={printer.current_print_thumbnail_url}
-                          alt={printer.current_print_name || `${printer.name} thumbnail`}
-                          className="h-[88px] w-[88px] rounded-md"
-                          imgClassName="object-cover"
-                          fallbackLabel="No view"
-                        />
-                        <div className="min-w-0">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-foreground">{printer.name}</p>
-                              <p className="truncate text-xs capitalize text-muted-foreground">
-                                {printer.monitor_status || printer.status}
-                              </p>
-                            </div>
-                            <span className="text-sm font-semibold text-foreground">
-                              {printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}
-                            </span>
-                          </div>
-                          <p className="mt-2 truncate text-sm text-muted-foreground">
-                            {printer.current_print_name || 'No active print'}
-                          </p>
-                          <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                            <p>Layer {formatLayer(printer)}</p>
-                            <p>ETA {formatDuration(printer.monitor_remaining_seconds)}</p>
-                            <p>{printer.location || 'No bay assigned'}</p>
-                            <p>{printer.monitor_ws_connected ? 'Socket live' : 'Polling'}</p>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+          {(roleMode === 'floor' || roleMode === 'admin' || roleMode === 'general') && (() => {
+            const content = (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-base font-semibold">Print-floor priorities</h2>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/print-floor">
+                      Open Print Floor <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
                 </div>
-              )}
-            </section>
-          )}
+                {!printers.length ? (
+                  <p className="text-sm text-muted-foreground">No active printers are available.</p>
+                ) : (
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {printers.slice(0, 4).map((printer) => {
+                      const needsAttention = ATTENTION_STATUSES.has(printer.monitor_status || printer.status);
+                      return (
+                        <Link
+                          key={printer.id}
+                          to={`/print-floor/printers/${printer.id}`}
+                          className={cn(
+                            'grid grid-cols-[88px_minmax(0,1fr)] gap-4 rounded-md border p-3 no-underline transition-colors',
+                            needsAttention
+                              ? calloutToneClasses.warning
+                              : 'border-border bg-background hover:bg-muted'
+                          )}
+                        >
+                          <PrinterThumbnail
+                            src={printer.current_print_thumbnail_url}
+                            alt={printer.current_print_name || `${printer.name} thumbnail`}
+                            className="h-[88px] w-[88px] rounded-md"
+                            imgClassName="object-cover"
+                            fallbackLabel="No view"
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-foreground">{printer.name}</p>
+                                <p className="truncate text-xs capitalize text-muted-foreground">
+                                  {printer.monitor_status || printer.status}
+                                </p>
+                              </div>
+                              <span className="text-sm font-semibold text-foreground">
+                                {printer.monitor_progress_percent != null ? `${printer.monitor_progress_percent.toFixed(0)}%` : '—'}
+                              </span>
+                            </div>
+                            <p className="mt-2 truncate text-sm text-muted-foreground">
+                              {printer.current_print_name || 'No active print'}
+                            </p>
+                            <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                              <p>Layer {formatLayer(printer)}</p>
+                              <p>ETA {formatDuration(printer.monitor_remaining_seconds)}</p>
+                              <p>{printer.location || 'No bay assigned'}</p>
+                              <p>{printer.monitor_ws_connected ? 'Socket live' : 'Polling'}</p>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+            return attentionPrinters.length > 0 ? (
+              <Callout tone="warning"><div className="space-y-4">{content}</div></Callout>
+            ) : (
+              <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">{content}</section>
+            );
+          })()}
 
           {(roleMode === 'cashier' || roleMode === 'admin' || roleMode === 'general') && (
             <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
@@ -311,86 +312,89 @@ export default function ControlCenterPage() {
             </section>
           )}
 
-          {(roleMode === 'inventory' || roleMode === 'admin' || roleMode === 'general') && (
-            <section
-              className={cn(
-                'rounded-md border p-5 shadow-xs space-y-4',
-                blockerAlerts.length > 0
-                  ? 'border-amber-300/60 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
-                  : 'border-border bg-card'
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="text-base font-semibold">Stock blockers</h2>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/stock">
-                    Open Stock Workspace <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
-              </div>
-              {!blockerAlerts.length ? (
-                <p className="text-sm text-muted-foreground">No low-stock blockers are currently open.</p>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {blockerAlerts.map((alert) => (
-                    <Link
-                      key={`${alert.type}-${alert.id}`}
-                      to={alert.type === 'product' ? `/product-studio/products/${alert.id}` : '/stock/materials'}
-                      className="flex items-center justify-between rounded-md border border-border bg-background px-4 py-3 text-sm no-underline transition-colors hover:bg-muted"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">{alert.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {alert.type === 'product' ? alert.sku || 'Product' : 'Material'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-amber-600 dark:text-amber-300">{alert.current_stock}</p>
-                        <p className="text-xs text-muted-foreground">reorder {alert.reorder_point}</p>
-                      </div>
+          {(roleMode === 'inventory' || roleMode === 'admin' || roleMode === 'general') && (() => {
+            const content = (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-base font-semibold">Stock blockers</h2>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/stock">
+                      Open Stock Workspace <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
-                  ))}
+                  </Button>
                 </div>
-              )}
-            </section>
-          )}
+                {!blockerAlerts.length ? (
+                  <p className="text-sm text-muted-foreground">No low-stock blockers are currently open.</p>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {blockerAlerts.map((alert) => (
+                      <Link
+                        key={`${alert.type}-${alert.id}`}
+                        to={alert.type === 'product' ? `/product-studio/products/${alert.id}` : '/stock/materials'}
+                        className="flex items-center justify-between rounded-md border border-border bg-background px-4 py-3 text-sm no-underline transition-colors hover:bg-muted"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-foreground">{alert.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {alert.type === 'product' ? alert.sku || 'Product' : 'Material'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-amber-600 dark:text-amber-300">{alert.current_stock}</p>
+                          <p className="text-xs text-muted-foreground">reorder {alert.reorder_point}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+            return blockerAlerts.length > 0 ? (
+              <Callout tone="warning"><div className="space-y-4">{content}</div></Callout>
+            ) : (
+              <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">{content}</section>
+            );
+          })()}
         </div>
 
         <div className="space-y-6">
-          <section
-            className={cn(
-              'rounded-md border p-5 shadow-xs space-y-4',
-              attentionPrinters.length + unassignedDraftJobs.length + blockerAlerts.length > 0
-                ? 'border-amber-300/60 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
-                : 'border-border bg-card'
-            )}
-          >
-            <h2 className="text-base font-semibold">Needs attention now</h2>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-                <div className="min-w-0">
-                  <p className="font-medium text-foreground">Printers needing attention</p>
-                  <p className="text-sm text-muted-foreground">
-                    {attentionPrinters.length
-                      ? `${attentionPrinters.length} printers are paused, offline, or in error.`
-                      : 'No printer exceptions currently open.'}
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <Package className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <p className="font-medium text-foreground">Draft jobs needing assignment</p>
-                  <p className="text-sm text-muted-foreground">
-                    {unassignedDraftJobs.length
-                      ? `${unassignedDraftJobs.length} draft jobs are still missing a printer.`
-                      : 'No unassigned draft jobs.'}
-                  </p>
-                </div>
-              </li>
-            </ul>
-          </section>
+          {(() => {
+            const hasAttention = attentionPrinters.length + unassignedDraftJobs.length + blockerAlerts.length > 0;
+            const content = (
+              <>
+                <h2 className="text-base font-semibold">Needs attention now</h2>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">Printers needing attention</p>
+                      <p className="text-sm text-muted-foreground">
+                        {attentionPrinters.length
+                          ? `${attentionPrinters.length} printers are paused, offline, or in error.`
+                          : 'No printer exceptions currently open.'}
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Package className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">Draft jobs needing assignment</p>
+                      <p className="text-sm text-muted-foreground">
+                        {unassignedDraftJobs.length
+                          ? `${unassignedDraftJobs.length} draft jobs are still missing a printer.`
+                          : 'No unassigned draft jobs.'}
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </>
+            );
+            return hasAttention ? (
+              <Callout tone="warning"><div className="space-y-4">{content}</div></Callout>
+            ) : (
+              <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">{content}</section>
+            );
+          })()}
 
           <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
             <h2 className="text-base font-semibold">Business pulse</h2>

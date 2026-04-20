@@ -28,6 +28,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import { ChartTooltip, chartCategoricalPalette } from '@/components/charts/ChartTooltip';
 import EmptyState from '@/components/ui/EmptyState';
+import { Callout } from '@/components/ui/Callout';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { formatCurrency, formatPercent } from '@/lib/utils';
@@ -152,11 +153,11 @@ export default function DashboardPage() {
 
       {/* Inventory Alerts */}
       {alerts && alerts.length > 0 ? (
-        <section className="rounded-md border border-amber-300/60 bg-amber-50/80 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-          <div className="mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-            <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Low stock alerts</h2>
-          </div>
+        <Callout
+          tone="warning"
+          icon={<AlertTriangle className="h-4 w-4" aria-hidden="true" />}
+          title="Low stock alerts"
+        >
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {alerts.map((a) => (
               <Link
@@ -174,7 +175,7 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </Callout>
       ) : null}
 
       {printersData?.items?.length ? (

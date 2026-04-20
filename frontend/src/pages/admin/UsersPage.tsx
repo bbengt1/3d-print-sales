@@ -243,7 +243,7 @@ function UsersTable({ users, isLoading, currentUserId, onEdit, onDeactivate, onR
                 onClick={() => onReactivate(u)}
                 aria-label={`Reactivate ${u.full_name}`}
                 title="Reactivate"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-green-100 dark:hover:bg-green-900/20 hover:text-green-600 cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-emerald-100 dark:hover:bg-emerald-900/20 hover:text-emerald-600 cursor-pointer"
               >
                 <Users className="h-4 w-4" />
               </button>

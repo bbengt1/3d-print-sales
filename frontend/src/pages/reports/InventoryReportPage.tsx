@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import DataTable from '@/components/data/DataTable';
 import { KPIStrip, KPI } from '@/components/layout/KPIStrip';
+import { ChartTooltip, chartCategoricalPalette } from '@/components/charts/ChartTooltip';
 import type { InventoryReport, StockLevelRow } from '@/types';
 
-const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#e0e7ff'];
+const COLORS = chartCategoricalPalette;
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
   const normalized = Array.isArray(value) ? value[0] : value;
   return formatCurrency(Number(normalized ?? 0));
@@ -123,7 +124,7 @@ export default function InventoryReportPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="product" tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" />
                     <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
-                    <Tooltip contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                    <ChartTooltip />
                     <Bar dataKey="turnover_rate" name="Turnover Rate" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -149,7 +150,7 @@ export default function InventoryReportPage() {
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                    <ChartTooltip formatter={formatTooltipCurrency} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

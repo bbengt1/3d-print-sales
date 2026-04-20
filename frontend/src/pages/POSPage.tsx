@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Callout } from '@/components/ui/Callout';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { cn, formatCurrency } from '@/lib/utils';
 import {
@@ -372,15 +373,13 @@ export default function POSPage() {
       </PageHeader>
 
       {successMessage ? (
-        <div className="rounded-md border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm" role="status">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p className="font-semibold">Checkout complete</p>
-              <p className="mt-1 text-sm">{successMessage}</p>
-            </div>
-          </div>
-        </div>
+        <Callout
+          tone="success"
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          title="Checkout complete"
+        >
+          {successMessage}
+        </Callout>
       ) : null}
 
       {checkoutError ? (
@@ -429,16 +428,12 @@ export default function POSPage() {
             </form>
 
             {scanStatus ? (
-              <div
-                className={cn(
-                  'mt-4 rounded-md border px-4 py-3 text-sm',
-                  scanStatus.startsWith('Scanned ')
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                    : 'border-amber-300 bg-amber-50 text-amber-900'
-                )}
+              <Callout
+                tone={scanStatus.startsWith('Scanned ') ? 'success' : 'warning'}
+                className="mt-4"
               >
                 {scanStatus}
-              </div>
+              </Callout>
             ) : null}
           </div>
 
@@ -814,12 +809,14 @@ export default function POSPage() {
               </Button>
             ) : null}
 
-            <div className="mt-4 rounded-md border border-amber-300/60 bg-amber-50 p-3 text-sm text-amber-900">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p>Checkout blocks oversell when requested quantity exceeds available stock.</p>
-              </div>
-            </div>
+            <Callout
+              tone="warning"
+              icon={<AlertTriangle className="h-4 w-4" />}
+              className="mt-4"
+              role="note"
+            >
+              Checkout blocks oversell when requested quantity exceeds available stock.
+            </Callout>
           </section>
 
           <section className="rounded-lg border border-border bg-card p-5 shadow-sm">

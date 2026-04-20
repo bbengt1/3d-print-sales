@@ -355,10 +355,10 @@ export default function PrinterDetailPage() {
               {printer.monitor_last_error ? (
                 <div className="rounded-md border border-red-300/60 bg-red-50/80 p-4 dark:border-red-500/30 dark:bg-red-500/10">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600 dark:text-red-300" />
+                    <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
                     <div>
-                      <p className="text-xs text-red-700 dark:text-red-200">Last monitor error</p>
-                      <p className="mt-2 text-sm text-red-700 dark:text-red-100">{printer.monitor_last_error}</p>
+                      <p className="text-xs text-destructive">Last monitor error</p>
+                      <p className="mt-2 text-sm text-destructive">{printer.monitor_last_error}</p>
                     </div>
                   </div>
                 </div>

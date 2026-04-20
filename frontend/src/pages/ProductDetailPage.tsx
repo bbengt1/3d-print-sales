@@ -239,7 +239,7 @@ export default function ProductDetailPage() {
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-muted-foreground">Inventory adjustment</span>
-                <span className="font-semibold text-red-600 dark:text-red-400">-{currentProduct.stock_qty}</span>
+                <span className="font-semibold text-destructive">-{currentProduct.stock_qty}</span>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -325,7 +325,7 @@ export default function ProductDetailPage() {
                   <td className="px-4 py-3">
                     <StatusBadge tone={defaultStatusTone(t.type)}>{t.type}</StatusBadge>
                   </td>
-                  <td className={`px-4 py-3 text-right font-medium ${t.quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <td className={`px-4 py-3 text-right font-medium ${t.quantity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                     {t.quantity > 0 ? '+' : ''}{t.quantity}
                   </td>
                   <td className="px-4 py-3 text-right">{formatCurrency(t.unit_cost)}</td>

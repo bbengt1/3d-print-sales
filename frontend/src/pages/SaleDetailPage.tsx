@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Callout } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
@@ -251,7 +252,7 @@ export default function SaleDetailPage() {
               <div className="flex justify-between"><span className="text-muted-foreground">Gross Profit</span><span>{formatCurrency(sale.gross_profit)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Platform fees</span><span>-{formatCurrency(sale.platform_fees)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Shipping cost</span><span>-{formatCurrency(sale.shipping_cost)}</span></div>
-              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.contribution_margin) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.contribution_margin) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                 <span>Contribution Margin</span>
                 <span>{formatCurrency(sale.contribution_margin)}</span>
               </div>
@@ -298,13 +299,13 @@ export default function SaleDetailPage() {
             </div>
 
             {shipmentMissingFields.length > 0 ? (
-              <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <Callout tone="warning">
                 Add {shipmentMissingFields.join(', ')} before printing from this workstation.
-              </p>
+              </Callout>
             ) : (
-              <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              <Callout tone="success">
                 Label is ready for workstation-local printing. Canceling the browser print dialog does not mark the label printed.
-              </p>
+              </Callout>
             )}
 
             <div className="grid grid-cols-1 gap-2">

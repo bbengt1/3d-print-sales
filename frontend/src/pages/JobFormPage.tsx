@@ -524,7 +524,7 @@ export default function JobFormPage() {
                 </div>
                 <div className="border-t-2 border-border pt-2 mt-2 flex justify-between font-semibold text-lg">
                   <span>Net Profit</span>
-                  <span className={preview.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}>
+                  <span className={preview.net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}>
                     {formatCurrency(preview.net_profit)}
                   </span>
                 </div>
