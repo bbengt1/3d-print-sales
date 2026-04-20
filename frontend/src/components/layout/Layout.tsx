@@ -44,7 +44,7 @@ export default function Layout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background text-sm text-foreground">
       <Header onOpenMobileNav={() => setMobileNavOpen(true)} />
 
       <div className="mx-auto flex-1 w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

@@ -229,7 +229,7 @@ export default function SaleDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Line Items</h2>
+          <h2 className="text-base font-semibold mb-4">Line Items</h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
@@ -256,7 +256,7 @@ export default function SaleDetailPage() {
 
         <div className="space-y-6">
           <div className="bg-card border border-border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Summary</h2>
+            <h2 className="text-base font-semibold mb-4">Summary</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(sale.subtotal)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Shipping charged</span><span>{formatCurrency(sale.shipping_charged)}</span></div>
@@ -275,7 +275,7 @@ export default function SaleDetailPage() {
           </div>
 
           <div className="bg-card border border-border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Details</h2>
+            <h2 className="text-base font-semibold mb-4">Details</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Channel</span><span>{channelName}</span></div>
               {sale.payment_method && <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span className="capitalize">{sale.payment_method}</span></div>}
@@ -287,7 +287,7 @@ export default function SaleDetailPage() {
           <div className="bg-card border border-border rounded-lg p-6 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold">Shipping Label</h2>
+                <h2 className="text-base font-semibold">Shipping Label</h2>
                 <p className="text-sm text-muted-foreground">
                   Server renders a 4x6 browser-printable label. The workstation browser owns the final thermal print step.
                 </p>
@@ -352,7 +352,7 @@ export default function SaleDetailPage() {
           </div>
 
           <div className="bg-card border border-border rounded-lg p-6 space-y-3">
-            <h2 className="text-lg font-semibold mb-2">Actions</h2>
+            <h2 className="text-base font-semibold mb-2">Actions</h2>
             {sale.status !== 'refunded' && sale.status !== 'cancelled' && (
               <select
                 value={sale.status}

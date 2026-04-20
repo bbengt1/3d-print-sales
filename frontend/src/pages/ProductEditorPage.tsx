@@ -181,7 +181,7 @@ export default function ProductEditorPage() {
           <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <ReceiptText className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">Identity and sellable details</h2>
+              <h2 className="text-base font-semibold">Identity and sellable details</h2>
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -305,7 +305,7 @@ export default function ProductEditorPage() {
           <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <Boxes className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">Stock and activity context</h2>
+              <h2 className="text-base font-semibold">Stock and activity context</h2>
             </div>
             {isCreate ? (
               <EmptyState
@@ -357,7 +357,7 @@ export default function ProductEditorPage() {
           <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <BadgeDollarSign className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">Readiness and margin</h2>
+              <h2 className="text-base font-semibold">Readiness and margin</h2>
             </div>
 
             <div className="mt-4 space-y-3">
@@ -424,7 +424,7 @@ export default function ProductEditorPage() {
           </section>
 
           <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-xl font-semibold">Material context</h2>
+            <h2 className="text-base font-semibold">Material context</h2>
             {selectedMaterial ? (
               <div className="mt-4 space-y-3 text-sm">
                 <div className="rounded-md bg-background px-4 py-3">

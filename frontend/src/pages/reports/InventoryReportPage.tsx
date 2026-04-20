@@ -35,7 +35,7 @@ export default function InventoryReportPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-6">Inventory Report</h2>
+      <h2 className="text-base font-semibold mb-6">Inventory Report</h2>
 
       <ReportControls
         dateFrom={dateFrom}
@@ -64,7 +64,7 @@ export default function InventoryReportPage() {
           {/* Stock levels table */}
           {data.stock_levels.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold">Stock Levels</h3>
+              <h3 className="text-base font-semibold">Stock Levels</h3>
               <DataTable<StockLevelRow>
                 data={data.stock_levels}
                 rowKey={(row) => row.product_id}
@@ -118,7 +118,7 @@ export default function InventoryReportPage() {
             {/* Turnover chart */}
             {data.turnover.length > 0 && (
               <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Inventory Turnover</h3>
+                <h3 className="text-base font-semibold mb-4">Inventory Turnover</h3>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={data.turnover.slice(0, 10)}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -134,7 +134,7 @@ export default function InventoryReportPage() {
             {/* Material usage chart */}
             {data.material_usage.length > 0 && (
               <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Material Usage</h3>
+                <h3 className="text-base font-semibold mb-4">Material Usage</h3>
                 <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
                     <Pie

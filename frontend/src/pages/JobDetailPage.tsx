@@ -160,7 +160,7 @@ export default function JobDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cost Breakdown */}
         <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Cost Breakdown</h3>
+          <h3 className="text-base font-semibold mb-4">Cost Breakdown</h3>
           <CostRow label="Electricity" value={job.electricity_cost} />
           <CostRow label="Material" value={job.material_cost} />
           <CostRow label="Labor" value={job.labor_cost} />
@@ -181,7 +181,7 @@ export default function JobDetailPage() {
 
         {/* Pricing & Profit */}
         <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Pricing & Profit</h3>
+          <h3 className="text-base font-semibold mb-4">Pricing & Profit</h3>
           <div className="space-y-4">
             <div className="flex justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">Target Margin</span>

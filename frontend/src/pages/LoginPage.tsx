@@ -87,7 +87,7 @@ export default function LoginPage() {
           <span className="text-2xl font-semibold">3D Print Sales</span>
         </div>
         <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
-          <h2 className="text-xl font-semibold mb-6 text-center">Sign In</h2>
+          <h2 className="text-base font-semibold mb-6 text-center">Sign In</h2>
           {errors.form && (
             <div className="bg-destructive/10 text-destructive text-sm rounded-lg p-3 mb-4">
               {errors.form}

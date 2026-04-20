@@ -303,7 +303,7 @@ export default function PrinterDetailPage() {
         <section className="rounded-md border border-border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Live monitoring</h2>
+              <h2 className="text-base font-semibold text-foreground">Live monitoring</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 A denser, operator-friendly view of the current telemetry from the configured monitoring provider.
               </p>
@@ -368,7 +368,7 @@ export default function PrinterDetailPage() {
         <section className="rounded-md border border-border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Visual console</h2>
+              <h2 className="text-base font-semibold text-foreground">Visual console</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {printer.camera_id ? `Live feed from ${printer.camera_name}` : 'Current print thumbnail plus the most relevant assignment and machine details.'}
               </p>
@@ -432,7 +432,7 @@ export default function PrinterDetailPage() {
       <section className="rounded-md border border-border bg-card p-5 shadow-xs">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Recent floor activity</h2>
+            <h2 className="text-base font-semibold text-foreground">Recent floor activity</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Status changes and assignment events for this machine.
             </p>
@@ -481,7 +481,7 @@ export default function PrinterDetailPage() {
       <section className="rounded-md border border-border bg-card p-5 shadow-xs">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Assigned jobs</h2>
+            <h2 className="text-base font-semibold text-foreground">Assigned jobs</h2>
             <p className="mt-1 text-sm text-muted-foreground">Current and recent jobs routed through this printer.</p>
           </div>
           <Link to="/orders" className="text-sm text-primary no-underline hover:underline">

@@ -357,7 +357,7 @@ export default function JobFormPage() {
         <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
           {/* Job Info */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Job Info</h3>
+            <h3 className="text-base font-semibold mb-4">Job Info</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Field label="Job Number" field="job_number" value={form.job_number} error={errors.job_number} onChange={update} placeholder="2026.03.24.001" />
@@ -432,7 +432,7 @@ export default function JobFormPage() {
 
           {/* Print Details */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Print Details</h3>
+            <h3 className="text-base font-semibold mb-4">Print Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="job-material">Material</Label>
@@ -458,7 +458,7 @@ export default function JobFormPage() {
 
           {/* Labor & Costs */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Labor & Additional Costs</h3>
+            <h3 className="text-base font-semibold mb-4">Labor & Additional Costs</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Labor Time (mins)" field="labor_mins" type="number" value={form.labor_mins} error={errors.labor_mins} onChange={update} min={0} />
               <Field label="Design Time (hrs)" field="design_time_hrs" type="number" value={form.design_time_hrs} error={errors.design_time_hrs} onChange={update} min={0} step="0.01" />
@@ -491,7 +491,7 @@ export default function JobFormPage() {
         {/* Live Cost Preview */}
         <div className="lg:col-span-1">
           <div className="bg-card border border-border rounded-lg p-6 sticky top-24">
-            <h3 className="text-lg font-semibold mb-4">Cost Preview</h3>
+            <h3 className="text-base font-semibold mb-4">Cost Preview</h3>
             {preview ? (
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Pieces</span><span className="font-medium">{preview.total_pieces}</span></div>

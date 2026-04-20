@@ -133,7 +133,7 @@ export default function SettingsPage() {
                 <Bot className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold">AI Intelligence</h2>
+                <h2 className="text-base font-semibold">AI Intelligence</h2>
                 <p className="text-sm text-muted-foreground">
                   Configure one supported provider for the read-only Insights workspace. Keep the choice obvious, the model explicit, and the secrets scoped to admins only.
                 </p>
@@ -185,7 +185,7 @@ export default function SettingsPage() {
           {Object.entries(groups).map(([group, { keys, description }]) => (
             <div key={group} className="bg-card border border-border rounded-lg p-6">
               <div className="mb-4">
-                <h2 className="text-lg font-semibold">{group}</h2>
+                <h2 className="text-base font-semibold">{group}</h2>
                 <p className="text-sm text-muted-foreground">{description}</p>
               </div>
               <div className="space-y-4">
