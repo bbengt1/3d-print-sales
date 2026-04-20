@@ -141,7 +141,7 @@ export default function ProductDetailPage() {
       <div className="bg-card border border-border rounded-lg p-6 mb-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-2xl font-bold">{currentProduct.name}</h1>
+            <h1 className="text-2xl font-semibold">{currentProduct.name}</h1>
             <p className="text-sm text-muted-foreground font-mono">{currentProduct.sku}</p>
             {currentProduct.upc && <p className="text-xs text-muted-foreground mt-1">UPC: {currentProduct.upc}</p>}
             {!currentProduct.is_active && <p className="text-sm text-muted-foreground mt-2">This product is archived. Historical records and inventory history are preserved.</p>}
@@ -171,21 +171,21 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">Unit Price</p>
-            <p className="text-lg font-bold">{formatCurrency(product.unit_price)}</p>
+            <p className="text-lg font-semibold">{formatCurrency(product.unit_price)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Unit Cost</p>
-            <p className="text-lg font-bold">{formatCurrency(product.unit_cost)}</p>
+            <p className="text-lg font-semibold">{formatCurrency(product.unit_cost)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Stock on Hand</p>
-            <p className={`text-lg font-bold ${product.stock_qty <= product.reorder_point ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+            <p className={`text-lg font-semibold ${product.stock_qty <= product.reorder_point ? 'text-amber-600 dark:text-amber-400' : ''}`}>
               {product.stock_qty}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Reorder Point</p>
-            <p className="text-lg font-bold">{product.reorder_point}</p>
+            <p className="text-lg font-semibold">{product.reorder_point}</p>
           </div>
         </div>
         {Number(product.unit_price) > 0 && Number(product.unit_cost) > 0 && (
@@ -200,7 +200,7 @@ export default function ProductDetailPage() {
 
       {/* Adjust Stock */}
       <div className="flex items-center justify-between mb-4 gap-3">
-        <h2 className="text-xl font-bold">Transaction History</h2>
+        <h2 className="text-xl font-semibold">Transaction History</h2>
         <div className="flex gap-2">
           <button
             onClick={() => {

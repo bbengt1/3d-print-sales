@@ -93,7 +93,7 @@ export default function UsersPage() {
         <div className="flex items-center gap-3">
           <Users className="w-8 h-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">User Management</h1>
+            <h1 className="text-2xl font-semibold">User Management</h1>
             <p className="text-sm text-muted-foreground">Manage user accounts and roles</p>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import PageHeader from '@/components/layout/PageHeader';
 import { formatCurrency } from '@/lib/utils';
 import type { Material, Job, CalculateResponse, PaginatedProducts, PaginatedPrinters, Product } from '@/types';
 
@@ -277,8 +278,11 @@ export default function JobFormPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">{isEdit ? 'Edit Job' : 'New Job'}</h1>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <PageHeader
+        title={isEdit ? 'Edit Job' : 'New Job'}
+        description="Configure materials, labor, and pricing. Live cost preview updates as you type."
+      />
 
       <Dialog open={showCreateProduct} onOpenChange={(open) => !open && setShowCreateProduct(false)}>
         <DialogContent className="max-w-md">
@@ -503,22 +507,22 @@ export default function JobFormPage() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Packaging</span><span>{formatCurrency(preview.packaging_cost)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Failure Buffer</span><span>{formatCurrency(preview.failure_buffer)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Overhead</span><span>{formatCurrency(preview.overhead)}</span></div>
-                <div className="border-t border-border pt-2 mt-2 flex justify-between font-bold">
+                <div className="border-t border-border pt-2 mt-2 flex justify-between font-semibold">
                   <span>Total Cost</span><span>{formatCurrency(preview.total_cost)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Cost/piece</span><span>{formatCurrency(preview.cost_per_piece)}</span>
                 </div>
                 <div className="border-t border-border pt-2 mt-2 flex justify-between">
-                  <span className="text-muted-foreground">Price/piece</span><span className="font-bold">{formatCurrency(preview.price_per_piece)}</span>
+                  <span className="text-muted-foreground">Price/piece</span><span className="font-semibold">{formatCurrency(preview.price_per_piece)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Revenue</span><span className="font-bold">{formatCurrency(preview.total_revenue)}</span>
+                  <span className="text-muted-foreground">Revenue</span><span className="font-semibold">{formatCurrency(preview.total_revenue)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Platform fees</span><span>-{formatCurrency(preview.platform_fees)}</span>
                 </div>
-                <div className="border-t-2 border-border pt-2 mt-2 flex justify-between font-bold text-lg">
+                <div className="border-t-2 border-border pt-2 mt-2 flex justify-between font-semibold text-lg">
                   <span>Net Profit</span>
                   <span className={preview.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}>
                     {formatCurrency(preview.net_profit)}

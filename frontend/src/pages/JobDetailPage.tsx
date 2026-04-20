@@ -70,7 +70,7 @@ export default function JobDetailPage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">{job.job_number}</h1>
+            <h1 className="text-2xl font-semibold">{job.job_number}</h1>
             <p className="text-muted-foreground text-sm">{job.product_name}</p>
           </div>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
@@ -132,7 +132,7 @@ export default function JobDetailPage() {
           <CostRow label="Shipping" value={job.shipping_cost} />
           <CostRow label="Failure Buffer" value={job.failure_buffer} />
           <CostRow label="Overhead" value={job.overhead} />
-          <div className="flex justify-between py-2 mt-2 border-t-2 border-border font-bold">
+          <div className="flex justify-between py-2 mt-2 border-t-2 border-border font-semibold">
             <span>Total Cost</span>
             <span>{formatCurrency(job.total_cost)}</span>
           </div>
@@ -155,15 +155,15 @@ export default function JobDetailPage() {
             </div>
             <div className="flex justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">Total Revenue</span>
-              <span className="font-bold text-lg">{formatCurrency(job.total_revenue)}</span>
+              <span className="font-semibold text-lg">{formatCurrency(job.total_revenue)}</span>
             </div>
             <div className="flex justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">Platform Fees</span>
               <span className="font-medium text-destructive">-{formatCurrency(job.platform_fees)}</span>
             </div>
             <div className="flex justify-between py-2 mt-2 border-t-2 border-border">
-              <span className="font-bold">Net Profit</span>
-              <span className={`font-bold text-lg ${job.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+              <span className="font-semibold">Net Profit</span>
+              <span className={`font-semibold text-lg ${job.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
                 {formatCurrency(job.net_profit)}
               </span>
             </div>

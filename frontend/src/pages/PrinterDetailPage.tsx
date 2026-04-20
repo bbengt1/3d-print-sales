@@ -74,7 +74,7 @@ function ConsoleStat({
     <div className="rounded-md border border-border bg-card/85 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
           <p
             className={cn(
               'mt-3 text-2xl font-semibold',
@@ -323,19 +323,19 @@ export default function PrinterDetailPage() {
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-md border border-border bg-background/60 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Provider</p>
+                  <p className="text-xs text-muted-foreground">Provider</p>
                   <p className="mt-2 font-semibold capitalize text-foreground">{printer.monitor_provider || '—'}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{printer.monitor_poll_interval_seconds}s poll interval</p>
                 </div>
                 <div className="rounded-md border border-border bg-background/60 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Last event</p>
+                  <p className="text-xs text-muted-foreground">Last event</p>
                   <p className="mt-2 font-semibold text-foreground">
                     {printer.monitor_last_event_type ? printer.monitor_last_event_type.replace('notify_', '').replaceAll('_', ' ') : '—'}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(printer.monitor_last_event_at)}</p>
                 </div>
                 <div className="rounded-md border border-border bg-background/60 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Last seen</p>
+                  <p className="text-xs text-muted-foreground">Last seen</p>
                   <p className="mt-2 font-semibold text-foreground">{formatDateTime(printer.monitor_last_seen_at)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {printer.monitor_provider === 'moonraker'
@@ -348,7 +348,7 @@ export default function PrinterDetailPage() {
               </div>
 
               <div className="rounded-md border border-border bg-background/60 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Provider message</p>
+                <p className="text-xs text-muted-foreground">Provider message</p>
                 <p className="mt-2 text-sm text-foreground">{printer.monitor_last_message || '—'}</p>
               </div>
 
@@ -357,7 +357,7 @@ export default function PrinterDetailPage() {
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600 dark:text-red-300" />
                     <div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-red-700 dark:text-red-200">Last monitor error</p>
+                      <p className="text-xs text-red-700 dark:text-red-200">Last monitor error</p>
                       <p className="mt-2 text-sm text-red-700 dark:text-red-100">{printer.monitor_last_error}</p>
                     </div>
                   </div>
@@ -404,12 +404,12 @@ export default function PrinterDetailPage() {
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-md border border-border bg-background/60 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Machine identity</p>
+              <p className="text-xs text-muted-foreground">Machine identity</p>
               <p className="mt-2 font-semibold text-foreground">{printer.manufacturer || '—'} {printer.model || ''}</p>
               <p className="mt-1 text-sm text-muted-foreground">{printer.serial_number || 'No serial number'}</p>
             </div>
             <div className="rounded-md border border-border bg-background/60 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Current assignment</p>
+              <p className="text-xs text-muted-foreground">Current assignment</p>
               {activeJob ? (
                 <>
                   <Link to={`/orders/jobs/${activeJob.id}`} className="mt-2 block font-semibold text-primary no-underline hover:underline">
@@ -425,7 +425,7 @@ export default function PrinterDetailPage() {
 
           {printer.notes ? (
             <div className="mt-4 rounded-md border border-border bg-background/60 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Notes</p>
+              <p className="text-xs text-muted-foreground">Notes</p>
               <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{printer.notes}</p>
             </div>
           ) : null}

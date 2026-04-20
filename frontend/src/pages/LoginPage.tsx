@@ -76,10 +76,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 text-primary mb-8">
           <Printer className="w-10 h-10" />
-          <span className="text-2xl font-bold">3D Print Sales</span>
+          <span className="text-2xl font-semibold">3D Print Sales</span>
         </div>
         <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
-          <h2 className="text-xl font-bold mb-6 text-center">Sign In</h2>
+          <h2 className="text-xl font-semibold mb-6 text-center">Sign In</h2>
           {errors.form && (
             <div className="bg-destructive/10 text-destructive text-sm rounded-lg p-3 mb-4">
               {errors.form}

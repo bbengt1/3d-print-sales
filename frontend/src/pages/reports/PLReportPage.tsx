@@ -6,6 +6,7 @@ import { formatCurrency, formatPercent } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import DataTable from '@/components/data/DataTable';
+import { KPIStrip, KPI } from '@/components/layout/KPIStrip';
 import type { PLReport, PLRow } from '@/types';
 
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
@@ -36,7 +37,7 @@ export default function PLReportPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Profit & Loss</h2>
+      <h2 className="text-xl font-semibold mb-6">Profit & Loss</h2>
 
       <ReportControls
         dateFrom={dateFrom}
@@ -53,31 +54,24 @@ export default function PLReportPage() {
       ) : !data || !s ? null : (
         <div className="space-y-8">
           {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Realized Sales Revenue</p>
-              <p className="text-2xl font-bold mt-1">{formatCurrency(s.total_revenue)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Sales basis only: {formatCurrency(s.sales_revenue)}
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Total Costs</p>
-              <p className="text-2xl font-bold mt-1">{formatCurrency(s.total_costs)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Gross Profit</p>
-              <p className={`text-2xl font-bold mt-1 ${s.gross_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(s.gross_profit)}
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Profit Margin</p>
-              <p className={`text-2xl font-bold mt-1 ${s.profit_margin_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatPercent(s.profit_margin_pct)}
-              </p>
-            </div>
-          </div>
+          <KPIStrip columns={4}>
+            <KPI
+              label="Realized sales revenue"
+              value={formatCurrency(s.total_revenue)}
+              sub={`Sales basis only: ${formatCurrency(s.sales_revenue)}`}
+            />
+            <KPI label="Total costs" value={formatCurrency(s.total_costs)} />
+            <KPI
+              label="Gross profit"
+              value={formatCurrency(s.gross_profit)}
+              tone={s.gross_profit >= 0 ? 'success' : 'destructive'}
+            />
+            <KPI
+              label="Profit margin"
+              value={formatPercent(s.profit_margin_pct)}
+              tone={s.profit_margin_pct >= 0 ? 'success' : 'destructive'}
+            />
+          </KPIStrip>
 
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-900 dark:text-amber-100">
             <p className="font-medium">Reporting basis: sales-realized revenue</p>

@@ -433,16 +433,16 @@ export default function ProductEditorPage() {
             {selectedMaterial ? (
               <div className="mt-4 space-y-3 text-sm">
                 <div className="rounded-md bg-background px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Material</p>
+                  <p className="text-xs text-muted-foreground">Material</p>
                   <p className="mt-2 font-semibold">{selectedMaterial.name}</p>
                   <p className="mt-1 text-muted-foreground">{selectedMaterial.brand}</p>
                 </div>
                 <div className="rounded-md bg-background px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Cost per gram</p>
+                  <p className="text-xs text-muted-foreground">Cost per gram</p>
                   <p className="mt-2 font-semibold">${Number(selectedMaterial.cost_per_g).toFixed(4)}</p>
                 </div>
                 <div className="rounded-md bg-background px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Material stock</p>
+                  <p className="text-xs text-muted-foreground">Material stock</p>
                   <p className="mt-2 font-semibold">{selectedMaterial.spools_in_stock} spools</p>
                   <p className="mt-1 text-muted-foreground">Reorder at {selectedMaterial.reorder_point}</p>
                 </div>

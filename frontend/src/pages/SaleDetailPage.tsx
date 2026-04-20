@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import PageHeader from '@/components/layout/PageHeader';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
@@ -192,19 +193,24 @@ export default function SaleDetailPage() {
     shipmentForm.tracking_number !== (sale.tracking_number || '');
 
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-8">
-        <Link to="/sales" className="p-2 hover:bg-accent rounded-md text-muted-foreground">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold">{sale.sale_number}</h1>
-          <p className="text-muted-foreground">{sale.date} &middot; {sale.customer_name || 'No customer'}</p>
-        </div>
-        <StatusBadge tone={defaultStatusTone(sale.status)} className="text-sm">
-          <span className="capitalize">{sale.status}</span>
-        </StatusBadge>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={sale.sale_number}
+        description={`${sale.date} · ${sale.customer_name || 'No customer'}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link
+              to="/sales"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent no-underline"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back
+            </Link>
+            <StatusBadge tone={defaultStatusTone(sale.status)} className="text-sm">
+              <span className="capitalize">{sale.status}</span>
+            </StatusBadge>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">

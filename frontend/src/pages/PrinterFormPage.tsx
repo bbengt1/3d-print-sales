@@ -196,7 +196,7 @@ export default function PrinterFormPage() {
 
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <h1 className="text-2xl font-semibold">{title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Track machine details, availability, and where this printer lives.</p>
         </div>
 

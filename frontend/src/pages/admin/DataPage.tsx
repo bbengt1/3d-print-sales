@@ -58,7 +58,7 @@ export default function DataPage() {
       <div className="flex items-center gap-3 mb-8">
         <Download className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Data Export</h1>
+          <h1 className="text-2xl font-semibold">Data Export</h1>
           <p className="text-sm text-muted-foreground">Export your data as CSV files</p>
         </div>
       </div>

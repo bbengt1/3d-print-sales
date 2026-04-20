@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import DataTable from '@/components/data/DataTable';
+import { KPIStrip, KPI } from '@/components/layout/KPIStrip';
 import type { SalesReport, ProductRanking, ChannelBreakdown } from '@/types';
 
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
@@ -34,7 +35,7 @@ export default function SalesReportPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Sales Report</h2>
+      <h2 className="text-xl font-semibold mb-6">Sales Report</h2>
 
       <ReportControls
         dateFrom={dateFrom}
@@ -51,36 +52,25 @@ export default function SalesReportPage() {
       ) : !data ? null : (
         <div className="space-y-8">
           {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Total Orders</p>
-              <p className="text-3xl font-bold mt-1">{data.total_orders}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Gross Sales</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(data.gross_sales)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Item COGS</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(data.item_cogs)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Gross Profit</p>
-              <p className={`text-3xl font-bold mt-1 ${data.gross_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(data.gross_profit)}
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Platform Fees + Shipping</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(data.platform_fees + data.shipping_costs)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Contribution Margin</p>
-              <p className={`text-3xl font-bold mt-1 ${data.contribution_margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(data.contribution_margin)}
-              </p>
-            </div>
-          </div>
+          <KPIStrip columns={3}>
+            <KPI label="Orders" value={data.total_orders.toLocaleString()} />
+            <KPI label="Gross sales" value={formatCurrency(data.gross_sales)} />
+            <KPI label="Item COGS" value={formatCurrency(data.item_cogs)} />
+            <KPI
+              label="Gross profit"
+              value={formatCurrency(data.gross_profit)}
+              tone={data.gross_profit >= 0 ? 'success' : 'destructive'}
+            />
+            <KPI
+              label="Fees + shipping"
+              value={formatCurrency(data.platform_fees + data.shipping_costs)}
+            />
+            <KPI
+              label="Contribution margin"
+              value={formatCurrency(data.contribution_margin)}
+              tone={data.contribution_margin >= 0 ? 'success' : 'destructive'}
+            />
+          </KPIStrip>
 
           {/* Revenue over time chart */}
           {data.period_data.length > 0 && (

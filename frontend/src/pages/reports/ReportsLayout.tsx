@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import PageHeader from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -9,11 +10,14 @@ const tabs = [
 
 export default function ReportsLayout() {
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Reports</h1>
+    <div className="space-y-6">
+      <PageHeader
+        title="Reports"
+        description="Slice sales, inventory, and profitability across periods and channels."
+      />
 
       {/* Sub-navigation tabs */}
-      <div className="border-b border-border mb-6">
+      <div className="border-b border-border">
         <nav className="flex gap-1 -mb-px">
           {tabs.map((tab) => (
             <NavLink
