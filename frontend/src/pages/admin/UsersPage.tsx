@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import StatusBadge from '@/components/data/StatusBadge';
 
 interface UserRecord {
   id: string;
@@ -172,14 +173,12 @@ export default function UsersPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${u.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-                      {u.role}
-                    </span>
+                    <StatusBadge tone={u.role === 'admin' ? 'info' : 'neutral'}>{u.role}</StatusBadge>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${u.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    <StatusBadge tone={u.is_active ? 'success' : 'destructive'}>
                       {u.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    </StatusBadge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">
                     {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}

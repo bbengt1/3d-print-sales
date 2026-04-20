@@ -19,7 +19,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import DataTable, { type Column, type SortDir } from '@/components/data/DataTable';
-import StatusBadge, { type StatusTone } from '@/components/data/StatusBadge';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
 import Select from '@/components/data/Select';
@@ -35,14 +35,6 @@ const TYPE_OPTIONS = [
   { value: 'return', label: 'Return' },
   { value: 'waste', label: 'Waste' },
 ] as const;
-
-const TYPE_COLORS: Record<string, string> = {
-  production: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  sale: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  adjustment: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  return: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  waste: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
 
 type StockSurface = 'exceptions' | 'ledger';
 
@@ -555,16 +547,9 @@ export default function InventoryPage() {
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold">{alert.name}</p>
-                              <span
-                                className={cn(
-                                  'rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                                  isCritical
-                                    ? 'bg-destructive text-destructive-foreground'
-                                    : 'bg-amber-100 text-amber-900'
-                                )}
-                              >
+                              <StatusBadge tone={isCritical ? 'destructive' : 'warning'}>
                                 {isCritical ? 'Stockout' : 'Reorder risk'}
-                              </span>
+                              </StatusBadge>
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">
                               {(alert.sku || 'No SKU')} • Stock {alert.current_stock} / Reorder {alert.reorder_point}
@@ -641,9 +626,7 @@ export default function InventoryPage() {
                               {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : '-'}
                             </p>
                           </div>
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[transaction.type] || ''}`}>
-                            {transaction.type}
-                          </span>
+                          <StatusBadge tone={defaultStatusTone(transaction.type)}>{transaction.type}</StatusBadge>
                         </div>
                         <div className="mt-3 flex items-center justify-between text-sm">
                           <p className="text-muted-foreground">{transaction.notes || 'No notes provided'}</p>
@@ -720,13 +703,6 @@ export default function InventoryPage() {
         </div>
       ) : (
         (() => {
-          const typeToneMap: Record<string, StatusTone> = {
-            production: 'success',
-            sale: 'info',
-            adjustment: 'warning',
-            return: 'info',
-            waste: 'destructive',
-          };
           const activeFilters = [search, type, dateFrom, dateTo].filter(Boolean).length;
           const clearFilters = () => {
             setSearch('');
@@ -778,7 +754,7 @@ export default function InventoryPage() {
               key: 'type',
               header: 'Type',
               sortable: true,
-              cell: (t) => <StatusBadge tone={typeToneMap[t.type] || 'neutral'}>{t.type}</StatusBadge>,
+              cell: (t) => <StatusBadge tone={defaultStatusTone(t.type)}>{t.type}</StatusBadge>,
             },
             {
               key: 'quantity',

@@ -17,10 +17,10 @@ const toneStyles: Record<StatusTone, { dot: string; text: string; bg: string }> 
  */
 export function defaultStatusTone(status: string): StatusTone {
   const s = (status || '').toLowerCase();
-  if (['paid', 'delivered', 'complete', 'completed', 'printing', 'active', 'healthy', 'ready', 'ok'].includes(s)) return 'success';
-  if (['pending', 'draft', 'in_progress', 'low_stock', 'queued', 'backorder', 'paused'].includes(s)) return 'warning';
-  if (['refunded', 'cancelled', 'error', 'offline', 'critical', 'failed'].includes(s)) return 'destructive';
-  if (['shipped', 'maintenance', 'idle', 'scheduled'].includes(s)) return 'info';
+  if (['paid', 'delivered', 'complete', 'completed', 'printing', 'active', 'healthy', 'ready', 'ok', 'production'].includes(s)) return 'success';
+  if (['pending', 'draft', 'in_progress', 'low_stock', 'queued', 'backorder', 'paused', 'adjustment'].includes(s)) return 'warning';
+  if (['refunded', 'cancelled', 'error', 'offline', 'critical', 'failed', 'waste'].includes(s)) return 'destructive';
+  if (['shipped', 'maintenance', 'idle', 'scheduled', 'sale', 'return'].includes(s)) return 'info';
   return 'neutral';
 }
 
