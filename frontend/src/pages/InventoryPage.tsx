@@ -411,7 +411,7 @@ export default function InventoryPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="reconcile-product">Product *</Label>
+              <Label htmlFor="reconcile-product" required>Product</Label>
               <select
                 id="reconcile-product"
                 value={reconcileForm.product_id}
@@ -450,7 +450,7 @@ export default function InventoryPage() {
             ) : null}
 
             <div className="space-y-1.5">
-              <Label htmlFor="reconcile-counted">Counted quantity *</Label>
+              <Label htmlFor="reconcile-counted" required>Counted quantity</Label>
               <Input
                 id="reconcile-counted"
                 type="number"
@@ -463,7 +463,7 @@ export default function InventoryPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="reconcile-reason">Reason *</Label>
+              <Label htmlFor="reconcile-reason" required>Reason</Label>
               <Input
                 id="reconcile-reason"
                 value={reconcileForm.reason}
@@ -501,7 +501,7 @@ export default function InventoryPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="adjust-product">Product *</Label>
+              <Label htmlFor="adjust-product" required>Product</Label>
               <select
                 id="adjust-product"
                 value={adjustForm.product_id}
@@ -541,7 +541,7 @@ export default function InventoryPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="adjust-quantity">Quantity *</Label>
+              <Label htmlFor="adjust-quantity" required>Quantity</Label>
               <Input
                 id="adjust-quantity"
                 type="number"

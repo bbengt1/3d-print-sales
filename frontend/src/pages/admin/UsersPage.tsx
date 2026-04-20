@@ -111,16 +111,16 @@ export default function UsersPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="user-name">Full name *</Label>
+              <Label htmlFor="user-name" required>Full name</Label>
               <Input id="user-name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="user-email">Email *</Label>
+              <Label htmlFor="user-email" required>Email</Label>
               <Input id="user-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             {editing === 'new' && (
               <div className="space-y-1.5">
-                <Label htmlFor="user-password">Password *</Label>
+                <Label htmlFor="user-password" required>Password</Label>
                 <Input
                   id="user-password"
                   type="password"

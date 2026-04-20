@@ -1,5 +1,7 @@
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 
 interface ReportControlsProps {
   dateFrom: string;
@@ -22,8 +24,6 @@ export default function ReportControls({
   onDateToChange,
   onPeriodChange,
 }: ReportControlsProps) {
-  const inputCls = 'px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm';
-
   const handleExport = () => {
     if (!csvUrl) return;
     const params = new URLSearchParams();
@@ -35,31 +35,54 @@ export default function ReportControls({
   };
 
   return (
-    <div className="flex flex-wrap gap-3 mb-6 items-end">
-      <div>
-        <label className="block text-xs text-muted-foreground mb-1">From</label>
-        <input type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} className={inputCls} />
+    <div className="mb-6 flex flex-wrap items-end gap-3">
+      <div className="space-y-1.5">
+        <Label htmlFor="report-date-from" className="text-xs text-muted-foreground">
+          From
+        </Label>
+        <Input
+          id="report-date-from"
+          type="date"
+          value={dateFrom}
+          onChange={(e) => onDateFromChange(e.target.value)}
+          className="w-auto"
+        />
       </div>
-      <div>
-        <label className="block text-xs text-muted-foreground mb-1">To</label>
-        <input type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} className={inputCls} />
+      <div className="space-y-1.5">
+        <Label htmlFor="report-date-to" className="text-xs text-muted-foreground">
+          To
+        </Label>
+        <Input
+          id="report-date-to"
+          type="date"
+          value={dateTo}
+          onChange={(e) => onDateToChange(e.target.value)}
+          className="w-auto"
+        />
       </div>
-      {showPeriod && onPeriodChange && (
-        <div>
-          <label className="block text-xs text-muted-foreground mb-1">Period</label>
-          <select value={period} onChange={(e) => onPeriodChange(e.target.value)} className={inputCls}>
+      {showPeriod && onPeriodChange ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="report-period" className="text-xs text-muted-foreground">
+            Period
+          </Label>
+          <select
+            id="report-period"
+            value={period}
+            onChange={(e) => onPeriodChange(e.target.value)}
+            className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
           </select>
         </div>
-      )}
-      {csvUrl && (
+      ) : null}
+      {csvUrl ? (
         <Button variant="outline" onClick={handleExport}>
           <Download className="h-4 w-4" /> Export CSV
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }

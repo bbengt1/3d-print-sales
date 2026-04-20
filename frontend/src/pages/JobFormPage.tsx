@@ -291,14 +291,13 @@ export default function JobFormPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="create-product-name">Name *</Label>
+              <Label htmlFor="create-product-name" required>Name</Label>
               <Input
                 id="create-product-name"
                 value={productForm.name}
                 onChange={(e) => updateProductForm('name', e.target.value)}
-                invalid={Boolean(productErrors.name)}
+                error={productErrors.name}
               />
-              {productErrors.name && <p className="text-destructive text-xs">{productErrors.name}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="create-product-description">Description</Label>
@@ -309,7 +308,7 @@ export default function JobFormPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-product-material">Material *</Label>
+              <Label htmlFor="create-product-material" required>Material</Label>
               <select
                 id="create-product-material"
                 value={productForm.material_id}

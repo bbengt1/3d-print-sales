@@ -167,7 +167,7 @@ export default function MaterialsPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="mat-name">Name *</Label>
+              <Label htmlFor="mat-name" required>Name</Label>
               <Input
                 id="mat-name"
                 value={form.name}
@@ -175,12 +175,11 @@ export default function MaterialsPage() {
                   setForm({ ...form, name: e.target.value });
                   setFormErrors({ ...formErrors, name: '' });
                 }}
-                invalid={Boolean(formErrors.name)}
+                error={formErrors.name}
               />
-              {formErrors.name && <p className="text-destructive text-xs">{formErrors.name}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="mat-brand">Brand *</Label>
+              <Label htmlFor="mat-brand" required>Brand</Label>
               <Input
                 id="mat-brand"
                 value={form.brand}
@@ -188,44 +187,40 @@ export default function MaterialsPage() {
                   setForm({ ...form, brand: e.target.value });
                   setFormErrors({ ...formErrors, brand: '' });
                 }}
-                invalid={Boolean(formErrors.brand)}
+                error={formErrors.brand}
               />
-              {formErrors.brand && <p className="text-destructive text-xs">{formErrors.brand}</p>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="mat-weight">Spool (g) *</Label>
+                <Label htmlFor="mat-weight" required>Spool (g)</Label>
                 <Input
                   id="mat-weight"
                   type="number"
                   value={form.spool_weight_g}
                   onChange={(e) => setForm({ ...form, spool_weight_g: Number(e.target.value) })}
-                  invalid={Boolean(formErrors.spool_weight_g)}
+                  error={formErrors.spool_weight_g}
                 />
-                {formErrors.spool_weight_g && <p className="text-destructive text-xs">{formErrors.spool_weight_g}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mat-price">Price ($) *</Label>
+                <Label htmlFor="mat-price" required>Price ($)</Label>
                 <Input
                   id="mat-price"
                   type="number"
                   step="0.01"
                   value={form.spool_price}
                   onChange={(e) => setForm({ ...form, spool_price: Number(e.target.value) })}
-                  invalid={Boolean(formErrors.spool_price)}
+                  error={formErrors.spool_price}
                 />
-                {formErrors.spool_price && <p className="text-destructive text-xs">{formErrors.spool_price}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mat-usable">Usable (g) *</Label>
+                <Label htmlFor="mat-usable" required>Usable (g)</Label>
                 <Input
                   id="mat-usable"
                   type="number"
                   value={form.net_usable_g}
                   onChange={(e) => setForm({ ...form, net_usable_g: Number(e.target.value) })}
-                  invalid={Boolean(formErrors.net_usable_g)}
+                  error={formErrors.net_usable_g}
                 />
-                {formErrors.net_usable_g && <p className="text-destructive text-xs">{formErrors.net_usable_g}</p>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

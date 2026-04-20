@@ -155,7 +155,7 @@ export default function SaleFormPage() {
             <h2 className="text-base font-semibold mb-4">Sale Details</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="sale-date">Date *</Label>
+                <Label htmlFor="sale-date" required>Date</Label>
                 <Input id="sale-date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
               </div>
               <div className="space-y-1.5">
@@ -284,7 +284,7 @@ export default function SaleFormPage() {
                     </select>
                   </div>
                   <div className="col-span-12 sm:col-span-3 space-y-1.5">
-                    <Label htmlFor={`sale-item-${idx}-description`} className="text-xs text-muted-foreground">Description *</Label>
+                    <Label htmlFor={`sale-item-${idx}-description`} className="text-xs text-muted-foreground" required>Description</Label>
                     <Input id={`sale-item-${idx}-description`} value={item.description} onChange={(e) => updateItem(idx, { description: e.target.value })} />
                   </div>
                   <div className="col-span-4 sm:col-span-1 space-y-1.5">

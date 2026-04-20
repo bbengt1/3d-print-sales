@@ -92,7 +92,7 @@ export default function SalesChannelsPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="channel-name">Name *</Label>
+              <Label htmlFor="channel-name" required>Name</Label>
               <Input id="channel-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
