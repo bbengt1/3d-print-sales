@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import DataTable, { type Column } from '@/components/data/DataTable';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Camera, PaginatedCameras, PaginatedPrinters } from '@/types';
 
 type ModalMode = 'create' | 'edit' | null;
@@ -79,8 +80,8 @@ export default function CamerasPage() {
       qc.invalidateQueries({ queryKey: ['printers'] });
       closeModal();
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || 'Failed to save camera');
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err, 'Failed to save camera'));
     },
   });
 

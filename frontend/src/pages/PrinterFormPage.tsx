@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Printer, PrinterConnectionTestResult } from '@/types';
 
 const STATUS_OPTIONS = ['idle', 'printing', 'paused', 'maintenance', 'offline', 'error'] as const;
@@ -147,8 +148,8 @@ export default function PrinterFormPage() {
 
       queryClient.invalidateQueries({ queryKey: ['printers'] });
       navigate(`/printers/${id}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save printer');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save printer'));
     } finally {
       setSaving(false);
     }
@@ -171,8 +172,8 @@ export default function PrinterFormPage() {
       const testResponse = await api.post<PrinterConnectionTestResult>(`/printers/${createdPrinter.id}/test-connection`);
       await api.delete(`/printers/${createdPrinter.id}`);
       testResponse.data.ok ? toast.success(testResponse.data.message || 'Connection successful') : toast.error(testResponse.data.message || 'Connection failed');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Connection test failed');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Connection test failed'));
     } finally {
       setTestingConnection(false);
     }

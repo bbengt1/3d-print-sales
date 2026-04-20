@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/Label';
 import { Callout, type CalloutTone } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
 import { cn, formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { InventoryTransaction, Material, PaginatedTransactions, Product } from '@/types';
 
 const emptyForm = {
@@ -131,8 +132,8 @@ export default function ProductEditorPage() {
         queryClient.invalidateQueries({ queryKey: ['products'] });
         queryClient.invalidateQueries({ queryKey: ['product', id] });
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save product');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save product'));
     } finally {
       setSaving(false);
     }

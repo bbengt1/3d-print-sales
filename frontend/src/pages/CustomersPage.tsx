@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import type { Customer } from '@/types';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const emptyForm = { name: '', email: '', phone: '', notes: '' };
 
@@ -56,8 +57,8 @@ export default function CustomersPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       close();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save'));
     } finally { setSaving(false); }
   };
 

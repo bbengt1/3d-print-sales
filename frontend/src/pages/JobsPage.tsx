@@ -13,6 +13,7 @@ import Select from '@/components/data/Select';
 import Pagination from '@/components/data/Pagination';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Job, PaginatedJobs } from '@/types';
 
 const STATUS_OPTIONS = [
@@ -57,8 +58,8 @@ export default function JobsPage() {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       toast.success('Job copied to draft successfully');
       navigate(`/orders/jobs/${data.id}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to copy job');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to copy job'));
     } finally {
       setDuplicatingId(null);
     }

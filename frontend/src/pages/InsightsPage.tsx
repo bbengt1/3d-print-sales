@@ -12,6 +12,7 @@ import StatusBadge, { type StatusTone } from '@/components/data/StatusBadge';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/auth';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { AIInsightStatus, AIInsightSummary } from '@/types';
 
 const presetQuestions = [
@@ -38,8 +39,8 @@ export default function InsightsPage() {
   const summaryMutation = useMutation({
     mutationFn: async (nextQuestion: string | null) =>
       api.post('/insights/summary', { question: nextQuestion || null }).then((r) => r.data as AIInsightSummary),
-    onError: (err: any) => {
-      toast.error(err.response?.data?.detail || 'Failed to generate insights');
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err, 'Failed to generate insights'));
     },
   });
 

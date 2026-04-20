@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Setting } from '@/types';
 
 const groups: Record<string, { keys: string[]; description: string }> = {
@@ -67,8 +68,8 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
       toast.success('Settings saved');
       setDirty(false);
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save settings');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save settings'));
     } finally {
       setSaving(false);
     }

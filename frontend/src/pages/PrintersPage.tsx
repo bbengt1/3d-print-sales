@@ -29,6 +29,7 @@ import Pagination from '@/components/data/Pagination';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { cn } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Job, PaginatedJobs, PaginatedPrinters, Printer } from '@/types';
 
 const STATUS_OPTIONS = ['idle', 'printing', 'paused', 'maintenance', 'offline', 'error'] as const;
@@ -374,8 +375,8 @@ export default function PrintersPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['printers'] });
       queryClient.invalidateQueries({ queryKey: ['printer', printer.id] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to update printer');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to update printer'));
     }
   };
 

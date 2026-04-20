@@ -27,6 +27,7 @@ import SearchInput from '@/components/data/SearchInput';
 import SelectInput from '@/components/data/Select';
 import Pagination from '@/components/data/Pagination';
 import { cn, formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type {
   InventoryAlert,
   InventoryReconcileResponse,
@@ -143,8 +144,8 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['inventory-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['inventory-alerts'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to reconcile inventory');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to reconcile inventory'));
     } finally {
       setReconcileSaving(false);
     }
@@ -177,8 +178,8 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['inventory-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['inventory-alerts'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to adjust stock');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to adjust stock'));
     } finally {
       setAdjustSaving(false);
     }

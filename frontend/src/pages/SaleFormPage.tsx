@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import PageHeader from '@/components/layout/PageHeader';
 import { formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { SalesChannel, PaginatedProducts, Customer } from '@/types';
 
 interface LineItem {
@@ -125,8 +126,8 @@ export default function SaleFormPage() {
       const resp = await api.post('/sales', payload);
       toast.success('Sale created');
       navigate(`/sales/${resp.data.id}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to create sale');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to create sale'));
     } finally {
       setSaving(false);
     }

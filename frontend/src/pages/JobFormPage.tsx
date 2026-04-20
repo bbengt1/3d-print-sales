@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import PageHeader from '@/components/layout/PageHeader';
 import { formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Material, Job, CalculateResponse, PaginatedProducts, PaginatedPrinters, Product } from '@/types';
 
 interface FieldProps {
@@ -227,8 +228,8 @@ export default function JobFormPage() {
       }));
       setShowCreateProduct(false);
       toast.success('Product created and linked to job');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to create product');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to create product'));
     } finally {
       setCreatingProduct(false);
     }
@@ -269,9 +270,8 @@ export default function JobFormPage() {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       navigate('/jobs');
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Failed to save job';
-      toast.error(msg);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save job'));
     } finally {
       setSaving(false);
     }
