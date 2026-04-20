@@ -1,35 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { formatCurrency } from '@/lib/utils';
 import type { Material, CalculateResponse } from '@/types';
-
-interface CalcFieldProps {
-  label: string;
-  field: string;
-  value: number;
-  onChange: (field: string, value: number) => void;
-  [k: string]: any;
-}
-
-function CalcField({ label, field, value, onChange, ...rest }: CalcFieldProps) {
-  return (
-    <div>
-      <label className="block text-sm font-medium mb-1.5">{label}</label>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(field, Number(e.target.value))}
-        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        {...rest}
-      />
-    </div>
-  );
-}
 
 export default function CalculatorPage() {
   const navigate = useNavigate();
@@ -69,7 +48,8 @@ export default function CalculatorPage() {
     return () => clearTimeout(timer);
   }, [form]);
 
-  const update = (field: string, value: number | string) => setForm((f) => ({ ...f, [field]: value }));
+  const update = (field: string, value: number | string) =>
+    setForm((f) => ({ ...f, [field]: value }));
 
   const saveAsJob = () => {
     const params = new URLSearchParams();
@@ -80,46 +60,126 @@ export default function CalculatorPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center gap-3 mb-8">
-        <Calculator className="w-8 h-8 text-primary" />
-        <h1 className="text-3xl font-bold">Cost Calculator</h1>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Cost Calculator"
+        description="Estimate material, labor, and machine costs for a print job before committing to production."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Print Parameters</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Material</label>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          {/* Print Parameters */}
+          <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+            <h2 className="text-base font-semibold">Print parameters</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-material">Material</Label>
                 <select
+                  id="calc-material"
                   value={form.material_id}
                   onChange={(e) => update('material_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">Select material...</option>
+                  <option value="">Select material…</option>
                   {materials?.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name} ({m.brand}) — ${Number(m.cost_per_g).toFixed(4)}/g</option>
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.brand}) — ${Number(m.cost_per_g).toFixed(4)}/g
+                    </option>
                   ))}
                 </select>
               </div>
-              <CalcField label="Qty per Plate" field="qty_per_plate" value={form.qty_per_plate} onChange={update} min={1} />
-              <CalcField label="Number of Plates" field="num_plates" value={form.num_plates} onChange={update} min={1} />
-              <CalcField label="Material per Plate (g)" field="material_per_plate_g" value={form.material_per_plate_g} onChange={update} min={0} step="0.01" />
-              <CalcField label="Print Time per Plate (hrs)" field="print_time_per_plate_hrs" value={form.print_time_per_plate_hrs} onChange={update} min={0} step="0.01" />
-            </div>
-          </div>
 
-          <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Labor & Costs</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <CalcField label="Labor Time (mins)" field="labor_mins" value={form.labor_mins} onChange={update} min={0} />
-              <CalcField label="Design Time (hrs)" field="design_time_hrs" value={form.design_time_hrs} onChange={update} min={0} step="0.01" />
-              <CalcField label="Shipping Cost ($)" field="shipping_cost" value={form.shipping_cost} onChange={update} min={0} step="0.01" />
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Target Margin: {form.target_margin_pct}%</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-qty-per-plate">Qty per plate</Label>
+                <Input
+                  id="calc-qty-per-plate"
+                  type="number"
+                  min={1}
+                  value={form.qty_per_plate}
+                  onChange={(e) => update('qty_per_plate', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-num-plates">Number of plates</Label>
+                <Input
+                  id="calc-num-plates"
+                  type="number"
+                  min={1}
+                  value={form.num_plates}
+                  onChange={(e) => update('num_plates', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-material-per-plate">Material per plate (g)</Label>
+                <Input
+                  id="calc-material-per-plate"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.material_per_plate_g}
+                  onChange={(e) => update('material_per_plate_g', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="calc-print-time">Print time per plate (hrs)</Label>
+                <Input
+                  id="calc-print-time"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.print_time_per_plate_hrs}
+                  onChange={(e) => update('print_time_per_plate_hrs', Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Labor & Costs */}
+          <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+            <h2 className="text-base font-semibold">Labor &amp; costs</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-labor-mins">Labor time (mins)</Label>
+                <Input
+                  id="calc-labor-mins"
+                  type="number"
+                  min={0}
+                  value={form.labor_mins}
+                  onChange={(e) => update('labor_mins', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-design-hrs">Design time (hrs)</Label>
+                <Input
+                  id="calc-design-hrs"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.design_time_hrs}
+                  onChange={(e) => update('design_time_hrs', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-shipping">Shipping cost ($)</Label>
+                <Input
+                  id="calc-shipping"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.shipping_cost}
+                  onChange={(e) => update('shipping_cost', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="calc-margin">Target margin: {form.target_margin_pct}%</Label>
                 <input
+                  id="calc-margin"
                   type="range"
                   min={0}
                   max={90}
@@ -129,59 +189,97 @@ export default function CalculatorPage() {
                 />
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
         {/* Results */}
         <div className="lg:col-span-1">
-          <div className="bg-card border border-border rounded-lg p-6 sticky top-24">
-            <h3 className="text-lg font-semibold mb-4">Results</h3>
+          <section className="sticky top-24 rounded-md border border-border bg-card p-5 shadow-xs space-y-3">
+            <h2 className="text-base font-semibold">Results</h2>
             {result ? (
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Total Pieces</span><span className="font-medium">{result.total_pieces}</span></div>
-                <div className="border-t border-border pt-2 mt-2" />
-                <div className="flex justify-between"><span className="text-muted-foreground">Material</span><span>{formatCurrency(result.material_cost)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Labor</span><span>{formatCurrency(result.labor_cost)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Design</span><span>{formatCurrency(result.design_cost)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Machine</span><span>{formatCurrency(result.machine_cost)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Electricity</span><span>{formatCurrency(result.electricity_cost)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Packaging</span><span>{formatCurrency(result.packaging_cost)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Failure Buffer</span><span>{formatCurrency(result.failure_buffer)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Overhead</span><span>{formatCurrency(result.overhead)}</span></div>
-                <div className="border-t border-border pt-2 mt-2 flex justify-between font-bold">
-                  <span>Total Cost</span><span>{formatCurrency(result.total_cost)}</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total pieces</span>
+                  <span className="font-medium tabular-nums">{result.total_pieces}</span>
                 </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Cost/piece</span><span>{formatCurrency(result.cost_per_piece)}</span>
-                </div>
-                <div className="border-t border-border pt-2 mt-2 flex justify-between">
-                  <span className="text-muted-foreground">Price/piece</span><span className="font-bold">{formatCurrency(result.price_per_piece)}</span>
+                <div className="border-t border-border pt-2" />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Material</span>
+                  <span className="tabular-nums">{formatCurrency(result.material_cost)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Revenue</span><span className="font-bold">{formatCurrency(result.total_revenue)}</span>
+                  <span className="text-muted-foreground">Labor</span>
+                  <span className="tabular-nums">{formatCurrency(result.labor_cost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Design</span>
+                  <span className="tabular-nums">{formatCurrency(result.design_cost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Machine</span>
+                  <span className="tabular-nums">{formatCurrency(result.machine_cost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Electricity</span>
+                  <span className="tabular-nums">{formatCurrency(result.electricity_cost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Packaging</span>
+                  <span className="tabular-nums">{formatCurrency(result.packaging_cost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Failure buffer</span>
+                  <span className="tabular-nums">{formatCurrency(result.failure_buffer)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Overhead</span>
+                  <span className="tabular-nums">{formatCurrency(result.overhead)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2 font-semibold">
+                  <span>Total cost</span>
+                  <span className="tabular-nums">{formatCurrency(result.total_cost)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Platform fees</span><span>-{formatCurrency(result.platform_fees)}</span>
+                  <span>Cost/piece</span>
+                  <span className="tabular-nums">{formatCurrency(result.cost_per_piece)}</span>
                 </div>
-                <div className="border-t-2 border-border pt-2 mt-2 flex justify-between font-bold text-lg">
-                  <span>Net Profit</span>
-                  <span className={result.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}>
+                <div className="flex justify-between border-t border-border pt-2">
+                  <span className="text-muted-foreground">Price/piece</span>
+                  <span className="font-semibold tabular-nums">{formatCurrency(result.price_per_piece)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Revenue</span>
+                  <span className="font-semibold tabular-nums">{formatCurrency(result.total_revenue)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Platform fees</span>
+                  <span className="tabular-nums">-{formatCurrency(result.platform_fees)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
+                  <span>Net profit</span>
+                  <span
+                    className={
+                      result.net_profit >= 0
+                        ? 'tabular-nums text-emerald-600 dark:text-emerald-400'
+                        : 'tabular-nums text-destructive'
+                    }
+                  >
                     {formatCurrency(result.net_profit)}
                   </span>
                 </div>
-                <div className="text-xs text-muted-foreground text-right">
+                <div className="text-right text-xs text-muted-foreground tabular-nums">
                   {formatCurrency(result.profit_per_piece)} per piece
                 </div>
-                <Button onClick={saveAsJob} className="mt-4 w-full">
-                  Save as Job
+                <Button onClick={saveAsJob} className="mt-2 w-full">
+                  Save as job
                 </Button>
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm py-8 text-center">
-                Fill in parameters to calculate costs
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Fill in parameters to calculate costs.
               </p>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </div>
