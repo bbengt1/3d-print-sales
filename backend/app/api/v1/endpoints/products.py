@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
@@ -13,6 +13,7 @@ from app.schemas.product import (
     ProductResponse,
     ProductUpdate,
 )
+from app.services.barcode_service import BarcodeFormat, render_barcode
 from app.services.inventory_service import generate_sku
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -143,3 +144,55 @@ async def delete_product(product_id: uuid.UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=404, detail="Product not found")
     product.is_active = False
     await db.commit()
+
+
+@router.get(
+    "/{product_id}/barcode",
+    summary="Generate a printable barcode for a product",
+    description=(
+        "Returns a PNG-encoded barcode or QR code for the given product. "
+        "`format=code128` (default) encodes the product SKU; `format=upc` "
+        "encodes the UPC-A value and requires the product to have a 12-digit "
+        "UPC; `format=qr` encodes either the UPC/SKU or the product URL when "
+        "`url=1` is set."
+    ),
+    responses={200: {"content": {"image/png": {}}}},
+)
+async def get_product_barcode(
+    product_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    format: BarcodeFormat = Query("code128", description="Barcode format"),
+    size: int = Query(2, ge=1, le=20, description="Visual size hint (1-20)"),
+    url: bool = Query(
+        False,
+        description="When format=qr, encode the public product URL instead of UPC/SKU.",
+    ),
+):
+    result = await db.execute(select(Product).where(Product.id == product_id))
+    product = result.scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if format == "qr" and url:
+        payload = f"/product-studio/products/{product.id}"
+    elif format == "upc":
+        if not product.upc:
+            raise HTTPException(
+                status_code=400,
+                detail="Product has no UPC assigned; use format=code128 or format=qr instead.",
+            )
+        payload = product.upc
+    else:
+        payload = product.upc or product.sku
+
+    try:
+        png = render_barcode(format=format, payload=payload, size=size)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )

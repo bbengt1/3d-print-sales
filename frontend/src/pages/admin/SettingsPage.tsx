@@ -25,6 +25,10 @@ const groups: Record<string, { keys: string[]; description: string }> = {
     keys: ['packaging_cost_per_order', 'shipping_charged_to_customer'],
     description: 'Packaging and shipping cost settings',
   },
+  Labels: {
+    keys: ['barcode_default_format', 'barcode_label_template', 'barcode_include_price'],
+    description: 'Default barcode format, label sheet template, and price display',
+  },
 };
 
 const aiProviders = [
@@ -79,10 +83,27 @@ export default function SettingsPage() {
   const activeProvider = values.ai_provider || 'chatgpt';
   const activeProviderConfig = aiProviders.find((provider) => provider.value === activeProvider) || aiProviders[0];
 
+  const selectOptions: Record<string, { value: string; label: string }[]> = {
+    barcode_default_format: [
+      { value: 'code128', label: 'Code128 (any SKU)' },
+      { value: 'upc', label: 'UPC-A (12-digit UPC)' },
+      { value: 'qr', label: 'QR code' },
+    ],
+    barcode_label_template: [
+      { value: 'avery_5160', label: 'Avery 5160 (30 per sheet)' },
+      { value: 'continuous_roll_2x1', label: 'Continuous roll 2 × 1 in' },
+    ],
+  };
+
+  const booleanKeys = new Set(['barcode_include_price']);
+
   const renderSettingInput = (key: string, helperLabel?: string) => {
     const setting = settingsMap.get(key);
     if (!setting) return null;
     const isSecret = key.endsWith('_api_key');
+    const options = selectOptions[key];
+    const isBoolean = booleanKeys.has(key);
+
     return (
       <div key={key} className="space-y-2">
         <div>
@@ -91,13 +112,37 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">{setting.notes}</p>
           )}
         </div>
-        <input
-          type={isSecret ? 'password' : 'text'}
-          value={values[key] ?? ''}
-          onChange={(e) => update(key, e.target.value)}
-          placeholder={isSecret ? 'Paste API key' : undefined}
-          className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-sm"
-        />
+        {options ? (
+          <select
+            value={values[key] ?? options[0].value}
+            onChange={(e) => update(key, e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        ) : isBoolean ? (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={values[key] === 'true'}
+              onChange={(e) => update(key, e.target.checked ? 'true' : 'false')}
+              className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+            />
+            Enabled
+          </label>
+        ) : (
+          <input
+            type={isSecret ? 'password' : 'text'}
+            value={values[key] ?? ''}
+            onChange={(e) => update(key, e.target.value)}
+            placeholder={isSecret ? 'Paste API key' : undefined}
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-sm"
+          />
+        )}
       </div>
     );
   };

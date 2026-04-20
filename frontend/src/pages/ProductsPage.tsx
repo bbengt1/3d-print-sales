@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Archive, ArchiveRestore, Eye, Pencil, Plus, ScanBarcode } from 'lucide-react';
+import { AlertTriangle, Archive, ArchiveRestore, Eye, Pencil, Plus, Printer, ScanBarcode } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import PageHeader from '@/components/layout/PageHeader';
@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { formatCurrency } from '@/lib/utils';
+import { printProductLabels } from '@/lib/printLabels';
+import { useLabelSettings } from '@/hooks/useLabelSettings';
 import type { PaginatedProducts, Product } from '@/types';
 
 export default function ProductsPage() {
@@ -24,6 +26,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
+  const labelSettings = useLabelSettings();
 
   const { data, isLoading, refetch } = useQuery<PaginatedProducts>({
     queryKey: ['products', search, sortKey, sortDir, page, pageSize],
@@ -144,7 +147,7 @@ export default function ProductsPage() {
     {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
-      width: '112px',
+      width: '144px',
       cell: (p) => (
         <div className="flex items-center justify-end gap-1">
           <Tooltip>
@@ -166,6 +169,25 @@ export default function ProductsPage() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>View</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() =>
+                  printProductLabels([p], {
+                    format: labelSettings.defaultFormat,
+                    includePrice: labelSettings.includePrice,
+                  })
+                }
+                aria-label={`Print label for ${p.name}`}
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Print label</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>

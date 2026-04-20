@@ -169,6 +169,7 @@ export function useDefaultCommandGroups(): CommandGroupDef[] {
         { id: 'customers-list', label: 'View customers', icon: <UsersRound className="h-4 w-4" />, to: '/orders/customers' },
         { id: 'products-list', label: 'View products', icon: <Box className="h-4 w-4" />, to: '/product-studio/products' },
         { id: 'materials-list', label: 'View materials', icon: <Package className="h-4 w-4" />, to: '/stock/materials' },
+        { id: 'print-labels', label: 'Print product labels', keywords: ['barcode', 'qr', 'sheet', 'avery'], icon: <ScanLine className="h-4 w-4" />, to: '/product-studio/labels' },
       ],
     },
     {
