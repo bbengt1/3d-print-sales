@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { Callout } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
@@ -165,7 +166,12 @@ export default function SaleDetailPage() {
   };
 
   if (isLoading) {
-    return <div className="animate-pulse space-y-4"><div className="h-8 bg-muted rounded w-1/3" /><div className="h-64 bg-muted rounded" /></div>;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-1/3" />
+        <SkeletonCard rows={3} />
+      </div>
+    );
   }
 
   if (!sale) {

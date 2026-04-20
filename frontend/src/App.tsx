@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import Layout from '@/components/layout/Layout';
 import AdminLayout from '@/components/layout/AdminLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -50,14 +51,12 @@ const queryClient = new QueryClient({
 function RouteFallback() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24">
-        <div className="w-full max-w-3xl animate-pulse space-y-4">
-          <div className="h-10 w-56 rounded-md bg-card" />
-          <div className="h-40 rounded-lg bg-card" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="h-32 rounded-lg bg-card" />
-            <div className="h-32 rounded-lg bg-card" />
-          </div>
+      <div className="mx-auto max-w-6xl space-y-4 px-6 py-24">
+        <Skeleton className="h-10 w-56" />
+        <SkeletonCard rows={2} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <SkeletonCard rows={1} />
+          <SkeletonCard rows={1} />
         </div>
       </div>
     </div>

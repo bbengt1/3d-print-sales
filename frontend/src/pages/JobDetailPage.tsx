@@ -5,6 +5,7 @@ import { ArrowLeft, Edit, Calendar, User, Package, Printer, Copy } from 'lucide-
 import { toast } from 'sonner';
 import api from '@/api/client';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import type { Job } from '@/types';
 
@@ -54,9 +55,13 @@ export default function JobDetailPage() {
   };
 
   if (isLoading) {
-    return <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => (
-      <div key={i} className="bg-card border border-border rounded-lg h-48 animate-pulse" />
-    ))}</div>;
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonCard key={i} rows={2} />
+        ))}
+      </div>
+    );
   }
 
   if (!job) return <p className="text-muted-foreground">Job not found</p>;

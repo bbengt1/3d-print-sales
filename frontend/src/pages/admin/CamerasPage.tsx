@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import DataTable, { type Column } from '@/components/data/DataTable';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { Camera, PaginatedCameras, PaginatedPrinters } from '@/types';
 
 type ModalMode = 'create' | 'edit' | null;
@@ -289,7 +290,10 @@ export default function CamerasPage() {
                   </div>
                   <div className="rounded-lg overflow-hidden border border-border bg-black aspect-video flex items-center justify-center">
                     {previewLoading && (
-                      <div className="text-muted-foreground text-sm animate-pulse">Fetching snapshot...</div>
+                      <>
+                        <Skeleton className="h-4 w-28" />
+                        <span className="sr-only">Fetching snapshot</span>
+                      </>
                     )}
                     {!previewLoading && previewError && (
                       <div className="text-center px-4">

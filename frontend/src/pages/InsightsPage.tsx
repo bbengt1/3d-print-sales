@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import StatusBadge, { type StatusTone } from '@/components/data/StatusBadge';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/auth';
 import type { AIInsightStatus, AIInsightSummary } from '@/types';
 
@@ -56,8 +58,8 @@ export default function InsightsPage() {
   if (statusLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-12 w-72 animate-pulse rounded-md bg-card" />
-        <div className="h-64 animate-pulse rounded-md bg-card" />
+        <Skeleton className="h-10 w-72" />
+        <SkeletonCard rows={3} />
       </div>
     );
   }
@@ -215,7 +217,7 @@ export default function InsightsPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No recommendations returned.</p>
+                <EmptyState compact icon="reports" title="No recommendations returned." />
               )}
             </section>
 
@@ -247,7 +249,7 @@ export default function InsightsPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No risks returned.</p>
+                <EmptyState compact icon="reports" title="No risks returned." />
               )}
             </section>
           </div>
