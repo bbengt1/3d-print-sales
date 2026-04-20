@@ -54,7 +54,7 @@ export default function Layout() {
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} groups={commandGroups} />
       <Header onOpenMobileNav={() => setMobileNavOpen(true)} onOpenCommandPalette={() => setPaletteOpen(true)} />
 
-      <div className="mx-auto flex-1 w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex-1 w-full max-w-[88rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="flex min-h-full gap-6 lg:gap-8">
           <aside className="hidden w-72 shrink-0 lg:block xl:w-80">
             <div className="sticky top-24 rounded-md border border-border bg-card p-2 shadow-xs">
