@@ -11,6 +11,7 @@ import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
 import Pagination from '@/components/data/Pagination';
 import { Button } from '@/components/ui/Button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { formatCurrency } from '@/lib/utils';
 import type { PaginatedProducts, Product } from '@/types';
 
@@ -150,28 +151,40 @@ export default function ProductsPage() {
       width: '112px',
       cell: (p) => (
         <div className="flex items-center justify-end gap-1">
-          <Link
-            to={`/product-studio/products/${p.id}/edit`}
-            aria-label={`Edit ${p.name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Pencil className="h-4 w-4" />
-          </Link>
-          <Link
-            to={`/product-studio/products/${p.id}`}
-            aria-label={`View ${p.name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Eye className="h-4 w-4" />
-          </Link>
-          <button
-            type="button"
-            onClick={() => toggleActive(p)}
-            aria-label={p.is_active ? `Archive ${p.name}` : `Restore ${p.name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            {p.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                <Link to={`/product-studio/products/${p.id}/edit`} aria-label={`Edit ${p.name}`}>
+                  <Pencil className="h-4 w-4" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                <Link to={`/product-studio/products/${p.id}`} aria-label={`View ${p.name}`}>
+                  <Eye className="h-4 w-4" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>View</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => toggleActive(p)}
+                aria-label={p.is_active ? `Archive ${p.name}` : `Restore ${p.name}`}
+              >
+                {p.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{p.is_active ? 'Archive' : 'Restore'}</TooltipContent>
+          </Tooltip>
         </div>
       ),
     },

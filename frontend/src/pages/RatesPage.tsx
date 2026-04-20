@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import type { Rate } from '@/types';
 
 const emptyForm = { name: '', value: 0, unit: '$/hour', notes: '' };
@@ -105,14 +106,20 @@ export default function RatesPage() {
       header: <span className="sr-only">Actions</span>,
       width: '48px',
       cell: (r) => (
-        <button
-          type="button"
-          onClick={() => openEdit(r)}
-          aria-label={`Edit ${r.name}`}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Edit className="h-4 w-4" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => openEdit(r)}
+              aria-label={`Edit ${r.name}`}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit</TooltipContent>
+        </Tooltip>
       ),
     },
   ];

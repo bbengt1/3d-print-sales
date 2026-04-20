@@ -158,21 +158,19 @@ export default function ProductEditorPage() {
         description={isCreate ? 'Draft' : product?.is_active ? 'Active' : 'Archived'}
         actions={
           <>
-            <Link
-              to="/product-studio"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to catalog
-            </Link>
-            {!isCreate ? (
-              <Link
-                to={`/product-studio/products/${id}`}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
-              >
-                View record
-                <ArrowRight className="h-4 w-4" />
+            <Button asChild variant="outline">
+              <Link to="/product-studio">
+                <ArrowLeft className="h-4 w-4" />
+                Back to catalog
               </Link>
+            </Button>
+            {!isCreate ? (
+              <Button asChild variant="outline">
+                <Link to={`/product-studio/products/${id}`}>
+                  View record
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             ) : null}
           </>
         }
@@ -295,12 +293,11 @@ export default function ProductEditorPage() {
                 {saving ? 'Saving...' : isCreate ? 'Create product' : 'Save changes'}
               </Button>
               {!isCreate ? (
-                <Link
-                  to={`/product-studio/products/${id}`}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-md border border-border px-5 py-3 font-semibold text-foreground no-underline transition-colors hover:bg-accent"
-                >
-                  Open detail record
-                </Link>
+                <Button asChild variant="outline" size="lg" className="min-h-12 px-5 font-semibold">
+                  <Link to={`/product-studio/products/${id}`}>
+                    Open detail record
+                  </Link>
+                </Button>
               ) : null}
             </div>
           </div>

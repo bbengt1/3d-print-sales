@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
@@ -439,24 +440,34 @@ function CamerasTable({ cameras, isLoading, onEdit, onDeactivate }: CamerasTable
       width: '96px',
       cell: (cam) => (
         <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={() => onEdit(cam)}
-            aria-label={`Edit ${cam.name}`}
-            title="Edit"
-            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted transition-colors"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onDeactivate(cam.id)}
-            aria-label={`Deactivate ${cam.name}`}
-            title="Deactivate"
-            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-danger/10 text-danger transition-colors"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onEdit(cam)}
+                aria-label={`Edit ${cam.name}`}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onDeactivate(cam.id)}
+                aria-label={`Deactivate ${cam.name}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Deactivate</TooltipContent>
+          </Tooltip>
         </div>
       ),
     },

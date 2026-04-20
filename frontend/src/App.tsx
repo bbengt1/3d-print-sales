@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { TooltipProvider } from '@/components/ui/Tooltip';
 import Layout from '@/components/layout/Layout';
 import AdminLayout from '@/components/layout/AdminLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -67,6 +68,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <TooltipProvider delayDuration={250} skipDelayDuration={0}>
         <BrowserRouter>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -167,6 +169,7 @@ export default function App() {
           </Suspense>
         </BrowserRouter>
         <Toaster richColors position="top-right" />
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

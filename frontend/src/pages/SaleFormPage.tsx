@@ -141,13 +141,9 @@ export default function SaleFormPage() {
         title="New Sale"
         description="Record a sale, its line items, shipment destination, and totals."
         actions={
-          <button
-            type="button"
-            onClick={() => navigate('/sales')}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to sales
-          </button>
+          <Button type="button" variant="outline" onClick={() => navigate('/sales')}>
+            <ArrowLeft className="h-4 w-4" /> Back to sales
+          </Button>
         }
       />
 

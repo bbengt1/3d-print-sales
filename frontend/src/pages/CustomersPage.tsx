@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import type { Customer } from '@/types';
 
 const emptyForm = { name: '', email: '', phone: '', notes: '' };
@@ -78,22 +79,34 @@ export default function CustomersPage() {
       width: '80px',
       cell: (c) => (
         <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={() => openEdit(c)}
-            aria-label={`Edit ${c.name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => deleteCustomer(c)}
-            aria-label={`Delete ${c.name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => openEdit(c)}
+                aria-label={`Edit ${c.name}`}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => deleteCustomer(c)}
+                aria-label={`Delete ${c.name}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
         </div>
       ),
     },

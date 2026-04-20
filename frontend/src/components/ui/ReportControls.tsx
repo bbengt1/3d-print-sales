@@ -1,4 +1,5 @@
 import { Download } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface ReportControlsProps {
   dateFrom: string;
@@ -55,12 +56,9 @@ export default function ReportControls({
         </div>
       )}
       {csvUrl && (
-        <button
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-accent text-sm cursor-pointer"
-        >
-          <Download className="w-4 h-4" /> Export CSV
-        </button>
+        <Button variant="outline" onClick={handleExport}>
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       )}
     </div>
   );

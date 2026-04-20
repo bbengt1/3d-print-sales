@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 
 export default function DataPage() {
   const [exporting, setExporting] = useState<string | null>(null);
@@ -73,14 +74,15 @@ export default function DataPage() {
                 <p className="text-sm text-muted-foreground mt-1">{description}</p>
               </div>
             </div>
-            <button
+            <Button
+              variant="outline"
+              className="shrink-0"
               onClick={() => exportCsv(resource, label)}
               disabled={exporting === resource}
-              className="shrink-0 inline-flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
             >
-              <Download className="w-4 h-4" />
+              <Download className="h-4 w-4" />
               {exporting === resource ? 'Exporting...' : 'Export'}
-            </button>
+            </Button>
           </div>
         ))}
       </div>

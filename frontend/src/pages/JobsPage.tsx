@@ -138,19 +138,20 @@ export default function JobsPage() {
       header: <span className="sr-only">Actions</span>,
       width: '104px',
       cell: (j) => (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={(e) => {
             e.stopPropagation();
             handleDuplicate(j);
           }}
           disabled={duplicatingId === j.id}
           aria-label={`Copy ${j.job_number}`}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
         >
           <Copy className="h-3.5 w-3.5" />
           {duplicatingId === j.id ? 'Copying…' : 'Copy'}
-        </button>
+        </Button>
       ),
     },
   ];

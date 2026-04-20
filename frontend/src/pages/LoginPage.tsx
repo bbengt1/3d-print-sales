@@ -7,6 +7,7 @@ import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Moon, Sun } from 'lucide-react';
@@ -64,13 +65,20 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="absolute top-4 right-4">
-        <button
-          onClick={toggle}
-          className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground"
-          aria-label="Toggle theme"
-        >
-          {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggle}
+              aria-label="Toggle theme"
+            >
+              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Toggle theme</TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="w-full max-w-md">

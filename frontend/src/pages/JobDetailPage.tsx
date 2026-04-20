@@ -4,6 +4,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Calendar, User, Package, Printer, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { formatCurrency, formatPercent } from '@/lib/utils';
@@ -78,9 +80,16 @@ export default function JobDetailPage() {
       />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/orders/jobs" className="p-2 rounded-md hover:bg-accent text-muted-foreground no-underline">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                <Link to="/orders/jobs" aria-label="Back to jobs">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Back to jobs</TooltipContent>
+          </Tooltip>
           <div>
             <h1 className="text-2xl font-semibold">{job.job_number}</h1>
             <p className="text-muted-foreground text-sm">{job.product_name}</p>
@@ -90,15 +99,21 @@ export default function JobDetailPage() {
           </span>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleDuplicate} disabled={duplicating} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50">
-            <Copy className="w-4 h-4" /> {duplicating ? 'Copying...' : 'Copy to New Job'}
-          </button>
-          <Link to={`/orders/jobs/${id}/edit`} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors no-underline">
-            <Edit className="w-4 h-4" /> Edit
-          </Link>
-          <button onClick={handleDelete} className="px-4 py-2 border border-destructive/30 text-destructive rounded-lg text-sm font-medium hover:bg-destructive/10 transition-colors">
+          <Button variant="outline" onClick={handleDuplicate} disabled={duplicating}>
+            <Copy className="h-4 w-4" /> {duplicating ? 'Copying...' : 'Copy to New Job'}
+          </Button>
+          <Button asChild variant="outline">
+            <Link to={`/orders/jobs/${id}/edit`}>
+              <Edit className="h-4 w-4" /> Edit
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDelete}
+            className="border-destructive/30 text-destructive hover:bg-destructive/10"
+          >
             Delete
-          </button>
+          </Button>
         </div>
       </div>
 

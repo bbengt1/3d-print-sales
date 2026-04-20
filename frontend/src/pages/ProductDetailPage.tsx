@@ -159,21 +159,16 @@ export default function ProductDetailPage() {
             <StatusBadge tone={currentProduct.is_active ? 'success' : 'warning'}>
               {currentProduct.is_active ? 'Active' : 'Archived'}
             </StatusBadge>
-            <Link
-              to={`/product-studio/products/${currentProduct.id}/edit`}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent no-underline text-foreground"
-            >
-              <Pencil className="w-4 h-4" />
-              Open Editor
-            </Link>
-            <button
-              onClick={toggleActive}
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent disabled:opacity-50"
-            >
-              {currentProduct.is_active ? <Archive className="w-4 h-4" /> : <ArchiveRestore className="w-4 h-4" />}
+            <Button asChild variant="outline">
+              <Link to={`/product-studio/products/${currentProduct.id}/edit`}>
+                <Pencil className="h-4 w-4" />
+                Open Editor
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={toggleActive} disabled={saving}>
+              {currentProduct.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
               {currentProduct.is_active ? 'Archive Product' : 'Restore Product'}
-            </button>
+            </Button>
           </div>
         </div>
         {product.description && <p className="text-sm text-muted-foreground mb-4">{product.description}</p>}
@@ -211,7 +206,8 @@ export default function ProductDetailPage() {
       <div className="flex items-center justify-between mb-4 gap-3">
         <h2 className="text-xl font-semibold">Transaction History</h2>
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="outline"
             onClick={() => {
               if (currentProduct.stock_qty === 0) {
                 toast.error('Product stock is already 0');
@@ -220,10 +216,9 @@ export default function ProductDetailPage() {
               setZeroReason('');
               setShowZeroStock(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium border border-border hover:bg-accent transition-colors"
           >
-            <RotateCcw className="w-4 h-4" /> Set Stock to 0
-          </button>
+            <RotateCcw className="h-4 w-4" /> Set Stock to 0
+          </Button>
           <Button onClick={() => setShowAdjust(true)}>
             <Plus className="h-4 w-4" /> Adjust Stock
           </Button>
