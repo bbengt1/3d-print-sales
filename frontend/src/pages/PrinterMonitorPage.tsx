@@ -4,6 +4,7 @@ import { ArrowLeft, Thermometer, Clock, Layers, Wifi, WifiOff } from 'lucide-rea
 import api from '@/api/client';
 import type { Printer } from '@/types';
 import CameraFeed from '@/components/cameras/CameraFeed';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 function formatDuration(seconds: number | null | undefined): string {
   if (!seconds || seconds <= 0) return '--';
@@ -31,7 +32,8 @@ export default function PrinterMonitorPage() {
   if (isLoading) {
     return (
       <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground text-sm">Loading printer...</div>
+        <Skeleton className="h-6 w-40" />
+        <span className="sr-only">Loading printer</span>
       </div>
     );
   }

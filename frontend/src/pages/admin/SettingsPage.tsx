@@ -4,6 +4,7 @@ import { Bot, KeyRound, Settings, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { Setting } from '@/types';
 
 const groups: Record<string, { keys: string[]; description: string }> = {
@@ -121,7 +122,7 @@ export default function SettingsPage() {
       {isLoading ? (
         <div className="space-y-6">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-lg p-6 h-32 animate-pulse" />
+            <SkeletonCard key={i} rows={2} />
           ))}
         </div>
       ) : (

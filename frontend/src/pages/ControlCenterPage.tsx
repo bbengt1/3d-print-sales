@@ -8,6 +8,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import { Button } from '@/components/ui/Button';
 import { Callout, calloutToneClasses } from '@/components/ui/Callout';
+import EmptyState from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/auth';
 import { cn, formatCurrency, formatPercent } from '@/lib/utils';
 import type {
@@ -210,7 +211,7 @@ export default function ControlCenterPage() {
                   </Button>
                 </div>
                 {!printers.length ? (
-                  <p className="text-sm text-muted-foreground">No active printers are available.</p>
+                  <EmptyState compact icon="printers" title="No active printers are available." />
                 ) : (
                   <div className="grid gap-3 lg:grid-cols-2">
                     {printers.slice(0, 4).map((printer) => {

@@ -19,6 +19,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -479,7 +480,7 @@ export default function POSPage() {
           {productsLoading ? (
             <div className="grid gap-3 md:grid-cols-2">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <SkeletonCard key={index} rows={2} />
               ))}
             </div>
           ) : productsError ? (
@@ -836,7 +837,7 @@ export default function POSPage() {
             {salesInboxLoading ? (
               <div className="mt-4 space-y-3">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="h-28 animate-pulse rounded-md border border-border bg-background" />
+                  <SkeletonCard key={index} rows={1} />
                 ))}
               </div>
             ) : salesInbox.length ? (

@@ -6,6 +6,7 @@ import Footer from './Footer';
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import WorkspaceLocalNav from './WorkspaceLocalNav';
+import QueryErrorBoundary from '@/components/ui/QueryErrorBoundary';
 import { getVisibleWorkspaces, isWorkspaceLinkActive } from './workspaces';
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -56,7 +57,9 @@ export default function Layout() {
 
           <main className="min-w-0 flex-1 space-y-5">
             <WorkspaceLocalNav />
-            <Outlet />
+            <QueryErrorBoundary>
+              <Outlet />
+            </QueryErrorBoundary>
           </main>
         </div>
       </div>

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import type { Product, PaginatedTransactions } from '@/types';
@@ -311,9 +312,7 @@ export default function ProductDetailPage() {
       {txnLoading ? (
         <SkeletonTable rows={5} cols={5} />
       ) : !transactions?.items?.length ? (
-        <div className="bg-card border border-border rounded-lg p-8 text-center text-muted-foreground">
-          No transactions yet
-        </div>
+        <EmptyState compact icon="reports" title="No transactions yet" />
       ) : (
         <div className="overflow-x-auto bg-card border border-border rounded-lg">
           <table className="w-full text-sm">

@@ -9,6 +9,7 @@ import DataTable, { type Column } from '@/components/data/DataTable';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import TableToolbar from '@/components/data/TableToolbar';
 import { Button } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Callout } from '@/components/ui/Callout';
 import { formatCurrency } from '@/lib/utils';
@@ -345,7 +346,7 @@ export default function OrdersPage() {
               </Link>
             </div>
             {topCustomers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No customer activity yet.</p>
+              <EmptyState compact icon="customers" title="No customer activity yet." />
             ) : (
               <ul className="space-y-2">
                 {topCustomers.map((customer) => (

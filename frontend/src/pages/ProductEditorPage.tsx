@@ -320,7 +320,13 @@ export default function ProductEditorPage() {
             ) : transactionsLoading ? (
               <SkeletonTable rows={3} cols={4} />
             ) : !recentTransactions.length ? (
-              <p className="mt-4 text-sm text-muted-foreground">No stock activity recorded yet for this product.</p>
+              <EmptyState
+                compact
+                icon="reports"
+                title="No stock activity recorded yet."
+                description="Adjustments and production entries will appear here."
+                className="mt-4"
+              />
             ) : (
               <div className="mt-4 space-y-3">
                 {recentTransactions.map((transaction: InventoryTransaction) => (
