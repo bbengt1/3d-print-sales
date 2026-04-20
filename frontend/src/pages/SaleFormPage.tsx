@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
+import PageHeader from '@/components/layout/PageHeader';
 import { formatCurrency } from '@/lib/utils';
 import type { SalesChannel, PaginatedProducts, Customer } from '@/types';
 
@@ -135,13 +136,20 @@ export default function SaleFormPage() {
     'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate('/sales')} className="p-2 hover:bg-accent rounded-md text-muted-foreground cursor-pointer">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-3xl font-bold">New Sale</h1>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="New Sale"
+        description="Record a sale, its line items, shipment destination, and totals."
+        actions={
+          <button
+            type="button"
+            onClick={() => navigate('/sales')}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to sales
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sale details */}

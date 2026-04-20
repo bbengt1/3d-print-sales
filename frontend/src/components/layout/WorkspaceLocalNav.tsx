@@ -10,7 +10,7 @@ export default function WorkspaceLocalNav() {
     <section className="rounded-lg border border-border bg-card/80 p-4 shadow-md backdrop-blur">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground">
             Workspace
           </p>
           <h2 className="mt-1 font-display text-xl font-semibold text-foreground">

@@ -186,7 +186,7 @@ export default function CamerasPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold">Cameras</h1>
+          <h1 className="text-2xl font-display font-semibold">Cameras</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage camera feeds and assign them to printers for live monitoring.
           </p>

@@ -41,7 +41,7 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
                 <span className="block truncate font-display text-lg font-semibold text-foreground">
                   3D Print Sales
                 </span>
-                <span className="block truncate text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                <span className="block truncate text-xs text-muted-foreground">
                   {workspace.label}
                 </span>
               </div>
@@ -64,7 +64,7 @@ export default function Header({ onOpenMobileNav }: HeaderProps) {
                 </div>
                 <div className="min-w-0">
                   <span className="block truncate font-medium text-foreground">{user.full_name}</span>
-                  <span className="block truncate text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  <span className="block truncate text-xs text-muted-foreground">
                     {user.role}
                   </span>
                 </div>

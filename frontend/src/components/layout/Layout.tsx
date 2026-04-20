@@ -23,7 +23,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               <PanelsTopLeft className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 Active Workspace
               </p>
               <p className="mt-1 font-display text-base font-semibold text-foreground">
@@ -38,7 +38,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="px-3 pb-2">
-        <p className="px-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+        <p className="px-3 text-xs font-medium text-muted-foreground">
           Workspaces
         </p>
       </div>

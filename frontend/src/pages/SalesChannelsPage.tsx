@@ -6,6 +6,7 @@ import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import PageHeader from '@/components/layout/PageHeader';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import StatusBadge from '@/components/data/StatusBadge';
 import DataTable, { type Column } from '@/components/data/DataTable';
@@ -72,13 +73,16 @@ export default function SalesChannelsPage() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Sales Channels</h1>
-        <Button onClick={openNew}>
-          <Plus className="h-4 w-4" /> Add Channel
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Sales Channels"
+        description="Manage platforms, fees, and active status for every place you sell."
+        actions={
+          <Button onClick={openNew}>
+            <Plus className="h-4 w-4" /> Add channel
+          </Button>
+        }
+      />
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
         <DialogContent className="max-w-md">
@@ -151,13 +155,13 @@ function SalesChannelsTable({ channels, isLoading, onEdit, onToggleActive }: Sal
       key: 'platform_fee_pct',
       header: 'Platform Fee %',
       numeric: true,
-      cell: (ch) => `${Number(ch.platform_fee_pct).toFixed(1)}%`,
+      cell: (ch) => <span className="tabular-nums">{Number(ch.platform_fee_pct).toFixed(1)}%</span>,
     },
     {
       key: 'fixed_fee',
       header: 'Fixed Fee',
       numeric: true,
-      cell: (ch) => `$${Number(ch.fixed_fee).toFixed(2)}`,
+      cell: (ch) => <span className="tabular-nums">${Number(ch.fixed_fee).toFixed(2)}</span>,
     },
     {
       key: 'status',

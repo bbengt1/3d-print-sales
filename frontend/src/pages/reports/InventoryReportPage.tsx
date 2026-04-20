@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import DataTable from '@/components/data/DataTable';
+import { KPIStrip, KPI } from '@/components/layout/KPIStrip';
 import type { InventoryReport, StockLevelRow } from '@/types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#e0e7ff'];
@@ -33,7 +34,7 @@ export default function InventoryReportPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Inventory Report</h2>
+      <h2 className="text-xl font-semibold mb-6">Inventory Report</h2>
 
       <ReportControls
         dateFrom={dateFrom}
@@ -49,22 +50,15 @@ export default function InventoryReportPage() {
       ) : !data ? null : (
         <div className="space-y-8">
           {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Total Products</p>
-              <p className="text-3xl font-bold mt-1">{data.total_products}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Stock Value</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(data.total_stock_value)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground">Low Stock Items</p>
-              <p className={`text-3xl font-bold mt-1 ${data.low_stock_count > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                {data.low_stock_count}
-              </p>
-            </div>
-          </div>
+          <KPIStrip columns={3}>
+            <KPI label="Total products" value={data.total_products.toLocaleString()} />
+            <KPI label="Stock value" value={formatCurrency(data.total_stock_value)} />
+            <KPI
+              label="Low stock"
+              value={data.low_stock_count}
+              tone={data.low_stock_count > 0 ? 'warning' : 'default'}
+            />
+          </KPIStrip>
 
           {/* Stock levels table */}
           {data.stock_levels.length > 0 && (
@@ -87,7 +81,7 @@ export default function InventoryReportPage() {
                     cell: (row) => (
                       <span
                         className={
-                          row.is_low_stock ? 'text-amber-600 dark:text-amber-400 font-bold' : ''
+                          row.is_low_stock ? 'text-amber-600 dark:text-amber-400 font-semibold' : ''
                         }
                       >
                         {row.stock_qty}
