@@ -11,6 +11,7 @@ import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
 import Select from '@/components/data/Select';
 import Pagination from '@/components/data/Pagination';
+import { Button } from '@/components/ui/Button';
 import type { PaginatedSales, SaleListItem, SalesChannel } from '@/types';
 
 const STATUS_OPTIONS = [
@@ -201,12 +202,11 @@ export default function SalesPage() {
         title="Sales"
         description={`${total.toLocaleString()} ${total === 1 ? 'result' : 'results'}`}
         actions={
-          <Link
-            to="/sell/sales/new"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> New sale
-          </Link>
+          <Button asChild>
+            <Link to="/sell/sales/new">
+              <Plus className="h-4 w-4" /> New sale
+            </Link>
+          </Button>
         }
       />
 

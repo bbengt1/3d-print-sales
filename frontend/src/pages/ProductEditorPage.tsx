@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/layout/PageHeader';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { InventoryTransaction, Material, PaginatedTransactions, Product } from '@/types';
@@ -274,15 +275,16 @@ export default function ProductEditorPage() {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={save}
                 disabled={saving}
-                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                size="lg"
+                className="min-h-12 font-semibold"
               >
                 <Save className="h-4 w-4" />
                 {saving ? 'Saving...' : isCreate ? 'Create product' : 'Save changes'}
-              </button>
+              </Button>
               {!isCreate ? (
                 <Link
                   to={`/product-studio/products/${id}`}

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Camera as CameraIcon, Link2, Link2Off, Pencil, Plus, Trash2, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import type { Camera, PaginatedCameras, PaginatedPrinters } from '@/types';
 
@@ -186,14 +187,10 @@ export default function CamerasPage() {
             Manage camera feeds and assign them to printers for live monitoring.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
+        <Button type="button" onClick={openCreate}>
           <Plus className="h-4 w-4" />
           Add Camera
-        </button>
+        </Button>
       </div>
 
       {/* Table */}
@@ -428,14 +425,13 @@ export default function CamerasPage() {
                 >
                   Cancel
                 </button>
-                <button
+                <Button
                   type="button"
                   onClick={handleSave}
                   disabled={saveMutation.isPending}
-                  className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                   {saveMutation.isPending ? 'Saving...' : modal === 'create' ? 'Add Camera' : 'Save Changes'}
-                </button>
+                </Button>
               </div>
           </div>
         </DialogContent>

@@ -17,6 +17,7 @@ import {
 import api from '@/api/client';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import PageHeader from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/auth';
 import { cn, formatCurrency, formatPercent } from '@/lib/utils';
 import type {
@@ -251,13 +252,9 @@ export default function ControlCenterPage() {
         actions={
           <>
             {quickActions.map((action) => (
-              <Link
-                key={action.to}
-                to={action.to}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
-              >
-                {action.label}
-              </Link>
+              <Button key={action.to} asChild>
+                <Link to={action.to}>{action.label}</Link>
+              </Button>
             ))}
             <Link
               to="/dashboard"

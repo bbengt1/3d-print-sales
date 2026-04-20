@@ -4,6 +4,7 @@ import { Bot, BrainCircuit, LoaderCircle, ShieldCheck, Sparkles } from 'lucide-r
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/auth';
 import type { AIInsightStatus, AIInsightSummary } from '@/types';
 
@@ -138,15 +139,16 @@ export default function InsightsPage() {
           />
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
+            <Button
               type="button"
               onClick={() => void handleGenerate()}
               disabled={summaryMutation.isPending || !status?.configured}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+              size="lg"
+              className="min-h-12 font-semibold"
             >
               {summaryMutation.isPending ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
               {summaryMutation.isPending ? 'Generating insights...' : 'Generate Insight Summary'}
-            </button>
+            </Button>
             {!status?.configured ? (
               <p className="text-sm text-muted-foreground">
                 {isAdmin ? (

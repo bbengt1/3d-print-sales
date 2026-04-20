@@ -219,9 +219,9 @@ export default function ProductDetailPage() {
           >
             <RotateCcw className="w-4 h-4" /> Set Stock to 0
           </button>
-          <button onClick={() => setShowAdjust(true)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
-            <Plus className="w-4 h-4" /> Adjust Stock
-          </button>
+          <Button onClick={() => setShowAdjust(true)}>
+            <Plus className="h-4 w-4" /> Adjust Stock
+          </Button>
         </div>
       </div>
 

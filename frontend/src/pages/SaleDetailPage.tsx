@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Printer, RefreshCw, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
 import type { Sale, SalesChannel } from '@/types';
@@ -315,13 +316,12 @@ export default function SaleDetailPage() {
               >
                 <Save className="w-4 h-4" /> {savingShipment ? 'Saving shipment...' : 'Save Shipment Details'}
               </button>
-              <button
+              <Button
                 onClick={handlePrintLabel}
                 disabled={printingLabel || shipmentMissingFields.length > 0 || shipmentDirty}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Printer className="w-4 h-4" /> {printingLabel ? 'Opening print dialog...' : getShippingLabelActionLabel(sale)}
-              </button>
+                <Printer className="h-4 w-4" /> {printingLabel ? 'Opening print dialog...' : getShippingLabelActionLabel(sale)}
+              </Button>
               <button
                 onClick={handleMarkPrinted}
                 disabled={markingPrinted || shipmentDirty || shipmentMissingFields.length > 0}

@@ -95,9 +95,9 @@ export default function UsersPage() {
             <p className="text-sm text-muted-foreground">Manage user accounts and roles</p>
           </div>
         </div>
-        <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer">
-          <Plus className="w-4 h-4" /> Add User
-        </button>
+        <Button onClick={openNew}>
+          <Plus className="h-4 w-4" /> Add User
+        </Button>
       </div>
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>

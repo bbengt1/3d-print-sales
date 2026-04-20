@@ -16,6 +16,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
+import { Button } from '@/components/ui/Button';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { Customer, Job, PaginatedJobs, PaginatedPrinters, PaginatedSales, SaleListItem } from '@/types';
 
@@ -99,13 +100,12 @@ export default function OrdersPage() {
         }
         actions={
           <>
-            <Link
-              to="/orders/jobs/new"
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
-            >
-              <PackageOpen className="h-4 w-4" />
-              New job
-            </Link>
+            <Button asChild>
+              <Link to="/orders/jobs/new">
+                <PackageOpen className="h-4 w-4" />
+                New job
+              </Link>
+            </Button>
             <Link
               to="/orders/jobs"
               className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
@@ -233,13 +233,12 @@ export default function OrdersPage() {
                               Printer
                             </Link>
                           ) : null}
-                          <Link
-                            to={`/orders/jobs/${job.id}`}
-                            className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Open job
-                          </Link>
+                          <Button asChild>
+                            <Link to={`/orders/jobs/${job.id}`}>
+                              <Eye className="h-4 w-4" />
+                              Open job
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </div>

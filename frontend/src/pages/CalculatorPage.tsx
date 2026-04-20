@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
 import type { Material, CalculateResponse } from '@/types';
 
@@ -171,12 +172,9 @@ export default function CalculatorPage() {
                 <div className="text-xs text-muted-foreground text-right">
                   {formatCurrency(result.profit_per_piece)} per piece
                 </div>
-                <button
-                  onClick={saveAsJob}
-                  className="w-full mt-4 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 transition-opacity cursor-pointer"
-                >
+                <Button onClick={saveAsJob} className="mt-4 w-full">
                   Save as Job
-                </button>
+                </Button>
               </div>
             ) : (
               <p className="text-muted-foreground text-sm py-8 text-center">

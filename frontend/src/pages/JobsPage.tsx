@@ -11,6 +11,7 @@ import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
 import Select from '@/components/data/Select';
 import Pagination from '@/components/data/Pagination';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
 import type { Job, PaginatedJobs } from '@/types';
 
@@ -160,12 +161,11 @@ export default function JobsPage() {
         title="Jobs"
         description={`${total.toLocaleString()} ${total === 1 ? 'job' : 'jobs'}`}
         actions={
-          <Link
-            to="/orders/jobs/new"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> New job
-          </Link>
+          <Button asChild>
+            <Link to="/orders/jobs/new">
+              <Plus className="h-4 w-4" /> New job
+            </Link>
+          </Button>
         }
       />
 

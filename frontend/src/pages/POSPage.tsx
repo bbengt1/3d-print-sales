@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import { cn, formatCurrency } from '@/lib/utils';
 import {
   addProductToCart,
@@ -515,13 +516,10 @@ export default function POSPage() {
                       aria-label="Scan barcode"
                       className="min-h-14 flex-1 rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
                     />
-                    <button
-                      type="submit"
-                      className="inline-flex min-h-14 items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                    >
+                    <Button type="submit" size="lg" className="min-h-14 font-semibold">
                       Resolve scan
                       <ArrowRight className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -643,16 +641,17 @@ export default function POSPage() {
                       </div>
                     </div>
 
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleAddProduct(product)}
                       disabled={outOfStock}
                       aria-label={`Add ${product.name} to cart`}
-                      className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                      size="lg"
+                      className="mt-4 min-h-14 w-full font-semibold"
                     >
                       <Plus className="h-4 w-4" />
                       {outOfStock ? 'Stock maxed in cart' : 'Add to cart'}
-                    </button>
+                    </Button>
                   </article>
                 );
               })}
@@ -887,7 +886,7 @@ export default function POSPage() {
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
               onClick={handleCheckout}
               disabled={
@@ -896,10 +895,11 @@ export default function POSPage() {
                 (customerMode === 'existing' && !selectedCustomerId) ||
                 (customerMode === 'new' && !customerName.trim())
               }
-              className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+              size="lg"
+              className="mt-6 min-h-14 w-full font-semibold"
             >
               {saving ? 'Processing checkout...' : 'Complete checkout'}
-            </button>
+            </Button>
 
             {!!cart.length ? (
               <button
