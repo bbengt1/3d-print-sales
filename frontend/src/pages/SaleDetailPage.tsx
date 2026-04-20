@@ -368,14 +368,14 @@ export default function SaleDetailPage() {
             {sale.status !== 'refunded' && sale.status !== 'cancelled' && (
               <button
                 onClick={handleRefund}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-destructive text-destructive rounded-md hover:bg-destructive/10 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-destructive text-destructive rounded-md hover:bg-destructive/10"
               >
                 <RefreshCw className="w-4 h-4" /> Refund Sale
               </button>
             )}
             <button
               onClick={handleDelete}
-              className="w-full px-4 py-2 border border-border text-muted-foreground rounded-md hover:bg-accent cursor-pointer"
+              className="w-full px-4 py-2 border border-border text-muted-foreground rounded-md hover:bg-accent"
             >
               Delete Sale
             </button>

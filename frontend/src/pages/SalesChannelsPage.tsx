@@ -171,7 +171,6 @@ function SalesChannelsTable({ channels, isLoading, onEdit, onToggleActive }: Sal
           type="button"
           onClick={() => onToggleActive(ch)}
           aria-label={ch.is_active ? `Deactivate ${ch.name}` : `Activate ${ch.name}`}
-          className="cursor-pointer"
         >
           <StatusBadge tone={ch.is_active ? 'success' : 'destructive'}>
             {ch.is_active ? 'Active' : 'Inactive'}
@@ -189,7 +188,7 @@ function SalesChannelsTable({ channels, isLoading, onEdit, onToggleActive }: Sal
           onClick={() => onEdit(ch)}
           aria-label={`Edit ${ch.name}`}
           title="Edit"
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted cursor-pointer"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
         >
           <Edit className="h-4 w-4" />
         </button>

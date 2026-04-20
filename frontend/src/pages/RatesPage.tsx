@@ -93,7 +93,6 @@ export default function RatesPage() {
           type="button"
           onClick={() => toggleActive(r)}
           aria-label={r.active ? `Deactivate ${r.name}` : `Activate ${r.name}`}
-          className="cursor-pointer"
         >
           <StatusBadge tone={r.active ? 'success' : 'destructive'}>
             {r.active ? 'Active' : 'Inactive'}

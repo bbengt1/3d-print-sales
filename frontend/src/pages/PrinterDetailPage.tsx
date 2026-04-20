@@ -72,7 +72,7 @@ function ConsoleStat({
   emphasis?: 'default' | 'warning' | 'success';
 }) {
   return (
-    <div className="rounded-md border border-border bg-card/85 p-4 shadow-sm">
+    <div className="rounded-md border border-border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium text-muted-foreground">{label}</p>
@@ -311,7 +311,7 @@ export default function PrinterDetailPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
+        <section className="rounded-md border border-border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-foreground">Live monitoring</h2>
@@ -325,25 +325,25 @@ export default function PrinterDetailPage() {
           </div>
 
           {!printer.monitor_enabled ? (
-            <div className="rounded-md border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
+            <div className="rounded-md border border-dashed border-border bg-background p-6 text-sm text-muted-foreground">
               Monitoring is not configured for this printer yet. The machine is still available as a static tracked record.
             </div>
           ) : (
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-md border border-border bg-background/60 p-4">
+                <div className="rounded-md border border-border bg-background p-4">
                   <p className="text-xs text-muted-foreground">Provider</p>
                   <p className="mt-2 font-semibold capitalize text-foreground">{printer.monitor_provider || '—'}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{printer.monitor_poll_interval_seconds}s poll interval</p>
                 </div>
-                <div className="rounded-md border border-border bg-background/60 p-4">
+                <div className="rounded-md border border-border bg-background p-4">
                   <p className="text-xs text-muted-foreground">Last event</p>
                   <p className="mt-2 font-semibold text-foreground">
                     {printer.monitor_last_event_type ? printer.monitor_last_event_type.replace('notify_', '').replaceAll('_', ' ') : '—'}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(printer.monitor_last_event_at)}</p>
                 </div>
-                <div className="rounded-md border border-border bg-background/60 p-4">
+                <div className="rounded-md border border-border bg-background p-4">
                   <p className="text-xs text-muted-foreground">Last seen</p>
                   <p className="mt-2 font-semibold text-foreground">{formatDateTime(printer.monitor_last_seen_at)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -356,7 +356,7 @@ export default function PrinterDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-md border border-border bg-background/60 p-4">
+              <div className="rounded-md border border-border bg-background p-4">
                 <p className="text-xs text-muted-foreground">Provider message</p>
                 <p className="mt-2 text-sm text-foreground">{printer.monitor_last_message || '—'}</p>
               </div>
@@ -376,7 +376,7 @@ export default function PrinterDetailPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
+        <section className="rounded-md border border-border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-foreground">Visual console</h2>
@@ -412,12 +412,12 @@ export default function PrinterDetailPage() {
           )}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-md border border-border bg-background/60 p-4">
+            <div className="rounded-md border border-border bg-background p-4">
               <p className="text-xs text-muted-foreground">Machine identity</p>
               <p className="mt-2 font-semibold text-foreground">{printer.manufacturer || '—'} {printer.model || ''}</p>
               <p className="mt-1 text-sm text-muted-foreground">{printer.serial_number || 'No serial number'}</p>
             </div>
-            <div className="rounded-md border border-border bg-background/60 p-4">
+            <div className="rounded-md border border-border bg-background p-4">
               <p className="text-xs text-muted-foreground">Current assignment</p>
               {activeJob ? (
                 <>
@@ -433,7 +433,7 @@ export default function PrinterDetailPage() {
           </div>
 
           {printer.notes ? (
-            <div className="mt-4 rounded-md border border-border bg-background/60 p-4">
+            <div className="mt-4 rounded-md border border-border bg-background p-4">
               <p className="text-xs text-muted-foreground">Notes</p>
               <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{printer.notes}</p>
             </div>
@@ -441,7 +441,7 @@ export default function PrinterDetailPage() {
         </section>
       </div>
 
-      <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
+      <section className="rounded-md border border-border bg-card p-5 shadow-xs">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">Recent floor activity</h2>
@@ -449,13 +449,13 @@ export default function PrinterDetailPage() {
               Status changes and assignment events for this machine.
             </p>
           </div>
-          <span className="rounded-full bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+          <span className="rounded-full bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground">
             {printer.history_events.length} events
           </span>
         </div>
 
         {!printer.history_events.length ? (
-          <div className="rounded-md border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed border-border bg-background p-6 text-sm text-muted-foreground">
             No printer activity has been recorded yet.
           </div>
         ) : (
@@ -467,7 +467,7 @@ export default function PrinterDetailPage() {
               const fromPrinter = formatEventMetaValue(event.metadata?.from_printer_name);
               const toPrinter = formatEventMetaValue(event.metadata?.to_printer_name);
               return (
-                <div key={event.id} className="rounded-md border border-border bg-background/60 p-4">
+                <div key={event.id} className="rounded-md border border-border bg-background p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-medium text-foreground">{event.title}</p>
@@ -490,7 +490,7 @@ export default function PrinterDetailPage() {
         )}
       </section>
 
-      <section className="rounded-lg border border-border bg-card/85 p-5 shadow-md">
+      <section className="rounded-md border border-border bg-card p-5 shadow-xs">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">Assigned jobs</h2>
@@ -504,11 +504,11 @@ export default function PrinterDetailPage() {
         {jobsLoading ? (
           <SkeletonTable rows={5} cols={6} />
         ) : !recentJobs.length ? (
-          <div className="rounded-md border border-dashed border-border bg-background/60 p-8 text-center text-muted-foreground">
+          <div className="rounded-md border border-dashed border-border bg-background p-8 text-center text-muted-foreground">
             No jobs assigned to this printer yet.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-border bg-background/60">
+          <div className="overflow-x-auto rounded-md border border-border bg-background">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">

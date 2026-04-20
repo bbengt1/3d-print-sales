@@ -92,7 +92,7 @@ function SalesInboxCard({ sale }: { sale: SaleListItem }) {
   return (
     <Link
       to={`/sell/sales/${sale.id}`}
-      className="block rounded-md border border-border bg-background/85 p-4 no-underline transition-colors hover:border-primary/35"
+      className="block rounded-md border border-border bg-background p-4 no-underline transition-colors hover:border-primary/35"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -572,7 +572,7 @@ export default function POSPage() {
             </div>
 
             {!cart.length ? (
-              <div className="mt-6 rounded-md border border-dashed border-border bg-background/70 p-8 text-center">
+              <div className="mt-6 rounded-md border border-dashed border-border bg-background p-8 text-center">
                 <ShoppingBasket className="mx-auto h-10 w-10 text-muted-foreground" />
                 <p className="mt-4 text-lg font-medium">Cart is empty</p>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -582,7 +582,7 @@ export default function POSPage() {
             ) : (
               <div className="mt-5 space-y-3">
                 {cart.map((line) => (
-                  <div key={line.product_id} className="rounded-md border border-border bg-background/85 p-4">
+                  <div key={line.product_id} className="rounded-md border border-border bg-background p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium">{line.name}</p>
@@ -637,7 +637,7 @@ export default function POSPage() {
               </div>
             )}
 
-            <div className="mt-6 rounded-md border border-border bg-background/70 p-4">
+            <div className="mt-6 rounded-md border border-border bg-background p-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-base font-semibold">Customer</h3>
@@ -710,7 +710,7 @@ export default function POSPage() {
               ) : null}
             </div>
 
-            <div className="mt-4 rounded-md border border-border bg-background/70 p-4">
+            <div className="mt-4 rounded-md border border-border bg-background p-4">
               <div className="flex items-center gap-2">
                 <WalletCards className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-base font-semibold">Payment method</h3>

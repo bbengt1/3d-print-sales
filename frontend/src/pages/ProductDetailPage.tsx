@@ -169,7 +169,7 @@ export default function ProductDetailPage() {
             <button
               onClick={toggleActive}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent disabled:opacity-50"
             >
               {currentProduct.is_active ? <Archive className="w-4 h-4" /> : <ArchiveRestore className="w-4 h-4" />}
               {currentProduct.is_active ? 'Archive Product' : 'Restore Product'}
@@ -220,7 +220,7 @@ export default function ProductDetailPage() {
               setZeroReason('');
               setShowZeroStock(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium border border-border hover:bg-accent transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium border border-border hover:bg-accent transition-colors"
           >
             <RotateCcw className="w-4 h-4" /> Set Stock to 0
           </button>

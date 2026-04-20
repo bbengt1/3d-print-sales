@@ -266,7 +266,7 @@ export default function SaleFormPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Line Items</h2>
-              <button onClick={addItem} className="inline-flex items-center gap-1 text-sm text-primary hover:opacity-80 cursor-pointer">
+              <button onClick={addItem} className="inline-flex items-center gap-1 text-sm text-primary hover:opacity-80">
                 <Plus className="w-4 h-4" /> Add Item
               </button>
             </div>
@@ -304,7 +304,7 @@ export default function SaleFormPage() {
                     <Input id={`sale-item-${idx}-cost`} type="number" step="0.01" min="0" value={item.unit_cost} onChange={(e) => updateItem(idx, { unit_cost: Number(e.target.value) })} />
                   </div>
                   <div className="col-span-1 flex justify-end">
-                    <button onClick={() => removeItem(idx)} disabled={items.length === 1} className="p-2 hover:bg-accent rounded-md text-muted-foreground disabled:opacity-30 cursor-pointer">
+                    <button onClick={() => removeItem(idx)} disabled={items.length === 1} className="p-2 hover:bg-accent rounded-md text-muted-foreground disabled:opacity-30">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
