@@ -363,12 +363,14 @@ export default function POSPage() {
             value={lowStockCount}
             sub="At or below reorder point"
             tone={lowStockCount > 0 ? 'warning' : 'default'}
+            href="/stock"
           />
           <KPI
             label="Sales inbox"
             value={salesNeedingAttention}
             sub="Pending or refunded sales"
             tone={salesNeedingAttention > 0 ? 'warning' : 'default'}
+            href="/sell/sales"
           />
         </KPIStrip>
       </PageHeader>

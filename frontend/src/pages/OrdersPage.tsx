@@ -245,9 +245,10 @@ export default function OrdersPage() {
             value={jobsNeedingAssignment.length}
             sub="Jobs missing a printer"
             tone={jobsNeedingAssignment.length > 0 ? 'warning' : 'default'}
+            href="/orders/jobs"
           />
-          <KPI label="In progress" value={productionActive.length} sub="Jobs on the production floor" />
-          <KPI label="Fulfillment queue" value={fulfillmentSales.length} sub="Sales pending ship/deliver" />
+          <KPI label="In progress" value={productionActive.length} sub="Jobs on the production floor" href="/orders/jobs" />
+          <KPI label="Fulfillment queue" value={fulfillmentSales.length} sub="Sales pending ship/deliver" href="/sell/sales" />
           <KPI
             label="Ready printers"
             value={readyPrinters.length}
@@ -257,6 +258,7 @@ export default function OrdersPage() {
                 : 'Idle, available for assignment'
             }
             tone={readyPrinters.length === 0 ? 'warning' : attentionPrinters.length > 0 ? 'warning' : 'default'}
+            href="/print-floor"
           />
         </KPIStrip>
       </PageHeader>
