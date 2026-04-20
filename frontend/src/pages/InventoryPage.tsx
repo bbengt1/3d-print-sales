@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
   ClipboardCheck,
-  Clock3,
-  PackageSearch,
+  Layers,
   Plus,
   ScrollText,
-  TrendingDown,
   TriangleAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,17 +16,23 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
-import EmptyState from '@/components/ui/EmptyState';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import DataTable, { type Column, type SortDir } from '@/components/data/DataTable';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
-import Select from '@/components/data/Select';
+import SelectInput from '@/components/data/Select';
 import Pagination from '@/components/data/Pagination';
 import { cn, formatCurrency } from '@/lib/utils';
-import type { InventoryAlert, InventoryReconcileResponse, InventoryTransaction, PaginatedProducts, PaginatedTransactions } from '@/types';
+import type {
+  InventoryAlert,
+  InventoryReconcileResponse,
+  InventoryTransaction,
+  PaginatedProducts,
+  PaginatedTransactions,
+} from '@/types';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All types' },
@@ -41,74 +45,7 @@ const TYPE_OPTIONS = [
 
 type StockSurface = 'exceptions' | 'ledger';
 
-interface SurfaceButtonProps {
-  active: boolean;
-  label: string;
-  detail: string;
-  onClick: () => void;
-}
-
-function SurfaceButton({ active, label, detail, onClick }: SurfaceButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'rounded-md border px-4 py-3 text-left transition-colors',
-        active
-          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-          : 'border-border bg-background/80 text-foreground hover:border-primary/35'
-      )}
-    >
-      <p className="text-sm font-semibold">{label}</p>
-      <p className={cn('mt-1 text-xs', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{detail}</p>
-    </button>
-  );
-}
-
-
-function TaskCard({
-  title,
-  detail,
-  actionLabel,
-  onAction,
-  tone = 'default',
-}: {
-  title: string;
-  detail: string;
-  actionLabel: string;
-  onAction: () => void;
-  tone?: 'default' | 'warning';
-}) {
-  return (
-    <div
-      className={cn(
-        'rounded-lg border p-5 shadow-sm',
-        tone === 'warning' ? 'border-amber-300/70 bg-amber-50' : 'border-border bg-card'
-      )}
-    >
-      <p className="text-lg font-semibold">{title}</p>
-      <p className={cn('mt-2 text-sm', tone === 'warning' ? 'text-amber-900/80' : 'text-muted-foreground')}>{detail}</p>
-      <button
-        type="button"
-        onClick={onAction}
-        className={cn(
-          'mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors',
-          tone === 'warning'
-            ? 'bg-amber-900 text-white hover:opacity-90'
-            : 'bg-primary text-primary-foreground hover:opacity-90'
-        )}
-      >
-        {actionLabel}
-        <ArrowRight className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
-
 export default function InventoryPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [surface, setSurface] = useState<StockSurface>('exceptions');
   const [search, setSearch] = useState('');
@@ -137,7 +74,7 @@ export default function InventoryPage() {
       ...(dateFrom ? { date_from: dateFrom } : {}),
       ...(dateTo ? { date_to: dateTo } : {}),
     }),
-    [page, pageSize, sortKey, sortDir, search, type, dateFrom, dateTo]
+    [page, pageSize, sortKey, sortDir, search, type, dateFrom, dateTo],
   );
 
   const { data, isLoading } = useQuery<PaginatedTransactions>({
@@ -166,7 +103,7 @@ export default function InventoryPage() {
   const criticalProductAlerts = productAlerts.filter((alert) => alert.current_stock <= 0);
   const outOfStockProducts = products.filter((product) => product.stock_qty <= 0);
   const nearReorderProducts = products.filter(
-    (product) => product.stock_qty > 0 && product.stock_qty <= product.reorder_point
+    (product) => product.stock_qty > 0 && product.stock_qty <= product.reorder_point,
   );
   const recentRiskTransactions = items
     .filter((transaction) => transaction.type === 'adjustment' || transaction.type === 'waste')
@@ -246,29 +183,199 @@ export default function InventoryPage() {
     }
   };
 
+  // Product exceptions table columns
+  const exceptionColumns: Column<InventoryAlert>[] = [
+    {
+      key: 'name',
+      header: 'Product',
+      cell: (a) => <span className="font-medium text-foreground">{a.name}</span>,
+    },
+    {
+      key: 'sku',
+      header: 'SKU',
+      colClassName: 'hidden md:table-cell',
+      cell: (a) => <span className="font-mono text-xs text-muted-foreground">{a.sku || '—'}</span>,
+    },
+    {
+      key: 'current_stock',
+      header: 'Stock',
+      numeric: true,
+      cell: (a) => (
+        <span className={a.current_stock <= 0 ? 'font-semibold text-destructive' : 'text-amber-700 dark:text-amber-300'}>
+          {a.current_stock}
+        </span>
+      ),
+    },
+    {
+      key: 'reorder_point',
+      header: 'Reorder',
+      numeric: true,
+      colClassName: 'hidden md:table-cell',
+      cell: (a) => <span className="text-muted-foreground">{a.reorder_point}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (a) => (
+        <StatusBadge tone={a.current_stock <= 0 ? 'destructive' : 'warning'}>
+          {a.current_stock <= 0 ? 'Stockout' : 'Reorder risk'}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '240px',
+      cell: (a) => (
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              openAdjust(a.id);
+            }}
+          >
+            Adjust
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              openReconcile(a.id);
+            }}
+          >
+            Reconcile
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/product-studio/products/${a.id}`} onClick={(e) => e.stopPropagation()}>
+              View
+            </Link>
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  // Ledger columns
+  const ledgerColumns: Column<InventoryTransaction>[] = [
+    {
+      key: 'created_at',
+      header: 'Date',
+      sortable: true,
+      cell: (t) => (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {t.created_at ? new Date(t.created_at).toLocaleString() : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'product_name',
+      header: 'Product',
+      cell: (t) =>
+        t.product_name ? (
+          <Link
+            className="font-medium text-foreground no-underline hover:underline"
+            to={`/products/${t.product_id}`}
+          >
+            {t.product_name}
+          </Link>
+        ) : (
+          <span className="font-mono text-xs">{t.product_id}</span>
+        ),
+    },
+    {
+      key: 'product_sku',
+      header: 'SKU',
+      colClassName: 'hidden lg:table-cell',
+      cell: (t) => <span className="font-mono text-xs">{t.product_sku || '—'}</span>,
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      sortable: true,
+      cell: (t) => <StatusBadge tone={defaultStatusTone(t.type)}>{t.type}</StatusBadge>,
+    },
+    {
+      key: 'quantity',
+      header: 'Qty',
+      sortable: true,
+      numeric: true,
+      cell: (t) => (
+        <span
+          className={cn(
+            'font-medium',
+            t.quantity > 0
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : t.quantity < 0
+                ? 'text-destructive'
+                : 'text-foreground',
+          )}
+        >
+          {t.quantity > 0 ? '+' : ''}
+          {t.quantity}
+        </span>
+      ),
+    },
+    {
+      key: 'unit_cost',
+      header: 'Unit cost',
+      sortable: true,
+      numeric: true,
+      colClassName: 'hidden md:table-cell',
+      cell: (t) => formatCurrency(t.unit_cost),
+    },
+    {
+      key: 'job_id',
+      header: 'Job',
+      colClassName: 'hidden xl:table-cell',
+      cell: (t) => <span className="font-mono text-xs">{t.job_id || '—'}</span>,
+    },
+    {
+      key: 'notes',
+      header: 'Notes',
+      colClassName: 'hidden xl:table-cell',
+      cell: (t) => <span className="text-xs text-muted-foreground">{t.notes || '—'}</span>,
+    },
+  ];
+
+  const activeFilters = [search, type, dateFrom, dateTo].filter(Boolean).length;
+  const clearFilters = () => {
+    setSearch('');
+    setType('');
+    setDateFrom('');
+    setDateTo('');
+    setPage(0);
+  };
+  const handleSortChange = (key: string, dir: SortDir | null) => {
+    if (!key || !dir) {
+      setSortKey('created_at');
+      setSortDir('desc');
+    } else {
+      setSortKey(key);
+      setSortDir(dir);
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
-        title="Inventory"
+        title="Stock"
         description={
           productAlerts.length > 0
             ? `${productAlerts.length} ${productAlerts.length === 1 ? 'item needs' : 'items need'} attention`
-            : 'Exceptions first — stock problems affecting selling and fulfillment'
+            : 'Exceptions first — stock problems affecting selling and fulfillment.'
         }
         actions={
           <>
-            <Button type="button" onClick={() => openReconcile()}>
-              <ClipboardCheck className="h-4 w-4" />
-              Reconcile stock
+            <Button variant="outline" onClick={() => openAdjust()}>
+              <Plus className="h-4 w-4" /> Quick adjustment
             </Button>
-            <button
-              type="button"
-              onClick={() => openAdjust()}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Quick adjustment
-            </button>
+            <Button onClick={() => openReconcile()}>
+              <ClipboardCheck className="h-4 w-4" /> Reconcile stock
+            </Button>
           </>
         }
       >
@@ -291,14 +398,11 @@ export default function InventoryPage() {
             sub="Nearing depletion"
             tone={nearReorderProducts.length > 0 ? 'warning' : 'default'}
           />
-          <KPI
-            label="Material signals"
-            value={materialAlerts.length}
-            sub="Lower-priority issues"
-          />
+          <KPI label="Material signals" value={materialAlerts.length} sub="Raw-material alerts" />
         </KPIStrip>
       </PageHeader>
 
+      {/* Reconcile dialog */}
       <Dialog open={showReconcile} onOpenChange={(open) => !open && setShowReconcile(false)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -306,14 +410,14 @@ export default function InventoryPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="reconcile-product">Product</Label>
+              <Label htmlFor="reconcile-product">Product *</Label>
               <select
                 id="reconcile-product"
                 value={reconcileForm.product_id}
                 onChange={(event) => setReconcileForm((form) => ({ ...form, product_id: event.target.value }))}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Select product...</option>
+                <option value="">Select product…</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.name} ({product.sku})
@@ -323,18 +427,18 @@ export default function InventoryPage() {
             </div>
 
             {selectedProduct ? (
-              <div className="grid grid-cols-2 gap-4 rounded-xl bg-accent/40 p-3 text-sm">
+              <div className="grid grid-cols-2 gap-4 rounded-md bg-muted px-4 py-3 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Current system qty</p>
-                  <p className="text-lg font-semibold">{selectedProduct.stock_qty}</p>
+                  <p className="text-xs text-muted-foreground">Current system qty</p>
+                  <p className="mt-0.5 text-lg font-semibold tabular-nums">{selectedProduct.stock_qty}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Variance</p>
+                  <p className="text-xs text-muted-foreground">Variance</p>
                   <p
                     className={cn(
-                      'text-lg font-semibold',
-                      variance > 0 && 'text-green-600 dark:text-green-400',
-                      variance < 0 && 'text-red-600 dark:text-red-400'
+                      'mt-0.5 text-lg font-semibold tabular-nums',
+                      variance > 0 && 'text-emerald-600 dark:text-emerald-400',
+                      variance < 0 && 'text-destructive',
                     )}
                   >
                     {variance > 0 ? '+' : ''}
@@ -345,9 +449,9 @@ export default function InventoryPage() {
             ) : null}
 
             <div className="space-y-1.5">
-              <Label htmlFor="reconcile-counted-qty">Counted quantity</Label>
+              <Label htmlFor="reconcile-counted">Counted quantity *</Label>
               <Input
-                id="reconcile-counted-qty"
+                id="reconcile-counted"
                 type="number"
                 min="0"
                 value={reconcileForm.counted_qty}
@@ -358,12 +462,12 @@ export default function InventoryPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="reconcile-reason">Reason</Label>
+              <Label htmlFor="reconcile-reason">Reason *</Label>
               <Input
                 id="reconcile-reason"
                 value={reconcileForm.reason}
                 onChange={(event) => setReconcileForm((form) => ({ ...form, reason: event.target.value }))}
-                placeholder="Cycle count, shelf recount, received correction..."
+                placeholder="Cycle count, shelf recount, received correction…"
               />
             </div>
 
@@ -378,7 +482,9 @@ export default function InventoryPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReconcile(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowReconcile(false)}>
+              Cancel
+            </Button>
             <Button onClick={submitReconcile} disabled={reconcileSaving}>
               {reconcileSaving ? 'Submitting…' : 'Submit reconciliation'}
             </Button>
@@ -386,6 +492,7 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Adjust dialog */}
       <Dialog open={showAdjust} onOpenChange={(open) => !open && setShowAdjust(false)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -393,14 +500,14 @@ export default function InventoryPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="adjust-product">Product</Label>
+              <Label htmlFor="adjust-product">Product *</Label>
               <select
                 id="adjust-product"
                 value={adjustForm.product_id}
                 onChange={(event) => setAdjustForm((form) => ({ ...form, product_id: event.target.value }))}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Select product...</option>
+                <option value="">Select product…</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.name} ({product.sku})
@@ -410,9 +517,9 @@ export default function InventoryPage() {
             </div>
 
             {adjustProduct ? (
-              <div className="rounded-xl bg-accent/40 p-3 text-sm">
-                <p className="text-muted-foreground">Current stock</p>
-                <p className="text-lg font-semibold">{adjustProduct.stock_qty}</p>
+              <div className="rounded-md bg-muted px-4 py-3 text-sm">
+                <p className="text-xs text-muted-foreground">Current stock</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums">{adjustProduct.stock_qty}</p>
               </div>
             ) : null}
 
@@ -433,7 +540,7 @@ export default function InventoryPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="adjust-quantity">Quantity</Label>
+              <Label htmlFor="adjust-quantity">Quantity *</Label>
               <Input
                 id="adjust-quantity"
                 type="number"
@@ -455,7 +562,9 @@ export default function InventoryPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdjust(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowAdjust(false)}>
+              Cancel
+            </Button>
             <Button onClick={submitAdjust} disabled={adjustSaving}>
               {adjustSaving ? 'Submitting…' : 'Submit adjustment'}
             </Button>
@@ -463,422 +572,219 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <TaskCard
-          title="Cycle counts"
-          detail="Start a reconciliation without digging through historical transactions first."
-          actionLabel="Open reconcile"
-          onAction={() => openReconcile()}
-        />
-        <TaskCard
-          title="Manual correction"
-          detail="Record a quick adjustment when the shelf count is already understood."
-          actionLabel="Open adjustment"
-          onAction={() => openAdjust()}
-        />
-        <TaskCard
-          title="Materials lane"
-          detail="Material spool inventory is still available, but it stays out of the urgent product queue."
-          actionLabel="Open materials"
-          onAction={() => navigate('/stock/materials')}
-        />
-        <TaskCard
-          title="Risk ledger"
-          detail="Recent waste and adjustment entries are visible below, with the full ledger one tap away."
-          actionLabel="Open ledger"
-          onAction={() => setSurface('ledger')}
-          tone="warning"
-        />
-      </section>
-
-      <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Workspace Surfaces</p>
-            <h2 className="mt-2 text-2xl font-semibold">Stock home</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Exceptions stay above the fold. The ledger is still accessible, but it is now a deliberate secondary view.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SurfaceButton
-              active={surface === 'exceptions'}
-              label="Exceptions"
-              detail="Urgent inventory issues and task-driven actions"
-              onClick={() => setSurface('exceptions')}
-            />
-            <SurfaceButton
-              active={surface === 'ledger'}
-              label="Ledger"
-              detail="Historical transaction search and audit trail"
-              onClick={() => setSurface('ledger')}
-            />
-          </div>
-        </div>
-      </section>
+      {/* Surface switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs value={surface} onValueChange={(v) => setSurface(v as StockSurface)}>
+          <TabsList>
+            <TabsTrigger value="exceptions">
+              Exceptions
+              <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{productAlerts.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="ledger">
+              Ledger
+              <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{data?.total ?? 0}</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/stock/materials">
+            <Layers className="h-3.5 w-3.5" /> Materials
+          </Link>
+        </Button>
+      </div>
 
       {surface === 'exceptions' ? (
-        <div className="space-y-6">
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
-            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <TriangleAlert className="h-5 w-5 text-destructive" />
-                <h2 className="text-xl font-semibold">Product exceptions</h2>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                These issues affect sellable finished goods first. Product-impacting stock problems stay visually separate from raw-material status.
-              </p>
-
-              {!productAlerts.length ? (
-                <EmptyState
-                  icon="products"
-                  title="No product exceptions"
-                  description="Finished-goods stock is currently above its urgent exception threshold."
-                  className="py-10"
-                />
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {productAlerts.map((alert) => {
-                    const isCritical = alert.current_stock <= 0;
-                    return (
-                      <div
-                        key={`${alert.type}-${alert.id}`}
-                        className={cn(
-                          'rounded-md border p-4',
-                          isCritical ? 'border-destructive/35 bg-destructive/5' : 'border-amber-300/60 bg-amber-50/70'
-                        )}
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold">{alert.name}</p>
-                              <StatusBadge tone={isCritical ? 'destructive' : 'warning'}>
-                                {isCritical ? 'Stockout' : 'Reorder risk'}
-                              </StatusBadge>
-                            </div>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              {(alert.sku || 'No SKU')} • Stock {alert.current_stock} / Reorder {alert.reorder_point}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 text-sm">
-                            <Button type="button" onClick={() => openAdjust(alert.id)}>
-                              Adjust
-                            </Button>
-                            <button
-                              type="button"
-                              onClick={() => openReconcile(alert.id)}
-                              className="rounded-xl border border-border px-3 py-2 font-semibold transition-colors hover:bg-accent"
-                            >
-                              Reconcile
-                            </button>
-                            <Link
-                              className="inline-flex items-center rounded-xl border border-border px-3 py-2 font-semibold text-foreground no-underline transition-colors hover:bg-accent"
-                              to={`/product-studio/products/${alert.id}`}
-                            >
-                              View product
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <TriangleAlert className="h-4 w-4 text-destructive" aria-hidden="true" />
+              <h2 className="text-base font-semibold">Product exceptions</h2>
             </div>
+            <DataTable<InventoryAlert>
+              data={productAlerts}
+              columns={exceptionColumns}
+              rowKey={(a) => a.id}
+              emptyState="No product exceptions — finished-goods stock is above its urgent threshold."
+              toolbar={<TableToolbar total={productAlerts.length} />}
+            />
+          </section>
 
-            <div className="space-y-4">
-              <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+          <aside className="space-y-4">
+            {outOfStockProducts.length > 0 || nearReorderProducts.length > 0 ? (
+              <section className="rounded-md border border-border bg-card p-4 shadow-xs">
+                <h2 className="mb-3 text-sm font-semibold">Finished-goods breakdown</h2>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Out of stock</span>
+                    <span
+                      className={cn(
+                        'font-semibold tabular-nums',
+                        outOfStockProducts.length > 0 ? 'text-destructive' : 'text-foreground',
+                      )}
+                    >
+                      {outOfStockProducts.length}
+                    </span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Near reorder</span>
+                    <span
+                      className={cn(
+                        'font-semibold tabular-nums',
+                        nearReorderProducts.length > 0
+                          ? 'text-amber-700 dark:text-amber-300'
+                          : 'text-foreground',
+                      )}
+                    >
+                      {nearReorderProducts.length}
+                    </span>
+                  </li>
+                </ul>
+              </section>
+            ) : null}
+
+            <section className="rounded-md border border-border bg-card p-4 shadow-xs">
+              <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <PackageSearch className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Exception summary</h2>
+                  <ScrollText className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <h2 className="text-sm font-semibold">Recent risky movements</h2>
                 </div>
-                <div className="mt-4 space-y-3">
-                  <div className="rounded-md bg-background px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Out of stock</p>
-                    <p className="mt-2 text-2xl font-semibold">{outOfStockProducts.length}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Products that cannot be sold from POS right now.</p>
-                  </div>
-                  <div className="rounded-md bg-background px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Near reorder</p>
-                    <p className="mt-2 text-2xl font-semibold">{nearReorderProducts.length}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Products that still have stock but need floor attention soon.</p>
-                  </div>
-                  <div className="rounded-md bg-background px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Material signals</p>
-                    <p className="mt-2 text-2xl font-semibold">{materialAlerts.length}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Raw-material alerts kept in a separate lane.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <ScrollText className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Recent risky movements</h2>
-                </div>
-
-                {!recentRiskTransactions.length ? (
-                  <p className="mt-4 text-sm text-muted-foreground">No recent adjustment or waste transactions in the current ledger window.</p>
-                ) : (
-                  <div className="mt-4 space-y-3">
-                    {recentRiskTransactions.map((transaction) => (
-                      <div key={transaction.id} className="rounded-md border border-border bg-background/80 px-4 py-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium">{transaction.product_name || transaction.product_id}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : '-'}
-                            </p>
-                          </div>
-                          <StatusBadge tone={defaultStatusTone(transaction.type)}>{transaction.type}</StatusBadge>
-                        </div>
-                        <div className="mt-3 flex items-center justify-between text-sm">
-                          <p className="text-muted-foreground">{transaction.notes || 'No notes provided'}</p>
-                          <p className={cn('font-semibold', transaction.quantity < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400')}>
-                            {transaction.quantity > 0 ? '+' : ''}
-                            {transaction.quantity}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 <button
                   type="button"
                   onClick={() => setSurface('ledger')}
-                  className="mt-4 inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
+                  className="text-xs text-primary hover:underline"
                 >
-                  Open full ledger
-                  <ArrowRight className="h-4 w-4" />
+                  Open ledger <ArrowRight className="inline h-3 w-3" />
                 </button>
               </div>
-            </div>
-          </section>
-
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-amber-600" />
-                <h2 className="text-xl font-semibold">Materials lane</h2>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Material shortages still matter, but they are separated from finished-goods actions so the stock workspace favors immediate selling and fulfillment risk first.
-              </p>
-
-              {!materialAlerts.length ? (
-                <p className="mt-4 text-sm text-muted-foreground">No material-specific low-stock alerts right now.</p>
+              {recentRiskTransactions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No recent adjustments or waste entries.</p>
               ) : (
-                <div className="mt-4 space-y-3">
-                  {materialAlerts.map((alert) => (
-                    <div key={`${alert.type}-${alert.id}`} className="rounded-md border border-border bg-background/80 px-4 py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-medium">{alert.name}</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Stock {alert.current_stock} / Reorder {alert.reorder_point}
-                          </p>
-                        </div>
-                        <Link
-                          to="/stock/materials"
-                          className="inline-flex items-center rounded-xl border border-border px-3 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
-                        >
-                          View materials
-                        </Link>
+                <ul className="space-y-2 text-sm">
+                  {recentRiskTransactions.map((transaction) => (
+                    <li key={transaction.id} className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">
+                          {transaction.product_name || transaction.product_id}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : '—'}
+                          {transaction.notes ? ` · ${transaction.notes}` : ''}
+                        </p>
                       </div>
-                    </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <StatusBadge tone={defaultStatusTone(transaction.type)} hideDot>
+                          {transaction.type}
+                        </StatusBadge>
+                        <span
+                          className={cn(
+                            'font-semibold tabular-nums',
+                            transaction.quantity > 0
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-destructive',
+                          )}
+                        >
+                          {transaction.quantity > 0 ? '+' : ''}
+                          {transaction.quantity}
+                        </span>
+                      </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
-            </div>
+            </section>
 
-            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Clock3 className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-xl font-semibold">Quick reminders</h2>
-              </div>
-              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-                <p>Reconcile when the shelf count is uncertain.</p>
-                <p>Use quick adjustment only when the count is already understood.</p>
-                <p>Finished-product issues should be handled before material-only cleanup.</p>
-              </div>
-            </div>
-          </section>
+            {materialAlerts.length > 0 ? (
+              <section className="rounded-md border border-amber-300/60 bg-amber-50/80 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Material signals</h2>
+                  <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                    <Link to="/stock/materials">Open</Link>
+                  </Button>
+                </div>
+                <ul className="space-y-1 text-sm">
+                  {materialAlerts.slice(0, 6).map((alert) => (
+                    <li key={`${alert.type}-${alert.id}`} className="flex items-center justify-between gap-3">
+                      <Link
+                        to="/stock/materials"
+                        className="truncate text-foreground no-underline hover:underline"
+                      >
+                        {alert.name}
+                      </Link>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {alert.current_stock} / {alert.reorder_point}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </aside>
         </div>
       ) : (
-        (() => {
-          const activeFilters = [search, type, dateFrom, dateTo].filter(Boolean).length;
-          const clearFilters = () => {
-            setSearch('');
-            setType('');
-            setDateFrom('');
-            setDateTo('');
-            setPage(0);
-          };
-          const handleSortChange = (key: string, dir: SortDir | null) => {
-            if (!key || !dir) {
-              setSortKey('created_at');
-              setSortDir('desc');
-            } else {
-              setSortKey(key);
-              setSortDir(dir);
-            }
-            setPage(0);
-          };
-          const ledgerColumns: Column<InventoryTransaction>[] = [
-            {
-              key: 'created_at',
-              header: 'Date',
-              sortable: true,
-              cell: (t) => (
-                <span className="text-xs tabular-nums">
-                  {t.created_at ? new Date(t.created_at).toLocaleString() : '—'}
-                </span>
-              ),
-            },
-            {
-              key: 'product_name',
-              header: 'Product',
-              cell: (t) =>
-                t.product_name ? (
-                  <Link className="font-medium no-underline hover:underline" to={`/products/${t.product_id}`}>
-                    {t.product_name}
-                  </Link>
-                ) : (
-                  <span className="font-mono text-xs">{t.product_id}</span>
-                ),
-            },
-            {
-              key: 'product_sku',
-              header: 'SKU',
-              colClassName: 'hidden lg:table-cell',
-              cell: (t) => <span className="font-mono text-xs">{t.product_sku || '—'}</span>,
-            },
-            {
-              key: 'type',
-              header: 'Type',
-              sortable: true,
-              cell: (t) => <StatusBadge tone={defaultStatusTone(t.type)}>{t.type}</StatusBadge>,
-            },
-            {
-              key: 'quantity',
-              header: 'Qty',
-              sortable: true,
-              numeric: true,
-              cell: (t) => (
-                <span className={t.quantity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
-                  {t.quantity > 0 ? '+' : ''}
-                  {t.quantity}
-                </span>
-              ),
-            },
-            {
-              key: 'unit_cost',
-              header: 'Unit cost',
-              sortable: true,
-              numeric: true,
-              colClassName: 'hidden md:table-cell',
-              cell: (t) => formatCurrency(t.unit_cost),
-            },
-            {
-              key: 'job_id',
-              header: 'Job',
-              colClassName: 'hidden xl:table-cell',
-              cell: (t) => <span className="font-mono text-xs">{t.job_id || '—'}</span>,
-            },
-            {
-              key: 'notes',
-              header: 'Notes',
-              colClassName: 'hidden xl:table-cell',
-              cell: (t) => <span className="text-xs text-muted-foreground">{t.notes || '—'}</span>,
-            },
-          ];
-
-          return (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ScrollText className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-base font-semibold">Inventory ledger</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSurface('exceptions')}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-                >
-                  Back to exceptions
-                </button>
-              </div>
-
-              <DataTable<InventoryTransaction>
-                data={items}
-                columns={ledgerColumns}
-                rowKey={(t) => t.id}
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSortChange={handleSortChange}
-                loading={isLoading}
-                emptyState={activeFilters > 0 ? 'No transactions match these filters.' : 'No inventory transactions recorded yet.'}
-                toolbar={
-                  <TableToolbar total={data?.total ?? 0} activeFilters={activeFilters} onClearFilters={clearFilters}>
-                    <SearchInput
-                      value={search}
-                      onChange={(v) => {
-                        setSearch(v);
-                        setPage(0);
-                      }}
-                      placeholder="Search product or SKU…"
-                    />
-                    <Select
-                      value={type}
-                      onChange={(v) => {
-                        setType(v);
-                        setPage(0);
-                      }}
-                      options={TYPE_OPTIONS.filter((o) => o.value).map((o) => ({ value: o.value, label: o.label }))}
-                      placeholder="All types"
-                      aria-label="Filter by type"
-                    />
-                    <Input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => {
-                        setDateFrom(e.target.value);
-                        setPage(0);
-                      }}
-                      className="w-auto"
-                      aria-label="From date"
-                    />
-                    <Input
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => {
-                        setDateTo(e.target.value);
-                        setPage(0);
-                      }}
-                      className="w-auto"
-                      aria-label="To date"
-                    />
-                  </TableToolbar>
-                }
-                footer={
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    total={data?.total ?? 0}
-                    onPageChange={setPage}
-                    onPageSizeChange={(n) => {
-                      setPageSize(n);
-                      setPage(0);
-                    }}
-                  />
-                }
+        <DataTable<InventoryTransaction>
+          data={items}
+          columns={ledgerColumns}
+          rowKey={(t) => t.id}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
+          loading={isLoading}
+          emptyState={activeFilters > 0 ? 'No transactions match these filters.' : 'No inventory transactions yet.'}
+          toolbar={
+            <TableToolbar total={data?.total ?? 0} activeFilters={activeFilters} onClearFilters={clearFilters}>
+              <SearchInput
+                value={search}
+                onChange={(v) => {
+                  setSearch(v);
+                  setPage(0);
+                }}
+                placeholder="Search product or SKU…"
               />
-            </div>
-          );
-        })()
+              <SelectInput
+                value={type}
+                onChange={(v) => {
+                  setType(v);
+                  setPage(0);
+                }}
+                options={TYPE_OPTIONS.filter((o) => o.value).map((o) => ({ value: o.value, label: o.label }))}
+                placeholder="All types"
+                aria-label="Filter by type"
+              />
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setPage(0);
+                }}
+                className="w-auto"
+                aria-label="From date"
+              />
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setPage(0);
+                }}
+                className="w-auto"
+                aria-label="To date"
+              />
+            </TableToolbar>
+          }
+          footer={
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={data?.total ?? 0}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setPageSize(n);
+                setPage(0);
+              }}
+            />
+          }
+        />
       )}
 
       <div className="sr-only" aria-live="polite">
