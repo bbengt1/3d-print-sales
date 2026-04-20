@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Rate } from '@/types';
 
 const emptyForm = { name: '', value: 0, unit: '$/hour', notes: '' };
@@ -58,8 +59,8 @@ export default function RatesPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['rates'] });
       close();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save'));
     } finally { setSaving(false); }
   };
 

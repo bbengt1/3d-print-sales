@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { formatCurrency, formatPercent } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Job } from '@/types';
 
 function CostRow({ label, value }: { label: string; value: number }) {
@@ -50,8 +51,8 @@ export default function JobDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       toast.success('Job copied to draft successfully');
       navigate(`/orders/jobs/${data.id}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to copy job');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to copy job'));
     } finally {
       setDuplicating(false);
     }

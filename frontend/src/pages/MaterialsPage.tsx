@@ -4,6 +4,7 @@ import { Edit, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import PageHeader from '@/components/layout/PageHeader';
 import DataTable, { type Column } from '@/components/data/DataTable';
 import StatusBadge from '@/components/data/StatusBadge';
@@ -62,8 +63,8 @@ export default function MaterialsPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['materials'] });
       close();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save'));
     } finally { setSaving(false); }
   };
 

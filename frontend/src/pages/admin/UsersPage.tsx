@@ -12,6 +12,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import StatusBadge from '@/components/data/StatusBadge';
 import DataTable, { type Column } from '@/components/data/DataTable';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 interface UserRecord {
   id: string;
@@ -64,8 +65,8 @@ export default function UsersPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['users'] });
       close();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save'));
     } finally { setSaving(false); }
   };
 
@@ -74,8 +75,8 @@ export default function UsersPage() {
       await api.delete(`/auth/users/${u.id}`);
       toast.success(`${u.full_name} deactivated`);
       queryClient.invalidateQueries({ queryKey: ['users'] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to deactivate');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to deactivate'));
     }
   };
 
@@ -84,8 +85,8 @@ export default function UsersPage() {
       await api.put(`/auth/users/${u.id}`, { is_active: true });
       toast.success(`${u.full_name} reactivated`);
       queryClient.invalidateQueries({ queryKey: ['users'] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to reactivate');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to reactivate'));
     }
   };
 

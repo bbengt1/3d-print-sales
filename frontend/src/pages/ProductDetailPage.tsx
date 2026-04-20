@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Plus, Archive, ArchiveRestore, RotateCcw } from 'luc
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -62,8 +63,8 @@ export default function ProductDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['transactions', id] });
       setShowAdjust(false);
       setAdjForm({ type: 'adjustment', quantity: 0, notes: '' });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to adjust stock');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to adjust stock'));
     } finally {
       setSaving(false);
     }
@@ -81,8 +82,8 @@ export default function ProductDetailPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', id] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to update product status');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to update product status'));
     } finally {
       setSaving(false);
     }
@@ -115,8 +116,8 @@ export default function ProductDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['transactions', id] });
       queryClient.invalidateQueries({ queryKey: ['inventory-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['inventory-alerts'] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to set stock to 0');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to set stock to 0'));
     } finally {
       setSaving(false);
     }

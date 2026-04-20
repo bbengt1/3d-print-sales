@@ -28,6 +28,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Callout } from '@/components/ui/Callout';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { cn, formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import {
   addProductToCart,
   buildPOSCheckoutPayload,
@@ -51,41 +52,7 @@ type CustomerMode = 'guest' | 'existing' | 'new';
 type ProductFilter = 'all' | 'scannable' | 'low-stock' | 'in-cart';
 
 function getErrorDetail(error: unknown): string {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof error.response === 'object' &&
-    error.response !== null &&
-    'data' in error.response &&
-    typeof error.response.data === 'object' &&
-    error.response.data !== null &&
-    'detail' in error.response &&
-    typeof error.response.detail === 'string'
-  ) {
-    return error.response.detail;
-  }
-
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof error.response === 'object' &&
-    error.response !== null &&
-    'data' in error.response &&
-    typeof error.response.data === 'object' &&
-    error.response.data !== null &&
-    'detail' in error.response.data &&
-    typeof error.response.data.detail === 'string'
-  ) {
-    return error.response.data.detail;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return 'Failed to complete POS checkout';
+  return getApiErrorMessage(error, 'Failed to complete POS checkout');
 }
 
 function SalesInboxCard({ sale }: { sale: SaleListItem }) {

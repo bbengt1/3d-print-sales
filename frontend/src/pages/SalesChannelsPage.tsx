@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import StatusBadge from '@/components/data/StatusBadge';
 import DataTable, { type Column } from '@/components/data/DataTable';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { SalesChannel } from '@/types';
 
 const emptyForm = { name: '', platform_fee_pct: 0, fixed_fee: 0, is_active: true };
@@ -51,8 +52,8 @@ export default function SalesChannelsPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['sales-channels'] });
       close();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save'));
     } finally {
       setSaving(false);
     }

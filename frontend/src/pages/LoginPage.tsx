@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { useAuthStore } from '@/store/auth';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useTheme } from '@/hooks/useTheme';
 import { Moon, Sun } from 'lucide-react';
 
@@ -54,9 +55,8 @@ export default function LoginPage() {
       setAuth(user, token);
       toast.success(`Welcome back, ${user.full_name}`);
       navigate(from, { replace: true });
-    } catch (err: any) {
-      const message = err.response?.data?.detail || 'Invalid email or password';
-      setErrors({ form: message });
+    } catch (err) {
+      setErrors({ form: getApiErrorMessage(err, 'Invalid email or password') });
     } finally {
       setLoading(false);
     }

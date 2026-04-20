@@ -13,6 +13,7 @@ import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Sale, SalesChannel } from '@/types';
 
 export default function SaleDetailPage() {
@@ -71,8 +72,8 @@ export default function SaleDetailPage() {
       await api.put(`/sales/${id}`, { status: newStatus });
       await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success(`Status updated to ${newStatus}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to update');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to update'));
     }
   };
 
@@ -81,8 +82,8 @@ export default function SaleDetailPage() {
       await api.post(`/sales/${id}/refund`);
       await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success('Sale refunded');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to refund');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to refund'));
     }
   };
 
@@ -112,8 +113,8 @@ export default function SaleDetailPage() {
       });
       await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success('Shipment details saved');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to save shipment details');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save shipment details'));
     } finally {
       setSavingShipment(false);
     }
@@ -144,9 +145,9 @@ export default function SaleDetailPage() {
       }, 250);
       await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success('Print dialog opened on this workstation. Mark the label printed after a successful thermal print.');
-    } catch (err: any) {
+    } catch (err) {
       printWindow.close();
-      toast.error(err.response?.data?.detail || 'Failed to open shipping label');
+      toast.error(getApiErrorMessage(err, 'Failed to open shipping label'));
     } finally {
       setPrintingLabel(false);
     }
@@ -158,8 +159,8 @@ export default function SaleDetailPage() {
       await api.post(`/sales/${id}/shipping-label/mark-printed`);
       await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success('Label marked as printed');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to mark label printed');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to mark label printed'));
     } finally {
       setMarkingPrinted(false);
     }

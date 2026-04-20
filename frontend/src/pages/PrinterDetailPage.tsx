@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { cn, formatCurrency } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/apiError';
 import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
@@ -131,8 +132,8 @@ export default function PrinterDetailPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['printers'] });
       queryClient.invalidateQueries({ queryKey: ['printer', printer.id] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to update printer');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to update printer'));
     }
   };
 
@@ -143,8 +144,8 @@ export default function PrinterDetailPage() {
       toast.success('Live status refreshed');
       queryClient.invalidateQueries({ queryKey: ['printer', printer.id] });
       queryClient.invalidateQueries({ queryKey: ['printers'] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Refresh failed');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Refresh failed'));
     }
   };
 
@@ -153,8 +154,8 @@ export default function PrinterDetailPage() {
     try {
       const { data } = await api.post<PrinterConnectionTestResult>(`/printers/${printer.id}/test-connection`);
       data.ok ? toast.success(data.message || 'Connection successful') : toast.error(data.message || 'Connection failed');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Connection test failed');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Connection test failed'));
     }
   };
 
