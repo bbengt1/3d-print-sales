@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import PageHeader from '@/components/layout/PageHeader';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import StatusBadge from '@/components/data/StatusBadge';
 import DataTable, { type Column } from '@/components/data/DataTable';
 import type { SalesChannel } from '@/types';
@@ -183,15 +184,20 @@ function SalesChannelsTable({ channels, isLoading, onEdit, onToggleActive }: Sal
       header: <span className="sr-only">Actions</span>,
       width: '96px',
       cell: (ch) => (
-        <button
-          type="button"
-          onClick={() => onEdit(ch)}
-          aria-label={`Edit ${ch.name}`}
-          title="Edit"
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-        >
-          <Edit className="h-4 w-4" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onEdit(ch)}
+              aria-label={`Edit ${ch.name}`}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit</TooltipContent>
+        </Tooltip>
       ),
     },
   ];

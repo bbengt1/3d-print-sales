@@ -236,14 +236,10 @@ export default function SalesPage() {
               onClearFilters={clearFilters}
               actions={
                 selected.size > 0 ? (
-                  <button
-                    type="button"
-                    onClick={exportSelected}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={exportSelected}>
                     <Download className="h-3.5 w-3.5" />
                     Export {selected.size} selected
-                  </button>
+                  </Button>
                 ) : null
               }
             >

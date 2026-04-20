@@ -330,10 +330,10 @@ export default function PrinterFormPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <button type="button" onClick={handleTestConnection} disabled={testingConnection} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-accent disabled:opacity-50">
+                  <Button type="button" variant="outline" onClick={handleTestConnection} disabled={testingConnection}>
                     <PlugZap className="h-4 w-4" />
                     {testingConnection ? 'Testing...' : 'Test connection'}
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : null}
@@ -354,9 +354,9 @@ export default function PrinterFormPage() {
             <Button type="submit" disabled={saving}>
               {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Printer'}
             </Button>
-            <button type="button" onClick={() => navigate(isEdit && id ? `/printers/${id}` : '/printers')} className="rounded-md border border-border px-4 py-2 hover:bg-accent">
+            <Button type="button" variant="outline" onClick={() => navigate(isEdit && id ? `/printers/${id}` : '/printers')}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       </div>

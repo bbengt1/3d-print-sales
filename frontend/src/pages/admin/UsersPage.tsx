@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import StatusBadge from '@/components/data/StatusBadge';
 import DataTable, { type Column } from '@/components/data/DataTable';
 
@@ -217,36 +218,51 @@ function UsersTable({ users, isLoading, currentUserId, onEdit, onDeactivate, onR
       width: '96px',
       cell: (u) => (
         <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => onEdit(u)}
-            aria-label={`Edit ${u.full_name}`}
-            title="Edit"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onEdit(u)}
+                aria-label={`Edit ${u.full_name}`}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
           {u.id !== currentUserId && (
             u.is_active ? (
-              <button
-                type="button"
-                onClick={() => onDeactivate(u)}
-                aria-label={`Deactivate ${u.full_name}`}
-                title="Deactivate"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              >
-                <UserX className="h-4 w-4" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => onDeactivate(u)}
+                    aria-label={`Deactivate ${u.full_name}`}
+                  >
+                    <UserX className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Deactivate</TooltipContent>
+              </Tooltip>
             ) : (
-              <button
-                type="button"
-                onClick={() => onReactivate(u)}
-                aria-label={`Reactivate ${u.full_name}`}
-                title="Reactivate"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-emerald-100 dark:hover:bg-emerald-900/20 hover:text-emerald-600"
-              >
-                <Users className="h-4 w-4" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => onReactivate(u)}
+                    aria-label={`Reactivate ${u.full_name}`}
+                  >
+                    <Users className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reactivate</TooltipContent>
+              </Tooltip>
             )
           )}
         </div>

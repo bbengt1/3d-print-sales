@@ -210,27 +210,20 @@ export default function PrinterDetailPage() {
                 <Button onClick={testConnection}>
                   <PlugZap className="h-4 w-4" /> Test connection
                 </Button>
-                <button
-                  onClick={refreshNow}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                >
+                <Button variant="outline" onClick={refreshNow}>
                   <RefreshCw className="h-4 w-4" /> Refresh
-                </button>
+                </Button>
               </>
             ) : null}
-            <Link
-              to={`/print-floor/printers/${printer.id}/edit`}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
-            >
-              <Edit className="h-4 w-4" /> Edit
-            </Link>
-            <button
-              onClick={toggleActive}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-            >
+            <Button asChild variant="outline">
+              <Link to={`/print-floor/printers/${printer.id}/edit`}>
+                <Edit className="h-4 w-4" /> Edit
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={toggleActive}>
               {printer.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
               {printer.is_active ? 'Deactivate' : 'Restore'}
-            </button>
+            </Button>
           </>
         }
       >
@@ -385,13 +378,12 @@ export default function PrinterDetailPage() {
               </p>
             </div>
             {printer.camera_id && (
-              <Link
-                to={`/print-floor/monitor/${printer.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
-              >
-                <Expand className="h-3.5 w-3.5" />
-                Monitor
-              </Link>
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/print-floor/monitor/${printer.id}`}>
+                  <Expand className="h-3.5 w-3.5" />
+                  Monitor
+                </Link>
+              </Button>
             )}
           </div>
 

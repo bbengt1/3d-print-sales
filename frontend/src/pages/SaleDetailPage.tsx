@@ -215,12 +215,11 @@ export default function SaleDetailPage() {
         }
         actions={
           <div className="flex items-center gap-2">
-            <Link
-              to="/sales"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent no-underline"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back
-            </Link>
+            <Button asChild variant="outline">
+              <Link to="/sales">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Link>
+            </Button>
             <StatusBadge tone={defaultStatusTone(sale.status)} className="text-sm">
               <span className="capitalize">{sale.status}</span>
             </StatusBadge>
@@ -324,26 +323,26 @@ export default function SaleDetailPage() {
             )}
 
             <div className="grid grid-cols-1 gap-2">
-              <button
+              <Button
+                variant="outline"
                 onClick={handleShipmentSave}
                 disabled={savingShipment || !shipmentDirty}
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Save className="w-4 h-4" /> {savingShipment ? 'Saving shipment...' : 'Save Shipment Details'}
-              </button>
+                <Save className="h-4 w-4" /> {savingShipment ? 'Saving shipment...' : 'Save Shipment Details'}
+              </Button>
               <Button
                 onClick={handlePrintLabel}
                 disabled={printingLabel || shipmentMissingFields.length > 0 || shipmentDirty}
               >
                 <Printer className="h-4 w-4" /> {printingLabel ? 'Opening print dialog...' : getShippingLabelActionLabel(sale)}
               </Button>
-              <button
+              <Button
+                variant="outline"
                 onClick={handleMarkPrinted}
                 disabled={markingPrinted || shipmentDirty || shipmentMissingFields.length > 0}
-                className="rounded-md border border-border px-4 py-2 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {markingPrinted ? 'Recording print...' : 'Mark Printed After Successful Print'}
-              </button>
+              </Button>
             </div>
 
             <div className="text-xs text-muted-foreground">
@@ -366,19 +365,21 @@ export default function SaleDetailPage() {
               </select>
             )}
             {sale.status !== 'refunded' && sale.status !== 'cancelled' && (
-              <button
+              <Button
+                variant="outline"
                 onClick={handleRefund}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-destructive text-destructive rounded-md hover:bg-destructive/10"
+                className="w-full border-destructive text-destructive hover:bg-destructive/10"
               >
-                <RefreshCw className="w-4 h-4" /> Refund Sale
-              </button>
+                <RefreshCw className="h-4 w-4" /> Refund Sale
+              </Button>
             )}
-            <button
+            <Button
+              variant="outline"
               onClick={handleDelete}
-              className="w-full px-4 py-2 border border-border text-muted-foreground rounded-md hover:bg-accent"
+              className="w-full text-muted-foreground"
             >
               Delete Sale
-            </button>
+            </Button>
           </div>
         </div>
       </div>

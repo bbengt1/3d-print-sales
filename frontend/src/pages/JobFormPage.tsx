@@ -482,13 +482,9 @@ export default function JobFormPage() {
             <Button type="submit" disabled={saving} size="lg">
               {saving ? 'Saving...' : isEdit ? 'Update Job' : 'Create Job'}
             </Button>
-            <button
-              type="button"
-              onClick={() => navigate('/jobs')}
-              className="px-6 py-2.5 border border-border rounded-lg font-medium hover:bg-accent transition-colors"
-            >
+            <Button type="button" variant="outline" size="lg" onClick={() => navigate('/jobs')}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
 
