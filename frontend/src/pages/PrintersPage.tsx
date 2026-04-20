@@ -7,17 +7,12 @@ import {
   ArrowRight,
   Archive,
   ArchiveRestore,
-  Camera,
   Edit,
   Expand,
   Layers3,
-  PauseCircle,
   Plus,
-  Search,
-  Sparkles,
   Shrink,
-  WifiOff,
-  Wrench,
+  TriangleAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
@@ -26,6 +21,10 @@ import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import EmptyState from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/layout/PageHeader';
+import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
+import SearchInput from '@/components/data/SearchInput';
+import Pagination from '@/components/data/Pagination';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { cn } from '@/lib/utils';
 import type { Job, PaginatedJobs, PaginatedPrinters, Printer } from '@/types';
@@ -60,34 +59,6 @@ type PrinterGroup = {
   printers: Printer[];
 };
 
-function SummaryCard({
-  label,
-  value,
-  subtext,
-  emphasis = 'default',
-}: {
-  label: string;
-  value: string;
-  subtext?: string;
-  emphasis?: 'default' | 'warning' | 'success';
-}) {
-  return (
-    <div className="rounded-md border border-border bg-card/80 p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-      <p
-        className={cn(
-          'mt-3 text-3xl font-semibold',
-          emphasis === 'warning' && 'text-amber-600 dark:text-amber-300',
-          emphasis === 'success' && 'text-emerald-600 dark:text-emerald-300'
-        )}
-      >
-        {value}
-      </p>
-      {subtext ? <p className="mt-1 text-sm text-muted-foreground">{subtext}</p> : null}
-    </div>
-  );
-}
-
 function PrinterWallCard({
   printer,
   currentJob,
@@ -108,13 +79,13 @@ function PrinterWallCard({
   return (
     <article
       className={cn(
-        'rounded-md border p-4 shadow-md',
+        'rounded-md border p-4 shadow-xs',
         !reducedMotion && 'transition-colors',
         needsAttention
           ? 'border-amber-300/70 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
           : wallMode
             ? 'border-slate-700/80 bg-slate-950/85 text-slate-50'
-            : 'border-border bg-card/85'
+            : 'border-border bg-card'
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -131,23 +102,19 @@ function PrinterWallCard({
             </StatusBadge>
             {!printer.is_active ? <StatusBadge tone="warning">Inactive</StatusBadge> : null}
           </div>
-          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground">
             {[printer.manufacturer, printer.model, printer.location].filter(Boolean).join(' • ') || 'Printer details pending'}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={() => onToggleActive(printer)}
-          className={cn(
-            'rounded-xl border p-2 transition-colors hover:text-foreground',
-            wallMode
-              ? 'border-slate-700 bg-slate-900/80 text-slate-300'
-              : 'border-border bg-background/70 text-muted-foreground'
-          )}
           title={printer.is_active ? 'Deactivate printer' : 'Restore printer'}
         >
           {printer.is_active ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
-        </button>
+        </Button>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[104px_minmax(0,1fr)]">
@@ -179,10 +146,10 @@ function PrinterWallCard({
             </span>
           </div>
 
-          <div className={cn('mt-3 h-2 rounded-full', wallMode ? 'bg-slate-900/90' : 'bg-background/90')}>
+          <div className={cn('mt-3 h-2 rounded-md', wallMode ? 'bg-slate-900/90' : 'bg-background')}>
             <div
               className={cn(
-                'h-2 rounded-full',
+                'h-2 rounded-md',
                 !reducedMotion && 'transition-[width]',
                 needsAttention ? 'bg-amber-500' : liveStatus === 'printing' ? 'bg-primary' : 'bg-sky-500'
               )}
@@ -192,15 +159,15 @@ function PrinterWallCard({
 
           <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
-              <dt className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Layer</dt>
+              <dt className="text-xs text-muted-foreground">Layer</dt>
               <dd className="font-medium text-foreground">{formatLayer(printer.monitor_current_layer, printer.monitor_total_layers)}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-[0.16em] text-muted-foreground">ETA</dt>
+              <dt className="text-xs text-muted-foreground">ETA</dt>
               <dd className="font-medium text-foreground">{formatDuration(printer.monitor_remaining_seconds)}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Transport</dt>
+              <dt className="text-xs text-muted-foreground">Transport</dt>
               <dd className="font-medium text-foreground">
                 {printer.monitor_provider === 'moonraker'
                   ? printer.monitor_ws_connected
@@ -212,17 +179,17 @@ function PrinterWallCard({
               </dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Assignment</dt>
+              <dt className="text-xs text-muted-foreground">Assignment</dt>
               <dd className="font-medium text-foreground">{currentJob ? currentJob.job_number : 'Unassigned'}</dd>
             </div>
           </dl>
         </div>
       </div>
 
-      <div className="mt-4 rounded-md border border-border bg-background/60 p-3">
+      <div className={cn('mt-4 rounded-md border p-3', wallMode ? 'border-slate-700/80 bg-slate-900/60' : 'border-border bg-background')}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Current job</p>
+            <p className="text-xs text-muted-foreground">Current job</p>
             {currentJob ? (
               <>
                 <Link
@@ -251,20 +218,18 @@ function PrinterWallCard({
           <Link to={`/print-floor/printers/${printer.id}`}>Open console</Link>
         </Button>
         {!wallMode ? (
-          <Link
-            to={`/print-floor/printers/${printer.id}/edit`}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground no-underline transition-colors hover:border-primary/30"
-          >
-            <Edit className="h-4 w-4" /> Edit
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/print-floor/printers/${printer.id}/edit`}>
+              <Edit className="h-4 w-4" /> Edit
+            </Link>
+          </Button>
         ) : null}
         {currentJob ? (
-          <Link
-            to={`/orders/jobs/${currentJob.id}`}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground no-underline transition-colors hover:border-primary/30"
-          >
-            <ArrowRight className="h-4 w-4" /> Job
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/orders/jobs/${currentJob.id}`}>
+              <ArrowRight className="h-4 w-4" /> Job
+            </Link>
+          </Button>
         ) : null}
       </div>
     </article>
@@ -328,7 +293,6 @@ export default function PrintersPage() {
 
   const printers = data?.items || [];
   const total = data?.total || 0;
-  const totalPages = Math.ceil(total / limit);
 
   const currentJobsByPrinter = useMemo(() => {
     const assignments = new Map<string, Job>();
@@ -347,20 +311,15 @@ export default function PrintersPage() {
     const attention = activePrinters.filter((printer) => ATTENTION_STATUSES.has(printer.monitor_status || printer.status)).length;
     const ready = activePrinters.filter((printer) => (printer.monitor_status || printer.status) === 'idle').length;
     const unassignedJobs = (activeJobsData?.items || []).filter((job) => !job.printer_id && ACTIVE_ASSIGNMENT_STATUSES.has(job.status)).length;
-    const queuePressure = ready === 0 ? activeJobsData?.items.length || 0 : Number(((activeJobsData?.items.length || 0) / ready).toFixed(1));
-    const utilization = activePrinters.length ? Math.round((printing / activePrinters.length) * 100) : 0;
 
     return {
       total: activePrinters.length,
       printing,
       attention,
       ready,
-      assigned: activePrinters.filter((printer) => currentJobsByPrinter.has(printer.id)).length,
       unassignedJobs,
-      queuePressure,
-      utilization,
     };
-  }, [currentJobsByPrinter, printers]);
+  }, [activeJobsData, printers]);
 
   const wallGroups = useMemo<PrinterGroup[]>(() => {
     const activePrinters = printers.filter((printer) => printer.is_active);
@@ -400,20 +359,6 @@ export default function PrintersPage() {
   }, [printers]);
 
   const attentionPrinters = wallGroups[0]?.printers || [];
-  const analytics = useMemo(() => {
-    const activeJobs = activeJobsData?.items || [];
-    const printingWithoutTelemetry = printers.filter(
-      (printer) => (printer.monitor_status || printer.status) === 'printing' && !printer.monitor_enabled
-    ).length;
-
-    return {
-      activeJobs: activeJobs.length,
-      unassignedJobs: activeJobs.filter((job) => !job.printer_id && ACTIVE_ASSIGNMENT_STATUSES.has(job.status)).length,
-      printersAtAttention: attentionPrinters.length,
-      printingWithoutTelemetry,
-      cameraReadyPlaceholder: printers.filter((printer) => printer.monitor_enabled).length,
-    };
-  }, [activeJobsData, attentionPrinters.length, printers]);
 
   const toggleActive = async (printer: Printer) => {
     const confirmed = window.confirm(
@@ -449,6 +394,8 @@ export default function PrintersPage() {
     setSearchParams(next, { replace: true });
   };
 
+  const liveCameras = printers.filter((p) => p.camera_id).length;
+
   return (
     <div className={cn('space-y-6', wallMode && 'rounded-lg bg-[linear-gradient(180deg,#020617_0%,#08111f_100%)] p-4 text-slate-50')}>
       <PageHeader
@@ -467,108 +414,79 @@ export default function PrintersPage() {
                     <Plus className="h-4 w-4" /> Add printer
                   </Link>
                 </Button>
-                <Link
-                  to="/orders"
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
-                >
-                  <ArrowRight className="h-4 w-4" /> Open jobs queue
-                </Link>
+                <Button asChild variant="outline">
+                  <Link to="/orders">
+                    <ArrowRight className="h-4 w-4" /> Open jobs queue
+                  </Link>
+                </Button>
               </>
             ) : null}
-            <button
-              type="button"
-              onClick={() => updateWallMode(!wallMode)}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-            >
+            <Button variant="outline" onClick={() => updateWallMode(!wallMode)}>
               {wallMode ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
               {wallMode ? 'Exit wall mode' : 'Wall mode'}
-            </button>
+            </Button>
           </>
         }
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <SummaryCard label="Visible active printers" value={String(summary.total)} />
-        <SummaryCard label="Printing now" value={String(summary.printing)} emphasis={summary.printing ? 'success' : 'default'} />
-        <SummaryCard label="Ready for work" value={String(summary.ready)} emphasis={summary.ready ? 'success' : 'default'} />
-        <SummaryCard label="Need attention" value={String(summary.attention)} emphasis={summary.attention ? 'warning' : 'default'} />
-        <SummaryCard
-          label="Queue pressure"
-          value={summary.ready ? `${summary.queuePressure}:1` : `${summary.unassignedJobs}`}
-          subtext={summary.ready ? 'Active queue to ready-printer ratio' : 'No ready printers available'}
-          emphasis={summary.unassignedJobs > summary.ready ? 'warning' : 'default'}
-        />
-      </div>
-
-      <div className={cn('grid gap-4', wallMode ? 'xl:grid-cols-3' : 'xl:grid-cols-4')}>
-        <SummaryCard
-          label="Assignment pressure"
-          value={String(analytics.unassignedJobs)}
-          subtext="Draft or in-progress jobs missing a printer assignment"
-          emphasis={analytics.unassignedJobs ? 'warning' : 'default'}
-        />
-        <SummaryCard
-          label="Telemetry blind spots"
-          value={String(analytics.printingWithoutTelemetry)}
-          subtext="Printing machines relying on static status or polling only"
-          emphasis={analytics.printingWithoutTelemetry ? 'warning' : 'default'}
-        />
-        <SummaryCard
-          label="Urgent floor load"
-          value={String(analytics.printersAtAttention + analytics.unassignedJobs)}
-          subtext="Attention printers plus queue items needing assignment"
-          emphasis={analytics.printersAtAttention + analytics.unassignedJobs ? 'warning' : 'default'}
-        />
-        <SummaryCard
-          label="Live cameras"
-          value={String(printers.filter((p) => p.camera_id).length)}
-          subtext={`${printers.filter((p) => p.camera_id).length} printers with camera feeds`}
-        />
-      </div>
+      >
+        <KPIStrip columns={4}>
+          <KPI
+            label="Printing now"
+            value={summary.printing}
+            tone={summary.printing > 0 ? 'success' : 'default'}
+          />
+          <KPI
+            label="Ready for work"
+            value={summary.ready}
+            tone={summary.ready > 0 ? 'success' : 'default'}
+          />
+          <KPI
+            label="Need attention"
+            value={summary.attention}
+            tone={summary.attention > 0 ? 'warning' : 'default'}
+          />
+          <KPI
+            label="Unassigned jobs"
+            value={summary.unassignedJobs}
+            tone={summary.unassignedJobs > 0 ? 'warning' : 'default'}
+            sub="Draft or in-progress without a printer"
+          />
+        </KPIStrip>
+      </PageHeader>
 
       {attentionPrinters.length > 0 ? (
-        <section className="rounded-lg border border-amber-300/70 bg-amber-50/80 p-5 shadow-md dark:border-amber-500/30 dark:bg-amber-500/10">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
-                <h2 className="text-lg font-semibold text-foreground">Operator attention strip</h2>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Start here when the floor gets noisy. These are the machines most likely to block work right now.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full bg-background/80 px-3 py-1"><PauseCircle className="h-3.5 w-3.5" /> Paused</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-background/80 px-3 py-1"><WifiOff className="h-3.5 w-3.5" /> Offline</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-background/80 px-3 py-1"><Wrench className="h-3.5 w-3.5" /> Maintenance</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-background/80 px-3 py-1"><AlertTriangle className="h-3.5 w-3.5" /> Error</span>
-            </div>
-          </div>
-        </section>
+        <p className="text-sm text-muted-foreground">
+          <TriangleAlert className="mr-1 inline h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          {attentionPrinters.length} printer{attentionPrinters.length === 1 ? '' : 's'} need attention — start here.
+        </p>
+      ) : null}
+
+      {wallMode ? (
+        <div className="flex flex-wrap gap-3 text-xs text-slate-300">
+          <span>{liveCameras} live camera{liveCameras === 1 ? '' : 's'}</span>
+          <span>•</span>
+          <span>{reducedMotion ? 'Reduced motion respected' : 'Motion available'}</span>
+          <span>•</span>
+          <span>10s refresh</span>
+        </div>
       ) : null}
 
       {!wallMode ? (
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
-              }}
-              placeholder="Search printers by name, model, slug, or location..."
-              className="w-full rounded-md border border-input bg-card/80 py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          <SearchInput
+            value={search}
+            onChange={(v) => {
+              setSearch(v);
+              setPage(0);
+            }}
+            placeholder="Search printers by name, model, slug, or location…"
+          />
           <select
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
               setPage(0);
             }}
-            className="rounded-md border border-input bg-card/80 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">All statuses</option>
             {STATUS_OPTIONS.map((option) => (
@@ -583,45 +501,19 @@ export default function PrintersPage() {
               setActive(e.target.value);
               setPage(0);
             }}
-            className="rounded-md border border-input bg-card/80 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Active + inactive</option>
             <option value="true">Active only</option>
             <option value="false">Inactive only</option>
           </select>
         </div>
-      ) : (
-        <section className="rounded-lg border border-slate-700/80 bg-slate-950/80 p-5 shadow-none">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-50">Wall-mode monitor behavior</h2>
-              <p className="mt-1 text-sm text-slate-300">
-                Reduced chrome, darker surfaces, larger fleet signals, and a 10s refresh interval for persistent shop-floor display.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs text-slate-300">
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">
-                <Camera className="h-3.5 w-3.5" /> {printers.filter((p) => p.camera_id).length} live camera{printers.filter((p) => p.camera_id).length !== 1 ? 's' : ''}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">
-                {reducedMotion ? 'Reduced motion respected' : 'Motion available'}
-              </span>
-            </div>
-          </div>
-        </section>
-      )}
+      ) : null}
 
       {isLoading || jobsLoading ? (
-        <div className={cn('grid gap-4', wallMode ? 'xl:grid-cols-3 2xl:grid-cols-3' : 'xl:grid-cols-3')}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="rounded-md border border-border bg-card/85 p-4">
-              <div className="mb-4 h-6 w-44 animate-pulse rounded bg-muted" />
-              <div className="space-y-3">
-                {Array.from({ length: 2 }).map((__, cardIndex) => (
-                  <div key={cardIndex} className="h-72 animate-pulse rounded-md border border-border bg-background/70" />
-                ))}
-              </div>
-            </div>
+        <div className="grid gap-4 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} rows={3} />
           ))}
         </div>
       ) : !printers.length ? (
@@ -644,17 +536,17 @@ export default function PrintersPage() {
             return (
               <section
                 key={group.key}
-                className={cn('rounded-lg border p-4 shadow-md', group.panelTone || 'border-border bg-card/85')}
+                className={cn('rounded-lg border p-4 shadow-xs', group.panelTone || 'border-border bg-card')}
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <Icon className={cn('h-4 w-4', group.accentClass)} />
-                      <h2 className="text-lg font-semibold text-foreground">{group.title}</h2>
+                      <h2 className="text-base font-semibold text-foreground">{group.title}</h2>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">{group.description}</p>
                   </div>
-                  <span className="rounded-full bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                  <span className="text-xs tabular-nums text-muted-foreground">
                     {group.printers.length}
                   </span>
                 </div>
@@ -673,7 +565,7 @@ export default function PrintersPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-md border border-dashed border-border bg-background/60 px-4 py-12 text-center text-sm text-muted-foreground">
+                  <div className="rounded-md border border-dashed border-border bg-background px-4 py-12 text-center text-sm text-muted-foreground">
                     {group.emptyText}
                   </div>
                 )}
@@ -683,28 +575,16 @@ export default function PrintersPage() {
         </div>
       )}
 
-      {totalPages > 1 && !wallMode ? (
-        <div className="flex items-center justify-between text-sm">
-          <p className="text-muted-foreground">
-            Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage((current) => Math.max(0, current - 1))}
-              disabled={page === 0}
-              className="rounded-full border border-border px-4 py-2 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setPage((current) => (current + 1 < totalPages ? current + 1 : current))}
-              disabled={page + 1 >= totalPages}
-              className="rounded-full border border-border px-4 py-2 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+      {!wallMode && total > 0 ? (
+        <Pagination
+          page={page}
+          pageSize={limit}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={() => {
+            /* no-op; fixed page size */
+          }}
+        />
       ) : null}
     </div>
   );
