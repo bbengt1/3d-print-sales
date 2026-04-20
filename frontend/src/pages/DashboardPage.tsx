@@ -132,22 +132,30 @@ export default function DashboardPage() {
       />
 
       <KPIStrip columns={3}>
-        <KPI icon={<BarChart3 className="h-4 w-4" />} label="Total jobs" value={data.total_jobs.toLocaleString()} />
-        <KPI icon={<Package className="h-4 w-4" />} label="Total pieces" value={data.total_pieces.toLocaleString()} />
-        <KPI icon={<DollarSign className="h-4 w-4" />} label="Total revenue" value={formatCurrency(data.total_revenue)} />
-        <KPI icon={<Layers className="h-4 w-4" />} label="Total costs" value={formatCurrency(data.total_costs)} />
+        <KPI icon={<BarChart3 className="h-4 w-4" />} label="Total jobs" value={data.total_jobs.toLocaleString()} href="/orders/jobs" />
+        <KPI icon={<Package className="h-4 w-4" />} label="Total pieces" value={data.total_pieces.toLocaleString()} href="/orders/jobs" />
+        <KPI
+          icon={<DollarSign className="h-4 w-4" />}
+          label="Total revenue"
+          value={formatCurrency(data.total_revenue)}
+          href="/sell/sales"
+          sparkline={revenueData?.map((d) => d.revenue) || []}
+        />
+        <KPI icon={<Layers className="h-4 w-4" />} label="Total costs" value={formatCurrency(data.total_costs)} href="/reports/pl" />
         <KPI
           icon={<TrendingUp className="h-4 w-4" />}
           label="Net profit"
           value={formatCurrency(data.total_net_profit)}
           sub={`Avg margin ${formatPercent(data.avg_margin_pct)}`}
           tone={data.total_net_profit >= 0 ? 'success' : 'destructive'}
+          href="/reports/pl"
         />
         <KPI
           icon={<Award className="h-4 w-4" />}
           label="Top material"
           value={data.top_material || '—'}
           sub={`Avg profit/piece ${formatCurrency(data.avg_profit_per_piece)}`}
+          href="/stock/materials"
         />
       </KPIStrip>
 
@@ -261,16 +269,17 @@ export default function DashboardPage() {
         <section>
           <h2 className="mb-3 text-base font-semibold">Finance overview</h2>
           <KPIStrip columns={4}>
-            <KPI icon={<DollarSign className="h-4 w-4" />} label="Cash on hand" value={formatCurrency(financeData.cash_on_hand)} />
+            <KPI icon={<DollarSign className="h-4 w-4" />} label="Cash on hand" value={formatCurrency(financeData.cash_on_hand)} href="/reports/pl" />
             <KPI
               icon={<TrendingUp className="h-4 w-4" />}
               label="Month net income"
               value={formatCurrency(financeData.current_month_net_income)}
               tone={financeData.current_month_net_income >= 0 ? 'success' : 'destructive'}
+              href="/reports/pl"
             />
-            <KPI icon={<BarChart3 className="h-4 w-4" />} label="Unpaid invoices" value={formatCurrency(financeData.unpaid_invoices)} />
+            <KPI icon={<BarChart3 className="h-4 w-4" />} label="Unpaid invoices" value={formatCurrency(financeData.unpaid_invoices)} href="/sell/sales" />
             <KPI icon={<Layers className="h-4 w-4" />} label="Unpaid bills" value={formatCurrency(financeData.unpaid_bills)} />
-            <KPI icon={<Package className="h-4 w-4" />} label="Inventory asset value" value={formatCurrency(financeData.inventory_asset_value)} />
+            <KPI icon={<Package className="h-4 w-4" />} label="Inventory asset value" value={formatCurrency(financeData.inventory_asset_value)} href="/stock" />
             <KPI
               icon={<AlertTriangle className="h-4 w-4" />}
               label="Tax payable"
@@ -287,25 +296,28 @@ export default function DashboardPage() {
         <section>
           <h2 className="mb-3 text-base font-semibold">Sales overview</h2>
           <KPIStrip columns={3}>
-            <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Total orders" value={salesMetrics.total_sales.toLocaleString()} />
-            <KPI icon={<DollarSign className="h-4 w-4" />} label="Gross sales" value={formatCurrency(salesMetrics.gross_sales)} />
-            <KPI icon={<Layers className="h-4 w-4" />} label="Item COGS" value={formatCurrency(salesMetrics.item_cogs)} />
+            <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Total orders" value={salesMetrics.total_sales.toLocaleString()} href="/sell/sales" />
+            <KPI icon={<DollarSign className="h-4 w-4" />} label="Gross sales" value={formatCurrency(salesMetrics.gross_sales)} href="/sell/sales" />
+            <KPI icon={<Layers className="h-4 w-4" />} label="Item COGS" value={formatCurrency(salesMetrics.item_cogs)} href="/reports/pl" />
             <KPI
               icon={<TrendingUp className="h-4 w-4" />}
               label="Gross profit"
               value={formatCurrency(salesMetrics.gross_profit)}
               tone={salesMetrics.gross_profit >= 0 ? 'success' : 'destructive'}
+              href="/reports/pl"
             />
             <KPI
               icon={<DollarSign className="h-4 w-4" />}
               label="Platform fees + shipping"
               value={formatCurrency(salesMetrics.platform_fees + salesMetrics.shipping_costs)}
+              href="/reports/sales"
             />
             <KPI
               icon={<BarChart3 className="h-4 w-4" />}
               label="Contribution margin"
               value={formatCurrency(salesMetrics.contribution_margin)}
               sub={salesMetrics.refund_count > 0 ? `${salesMetrics.refund_count} refund(s)` : 'Net pending overhead allocation'}
+              href="/reports/pl"
             />
           </KPIStrip>
 

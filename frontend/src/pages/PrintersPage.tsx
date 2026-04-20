@@ -444,6 +444,7 @@ export default function PrintersPage() {
             value={summary.unassignedJobs}
             tone={summary.unassignedJobs > 0 ? 'warning' : 'default'}
             sub="Draft or in-progress without a printer"
+            href="/orders/jobs"
           />
         </KPIStrip>
       </PageHeader>

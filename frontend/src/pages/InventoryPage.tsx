@@ -399,7 +399,7 @@ export default function InventoryPage() {
             sub="Nearing depletion"
             tone={nearReorderProducts.length > 0 ? 'warning' : 'default'}
           />
-          <KPI label="Material signals" value={materialAlerts.length} sub="Raw-material alerts" />
+          <KPI label="Material signals" value={materialAlerts.length} sub="Raw-material alerts" href="/stock/materials" />
         </KPIStrip>
       </PageHeader>
 

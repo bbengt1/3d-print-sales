@@ -175,24 +175,28 @@ export default function ControlCenterPage() {
             value={needsAttentionCount}
             sub={`${attentionPrinters.length} printers • ${blockerAlerts.length} stock blockers`}
             tone={needsAttentionCount > 0 ? 'warning' : 'success'}
+            href="/print-floor"
           />
           <KPI
             label="Draft queue"
             value={unassignedDraftJobs.length}
             sub="Draft jobs without printer"
             tone={unassignedDraftJobs.length > 0 ? 'warning' : 'default'}
+            href="/orders/jobs"
           />
           <KPI
             label="Printing now"
             value={busyPrinters.length}
             sub={`${printers.length} active printers in view`}
             tone={busyPrinters.length > 0 ? 'success' : 'default'}
+            href="/print-floor"
           />
           <KPI
             label="Low-stock blockers"
             value={alerts.length}
             sub={alerts.length ? 'Below reorder point' : 'No blockers'}
             tone={alerts.length ? 'warning' : 'success'}
+            href="/stock"
           />
         </KPIStrip>
       </PageHeader>
@@ -286,6 +290,7 @@ export default function ControlCenterPage() {
                     label="Orders"
                     value={salesMetrics.total_sales}
                     sub={`${salesMetrics.total_units_sold} units sold`}
+                    href="/sell/sales"
                   />
                   <KPI
                     label="Contribution"
@@ -404,11 +409,13 @@ export default function ControlCenterPage() {
                 label="Revenue"
                 value={summary ? formatCurrency(summary.total_revenue) : '—'}
                 sub={summary ? `${summary.total_jobs} jobs • ${summary.total_pieces} pieces` : 'Dashboard summary unavailable'}
+                href="/sell/sales"
               />
               <KPI
                 label="Net profit"
                 value={summary ? formatCurrency(summary.total_net_profit) : '—'}
                 sub={summary ? `Avg margin ${formatPercent(summary.avg_margin_pct)}` : 'Margin unavailable'}
+                href="/reports/pl"
               />
             </KPIStrip>
             {financeData ? (
