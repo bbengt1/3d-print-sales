@@ -76,7 +76,7 @@ export default function DataPage() {
             <button
               onClick={() => exportCsv(resource, label)}
               disabled={exporting === resource}
-              className="shrink-0 inline-flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 cursor-pointer"
+              className="shrink-0 inline-flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
             >
               <Download className="w-4 h-4" />
               {exporting === resource ? 'Exporting...' : 'Export'}

@@ -90,7 +90,7 @@ export default function JobDetailPage() {
           </span>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleDuplicate} disabled={duplicating} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 cursor-pointer">
+          <button onClick={handleDuplicate} disabled={duplicating} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50">
             <Copy className="w-4 h-4" /> {duplicating ? 'Copying...' : 'Copy to New Job'}
           </button>
           <Link to={`/orders/jobs/${id}/edit`} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors no-underline">

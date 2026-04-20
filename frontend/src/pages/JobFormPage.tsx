@@ -407,7 +407,7 @@ export default function JobFormPage() {
                   <button
                     type="button"
                     onClick={openCreateProduct}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                   >
                     <Plus className="w-3.5 h-3.5" /> Create product
                   </button>

@@ -37,7 +37,7 @@ export default function Pagination({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 border-t border-border bg-card/50 px-3 py-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between',
+        'flex flex-col gap-3 border-t border-border bg-card px-3 py-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between',
         className,
       )}
     >

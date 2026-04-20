@@ -163,9 +163,9 @@ export default function SettingsPage() {
               })}
             </div>
 
-            <div className="mt-6 rounded-md border border-border bg-background/70 p-5">
+            <div className="mt-6 rounded-md border border-border bg-background p-5">
               <div className="mb-4 flex items-start gap-3">
-                <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                <div className="rounded-md bg-primary/10 p-2 text-primary">
                   <KeyRound className="h-4 w-4" />
                 </div>
                 <div>

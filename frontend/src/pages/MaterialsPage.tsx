@@ -115,7 +115,6 @@ export default function MaterialsPage() {
           type="button"
           onClick={() => toggleActive(m)}
           aria-label={m.active ? `Deactivate ${m.name}` : `Activate ${m.name}`}
-          className="cursor-pointer"
         >
           <StatusBadge tone={m.active ? 'success' : 'destructive'}>
             {m.active ? 'Active' : 'Inactive'}
