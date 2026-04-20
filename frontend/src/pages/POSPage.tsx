@@ -8,11 +8,9 @@ import {
   Clock3,
   Minus,
   Plus,
-  Receipt,
   Search,
   ShoppingBasket,
   Trash2,
-  UserRound,
   Users,
   WalletCards,
   XCircle,
@@ -22,6 +20,11 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { cn, formatCurrency } from '@/lib/utils';
 import {
   addProductToCart,
@@ -44,94 +47,6 @@ const SALES_INBOX_PAGE_SIZE = 6;
 
 type CustomerMode = 'guest' | 'existing' | 'new';
 type ProductFilter = 'all' | 'scannable' | 'low-stock' | 'in-cart';
-
-interface QuickFilterButtonProps {
-  active: boolean;
-  label: string;
-  detail: string;
-  onClick: () => void;
-}
-
-function QuickFilterButton({ active, label, detail, onClick }: QuickFilterButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'rounded-md border px-4 py-3 text-left transition-colors',
-        active
-          ? 'border-primary bg-primary/10 text-foreground shadow-sm'
-          : 'border-border bg-background/80 text-muted-foreground hover:border-primary/40 hover:text-foreground'
-      )}
-    >
-      <p className="text-sm font-semibold">{label}</p>
-      <p className="mt-1 text-xs">{detail}</p>
-    </button>
-  );
-}
-
-interface CustomerModeButtonProps {
-  active: boolean;
-  icon: typeof UserRound;
-  label: string;
-  detail: string;
-  onClick: () => void;
-}
-
-function CustomerModeButton({ active, icon: Icon, label, detail, onClick }: CustomerModeButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'rounded-md border px-4 py-4 text-left transition-colors',
-        active
-          ? 'border-primary bg-primary/10 text-foreground shadow-sm'
-          : 'border-border bg-background/85 text-muted-foreground hover:border-primary/40 hover:text-foreground'
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            'rounded-md p-2',
-            active ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground'
-          )}
-        >
-          <Icon className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="font-semibold">{label}</p>
-          <p className="mt-1 text-xs">{detail}</p>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-interface PaymentButtonProps {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}
-
-function PaymentButton({ active, label, onClick }: PaymentButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'rounded-md border px-4 py-3 text-sm font-semibold transition-colors',
-        active
-          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-          : 'border-border bg-background hover:border-primary/40 hover:text-foreground'
-      )}
-    >
-      {label}
-    </button>
-  );
-}
 
 function getErrorDetail(error: unknown): string {
   if (
@@ -172,13 +87,6 @@ function getErrorDetail(error: unknown): string {
 }
 
 function SalesInboxCard({ sale }: { sale: SaleListItem }) {
-  const statusTone =
-    sale.status === 'refunded'
-      ? 'border-destructive/20 bg-destructive/5 text-destructive'
-      : sale.status === 'pending'
-        ? 'border-amber-300/50 bg-amber-50 text-amber-900'
-        : 'border-emerald-300/40 bg-emerald-50 text-emerald-900';
-
   return (
     <Link
       to={`/sell/sales/${sale.id}`}
@@ -186,25 +94,27 @@ function SalesInboxCard({ sale }: { sale: SaleListItem }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">{sale.sale_number}</p>
-          <p className="mt-2 truncate text-base font-semibold text-foreground">{sale.customer_name || 'Guest checkout'}</p>
+          <p className="font-mono text-xs text-muted-foreground">{sale.sale_number}</p>
+          <p className="mt-2 truncate text-base font-semibold text-foreground">
+            {sale.customer_name || 'Guest checkout'}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {sale.date} • {sale.channel_name || 'Direct'} • {sale.item_count} items
           </p>
         </div>
-        <div className={cn('rounded-full border px-3 py-1 text-xs font-semibold capitalize', statusTone)}>
+        <StatusBadge tone={defaultStatusTone(sale.status)} className="capitalize">
           {sale.status}
-        </div>
+        </StatusBadge>
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3 text-sm">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Payment</p>
+          <p className="text-xs text-muted-foreground">Payment</p>
           <p className="mt-1 capitalize text-foreground">{sale.payment_method || 'Unknown'}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Total</p>
-          <p className="mt-1 font-semibold text-foreground">{formatCurrency(sale.total)}</p>
+          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="mt-1 font-semibold tabular-nums text-foreground">{formatCurrency(sale.total)}</p>
         </div>
       </div>
     </Link>
@@ -462,7 +372,7 @@ export default function POSPage() {
       </PageHeader>
 
       {successMessage ? (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm" role="status">
+        <div className="rounded-md border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm" role="status">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
@@ -474,7 +384,7 @@ export default function POSPage() {
       ) : null}
 
       {checkoutError ? (
-        <div className="rounded-lg border border-destructive/35 bg-destructive/10 px-5 py-4 text-destructive shadow-sm" role="alert">
+        <div className="rounded-md border border-destructive/35 bg-destructive/10 px-5 py-4 text-destructive shadow-sm" role="alert">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
@@ -488,51 +398,35 @@ export default function POSPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.95fr)]">
         <section className="space-y-4">
           <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Barcode className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">Scanner lane</h2>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Keep wedge scanning obvious. Operators can scan into the field below or scan with focus outside other form controls.
-                </p>
-                <form
-                  className="mt-4"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void handleResolveScan(scanCode);
-                  }}
-                >
-                  <label className="mb-2 block text-sm font-medium" htmlFor="pos-scan-code">
-                    Scan barcode
-                  </label>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <input
-                      id="pos-scan-code"
-                      value={scanCode}
-                      onChange={(event) => setScanCode(event.target.value)}
-                      placeholder="Scan UPC and press Enter"
-                      aria-label="Scan barcode"
-                      className="min-h-14 flex-1 rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <Button type="submit" size="lg" className="min-h-14 font-semibold">
-                      Resolve scan
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </form>
-              </div>
-
-              <div className="rounded-lg border border-border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Lane rules</p>
-                <div className="mt-3 space-y-3 text-sm text-muted-foreground">
-                  <p>Exact UPC match only.</p>
-                  <p>Only active, in-stock products resolve.</p>
-                  <p>Failed scans leave the cart unchanged.</p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <Barcode className="h-5 w-5 text-primary" />
+              <h2 className="text-base font-semibold">Scanner lane</h2>
             </div>
+            <form
+              className="mt-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleResolveScan(scanCode);
+              }}
+            >
+              <Label htmlFor="pos-scan-code" className="mb-2 block">
+                Scan barcode
+              </Label>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input
+                  id="pos-scan-code"
+                  value={scanCode}
+                  onChange={(event) => setScanCode(event.target.value)}
+                  placeholder="Scan UPC and press Enter"
+                  aria-label="Scan barcode"
+                  className="min-h-14 flex-1 px-4 py-3 text-base"
+                />
+                <Button type="submit" size="lg" className="min-h-14 font-semibold">
+                  Resolve scan
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </form>
 
             {scanStatus ? (
               <div
@@ -549,30 +443,41 @@ export default function POSPage() {
           </div>
 
           <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Catalog lane</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Search by product name, SKU, or UPC. Quick filters reduce choice overload during busy counter traffic.
-                </p>
-              </div>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <h2 className="text-base font-semibold">Catalog</h2>
               <div className="relative w-full lg:max-w-sm">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
+                <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search products..."
+                  placeholder="Search products…"
                   aria-label="Search products"
-                  className="min-h-14 w-full rounded-md border border-input bg-background py-3 pl-11 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-14 pl-11 pr-4 py-3 text-base"
                 />
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <QuickFilterButton active={productFilter === 'all'} label="All products" detail={`${products.length} active items`} onClick={() => setProductFilter('all')} />
-              <QuickFilterButton active={productFilter === 'scannable'} label="Scanner-ready" detail={`${scannableCount} products with UPC`} onClick={() => setProductFilter('scannable')} />
-              <QuickFilterButton active={productFilter === 'low-stock'} label="Low stock" detail={`${lowStockCount} products need attention`} onClick={() => setProductFilter('low-stock')} />
-              <QuickFilterButton active={productFilter === 'in-cart'} label="In cart" detail={`${cart.length} product lines selected`} onClick={() => setProductFilter('in-cart')} />
+            <div className="mt-4">
+              <Tabs value={productFilter} onValueChange={(value) => setProductFilter(value as ProductFilter)}>
+                <TabsList>
+                  <TabsTrigger value="all">
+                    All
+                    <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{products.length}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="scannable">
+                    Scanner-ready
+                    <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{scannableCount}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="low-stock">
+                    Low stock
+                    <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{lowStockCount}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="in-cart">
+                    In cart
+                    <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{cart.length}</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </div>
 
@@ -583,13 +488,13 @@ export default function POSPage() {
               ))}
             </div>
           ) : productsError ? (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-6 text-destructive">
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-6 text-destructive">
               Unable to load products for POS checkout.
             </div>
           ) : !filteredProducts.length ? (
             <EmptyState
               icon="sales"
-              title={products.length ? 'No products match the current lane filters' : 'No active products available'}
+              title={products.length ? 'No products match the current filters' : 'No active products available'}
               description={
                 products.length
                   ? 'Try a different search term or filter combination.'
@@ -615,28 +520,30 @@ export default function POSPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">{product.sku}</p>
+                        <p className="font-mono text-xs text-muted-foreground">{product.sku}</p>
                         <h3 className="mt-2 text-lg font-semibold leading-tight">{product.name}</h3>
                         <p className="mt-2 text-sm text-muted-foreground">
                           {product.upc ? `UPC ${product.upc}` : 'No UPC assigned yet'}
                         </p>
                       </div>
-                      <div className="rounded-md bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground">
+                      <div className="rounded-md bg-accent px-4 py-3 text-sm font-semibold tabular-nums text-accent-foreground">
                         {formatCurrency(product.unit_price)}
                       </div>
                     </div>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                       <div className="rounded-md bg-background px-3 py-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Stock</p>
-                        <p className={cn('mt-2 text-lg font-semibold', lowStock && 'text-amber-600')}>{product.stock_qty}</p>
+                        <p className="text-xs text-muted-foreground">Stock</p>
+                        <p className={cn('mt-2 text-lg font-semibold tabular-nums', lowStock && 'text-amber-600')}>
+                          {product.stock_qty}
+                        </p>
                       </div>
                       <div className="rounded-md bg-background px-3 py-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">In cart</p>
-                        <p className="mt-2 text-lg font-semibold">{cartQty}</p>
+                        <p className="text-xs text-muted-foreground">In cart</p>
+                        <p className="mt-2 text-lg font-semibold tabular-nums">{cartQty}</p>
                       </div>
                       <div className="rounded-md bg-background px-3 py-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Scanner</p>
+                        <p className="text-xs text-muted-foreground">Scanner</p>
                         <p className="mt-2 text-sm font-semibold">{product.upc ? 'Ready' : 'Manual only'}</p>
                       </div>
                     </div>
@@ -662,35 +569,34 @@ export default function POSPage() {
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
           <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold">Cart and checkout</h2>
-                <p className="mt-2 text-sm text-muted-foreground">Large controls, shorter decisions, faster recovery.</p>
-              </div>
+              <h2 className="text-base font-semibold">Cart and checkout</h2>
               <div className="rounded-full bg-accent px-3 py-1 text-sm font-medium text-accent-foreground">
                 {cartUnits} items
               </div>
             </div>
 
             {!cart.length ? (
-              <div className="mt-6 rounded-lg border border-dashed border-border bg-background/70 p-8 text-center">
+              <div className="mt-6 rounded-md border border-dashed border-border bg-background/70 p-8 text-center">
                 <ShoppingBasket className="mx-auto h-10 w-10 text-muted-foreground" />
                 <p className="mt-4 text-lg font-medium">Cart is empty</p>
-                <p className="mt-2 text-sm text-muted-foreground">Add products from the catalog lane or scan a barcode to start a sale.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Add products from the catalog or scan a barcode to start a sale.
+                </p>
               </div>
             ) : (
               <div className="mt-5 space-y-3">
                 {cart.map((line) => (
-                  <div key={line.product_id} className="rounded-lg border border-border bg-background/85 p-4">
+                  <div key={line.product_id} className="rounded-md border border-border bg-background/85 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium">{line.name}</p>
-                        <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">{line.sku}</p>
+                        <p className="font-mono text-xs text-muted-foreground">{line.sku}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setCart((prev) => removeProductFromCart(prev, line.product_id))}
                         aria-label={`Remove ${line.name} from cart`}
-                        className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -702,11 +608,14 @@ export default function POSPage() {
                           type="button"
                           onClick={() => setCart((prev) => updateCartLineQuantity(prev, line.product_id, line.quantity - 1))}
                           aria-label={`Decrease quantity for ${line.name}`}
-                          className="rounded-l-2xl px-4 py-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          className="rounded-l-md px-4 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <span aria-label={`${line.name} quantity`} className="min-w-14 px-3 text-center text-lg font-semibold">
+                        <span
+                          aria-label={`${line.name} quantity`}
+                          className="min-w-14 px-3 text-center text-lg font-semibold tabular-nums"
+                        >
                           {line.quantity}
                         </span>
                         <button
@@ -714,15 +623,17 @@ export default function POSPage() {
                           onClick={() => setCart((prev) => updateCartLineQuantity(prev, line.product_id, line.quantity + 1))}
                           disabled={line.quantity >= line.stock_qty}
                           aria-label={`Increase quantity for ${line.name}`}
-                          className="rounded-r-2xl px-4 py-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:text-muted-foreground/40"
+                          className="rounded-r-md px-4 py-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:text-muted-foreground/40"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
 
                       <div className="text-right">
-                        <p className="text-sm text-muted-foreground">{formatCurrency(line.unit_price)} each</p>
-                        <p className="text-lg font-semibold">{formatCurrency(line.unit_price * line.quantity)}</p>
+                        <p className="text-sm text-muted-foreground tabular-nums">{formatCurrency(line.unit_price)} each</p>
+                        <p className="text-lg font-semibold tabular-nums">
+                          {formatCurrency(line.unit_price * line.quantity)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -730,57 +641,42 @@ export default function POSPage() {
               </div>
             )}
 
-            <div className="mt-6 rounded-lg border border-border bg-background/70 p-4">
+            <div className="mt-6 rounded-md border border-border bg-background/70 p-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-base font-semibold">Customer mode</h3>
+                <h3 className="text-base font-semibold">Customer</h3>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Make the cashier choice explicit instead of hiding it in one select box.
-              </p>
 
-              <div className="mt-4 grid gap-3">
-                <CustomerModeButton
-                  active={customerMode === 'guest'}
-                  icon={UserRound}
-                  label="Guest"
-                  detail="Fastest path for walk-up checkout."
-                  onClick={() => {
-                    setCustomerMode('guest');
-                    setSelectedCustomerId('');
-                    setCustomerName('');
+              <div className="mt-4">
+                <Tabs
+                  value={customerMode}
+                  onValueChange={(value) => {
+                    const next = value as CustomerMode;
+                    setCustomerMode(next);
                     setCheckoutError(null);
+                    if (next === 'guest') {
+                      setSelectedCustomerId('');
+                      setCustomerName('');
+                    } else if (next === 'existing') {
+                      setCustomerName('');
+                    } else if (next === 'new') {
+                      setSelectedCustomerId('');
+                    }
                   }}
-                />
-                <CustomerModeButton
-                  active={customerMode === 'existing'}
-                  icon={Users}
-                  label="Existing customer"
-                  detail="Attach the sale to an existing customer record."
-                  onClick={() => {
-                    setCustomerMode('existing');
-                    setCustomerName('');
-                    setCheckoutError(null);
-                  }}
-                />
-                <CustomerModeButton
-                  active={customerMode === 'new'}
-                  icon={Receipt}
-                  label="New customer name"
-                  detail="Capture a customer name on the sale without leaving the register."
-                  onClick={() => {
-                    setCustomerMode('new');
-                    setSelectedCustomerId('');
-                    setCheckoutError(null);
-                  }}
-                />
+                >
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="guest">Guest</TabsTrigger>
+                    <TabsTrigger value="existing">Existing customer</TabsTrigger>
+                    <TabsTrigger value="new">New customer</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
 
               {customerMode === 'existing' ? (
                 <div className="mt-4">
-                  <label className="mb-2 block text-sm font-medium" htmlFor="pos-existing-customer">
+                  <Label htmlFor="pos-existing-customer" className="mb-2 block">
                     Existing customer
-                  </label>
+                  </Label>
                   <select
                     id="pos-existing-customer"
                     value={selectedCustomerId}
@@ -789,7 +685,7 @@ export default function POSPage() {
                       setCheckoutError(null);
                     }}
                     aria-label="Existing customer"
-                    className="min-h-14 w-full rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="min-h-14 w-full rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="">Select customer</option>
                     {customers.map((customer) => (
@@ -803,35 +699,39 @@ export default function POSPage() {
 
               {customerMode === 'new' ? (
                 <div className="mt-4">
-                  <label className="mb-2 block text-sm font-medium" htmlFor="pos-customer-name">
+                  <Label htmlFor="pos-customer-name" className="mb-2 block">
                     Customer name
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     id="pos-customer-name"
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
                     placeholder="Name for receipt or follow-up"
                     aria-label="Customer name"
-                    className="min-h-14 w-full rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="min-h-14 px-4 py-3 text-base"
                   />
                 </div>
               ) : null}
             </div>
 
-            <div className="mt-4 rounded-lg border border-border bg-background/70 p-4">
+            <div className="mt-4 rounded-md border border-border bg-background/70 p-4">
               <div className="flex items-center gap-2">
                 <WalletCards className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-base font-semibold">Payment method</h3>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {POS_PAYMENT_METHODS.map((method) => (
-                  <PaymentButton
-                    key={method.value}
-                    active={paymentMethod === method.value}
-                    label={method.label}
-                    onClick={() => setPaymentMethod(method.value)}
-                  />
-                ))}
+              <div className="mt-4">
+                <Tabs value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <TabsList
+                    className="grid w-full"
+                    style={{ gridTemplateColumns: `repeat(${POS_PAYMENT_METHODS.length}, minmax(0, 1fr))` }}
+                  >
+                    {POS_PAYMENT_METHODS.map((method) => (
+                      <TabsTrigger key={method.value} value={method.value}>
+                        {method.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
               </div>
               <div className="sr-only" aria-live="polite">
                 Payment method: {POS_PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label || paymentMethod}
@@ -840,10 +740,10 @@ export default function POSPage() {
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-medium" htmlFor="pos-tax-collected">
+                <Label htmlFor="pos-tax-collected" className="mb-2 block">
                   Tax collected
-                </label>
-                <input
+                </Label>
+                <Input
                   id="pos-tax-collected"
                   type="number"
                   min="0"
@@ -851,38 +751,38 @@ export default function POSPage() {
                   value={taxCollected}
                   onChange={(event) => setTaxCollected(Math.max(0, Number(event.target.value) || 0))}
                   aria-label="Tax collected"
-                  className="min-h-14 w-full rounded-md border border-input bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-14 px-4 py-3 text-base"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium" htmlFor="pos-notes">
+                <Label htmlFor="pos-notes" className="mb-2 block">
                   Notes
-                </label>
-                <textarea
+                </Label>
+                <Textarea
                   id="pos-notes"
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   rows={3}
                   placeholder="Optional booth or counter notes"
                   aria-label="Notes"
-                  className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-14 px-4 py-3 text-base"
                 />
               </div>
             </div>
 
-            <div className="mt-4 rounded-lg bg-background p-4">
+            <div className="mt-4 rounded-md bg-background p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span className="tabular-nums">{formatCurrency(subtotal)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Tax</span>
-                <span>{formatCurrency(taxCollected)}</span>
+                <span className="tabular-nums">{formatCurrency(taxCollected)}</span>
               </div>
               <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-lg font-semibold">
                 <span>Total</span>
-                <span>{formatCurrency(total)}</span>
+                <span className="tabular-nums">{formatCurrency(total)}</span>
               </div>
             </div>
 
@@ -898,18 +798,20 @@ export default function POSPage() {
               size="lg"
               className="mt-6 min-h-14 w-full font-semibold"
             >
-              {saving ? 'Processing checkout...' : 'Complete checkout'}
+              {saving ? 'Processing checkout…' : 'Complete checkout'}
             </Button>
 
-            {!!cart.length ? (
-              <button
+            {cart.length ? (
+              <Button
                 type="button"
                 onClick={resetCheckoutFields}
-                className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-md border border-border px-4 py-3 font-semibold transition-colors hover:bg-accent"
+                variant="outline"
+                size="lg"
+                className="mt-3 w-full min-h-14"
               >
                 <XCircle className="h-4 w-4" />
                 Clear cart
-              </button>
+              </Button>
             ) : null}
 
             <div className="mt-4 rounded-md border border-amber-300/60 bg-amber-50 p-3 text-sm text-amber-900">
@@ -922,28 +824,22 @@ export default function POSPage() {
 
           <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Clock3 className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Sales inbox</h2>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Recent sales and exceptions stay adjacent to the register so staff do not need to context-switch into the full sales area.
-                </p>
+              <div className="flex items-center gap-2">
+                <Clock3 className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-base font-semibold">Sales inbox</h2>
               </div>
-              <Link
-                to="/sell/sales"
-                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
-              >
-                Open inbox
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/sell/sales">
+                  Open inbox
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
             </div>
 
             {salesInboxLoading ? (
               <div className="mt-4 space-y-3">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="h-28 animate-pulse rounded-lg border border-border bg-background" />
+                  <div key={index} className="h-28 animate-pulse rounded-md border border-border bg-background" />
                 ))}
               </div>
             ) : salesInbox.length ? (
