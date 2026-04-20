@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import type { Product, PaginatedTransactions } from '@/types';
 
 const TXN_TYPES = [
@@ -133,6 +134,13 @@ export default function ProductDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <Breadcrumbs
+        className="mb-4"
+        items={[
+          { to: '/product-studio/products', label: 'Products' },
+          { label: currentProduct.name },
+        ]}
+      />
       <Link to="/product-studio" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Products
       </Link>

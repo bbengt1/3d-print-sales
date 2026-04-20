@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Calendar, User, Package, Printer, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import type { Job } from '@/types';
 
@@ -64,6 +65,12 @@ export default function JobDetailPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs
+        items={[
+          { to: '/orders/jobs', label: 'Jobs' },
+          { label: job.job_number },
+        ]}
+      />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link to="/orders/jobs" className="p-2 rounded-md hover:bg-accent text-muted-foreground no-underline">

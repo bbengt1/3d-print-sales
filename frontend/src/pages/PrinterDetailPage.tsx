@@ -22,6 +22,7 @@ import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/layout/PageHeader';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import type { Job, PaginatedJobs, Printer, PrinterConnectionTestResult } from '@/types';
 
@@ -181,6 +182,14 @@ export default function PrinterDetailPage() {
 
       <PageHeader
         title={printer.name}
+        breadcrumbs={
+          <Breadcrumbs
+            items={[
+              { to: '/print-floor', label: 'Print Floor' },
+              { label: printer.name },
+            ]}
+          />
+        }
         description={
           <span className="flex flex-wrap items-center gap-2">
             <StatusBadge tone={defaultStatusTone(liveStatus)}>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Callout } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
@@ -198,6 +199,14 @@ export default function SaleDetailPage() {
       <PageHeader
         title={sale.sale_number}
         description={`${sale.date} · ${sale.customer_name || 'No customer'}`}
+        breadcrumbs={
+          <Breadcrumbs
+            items={[
+              { to: '/sell/sales', label: 'Sales' },
+              { label: sale.sale_number },
+            ]}
+          />
+        }
         actions={
           <div className="flex items-center gap-2">
             <Link
