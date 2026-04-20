@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
+import { Callout, type CalloutTone } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { InventoryTransaction, Material, PaginatedTransactions, Product } from '@/types';
@@ -32,10 +33,10 @@ const emptyForm = {
   reorder_point: 5,
 };
 
-function readinessTone(value: 'ready' | 'warning' | 'draft') {
-  if (value === 'ready') return 'bg-emerald-50 text-emerald-900 border-emerald-300/60';
-  if (value === 'warning') return 'bg-amber-50 text-amber-900 border-amber-300/60';
-  return 'bg-slate-100 text-slate-800 border-slate-300/60';
+function readinessTone(value: 'ready' | 'warning' | 'draft'): CalloutTone {
+  if (value === 'ready') return 'success';
+  if (value === 'warning') return 'warning';
+  return 'neutral';
 }
 
 export default function ProductEditorPage() {
@@ -334,7 +335,7 @@ export default function ProductEditorPage() {
                       <p
                         className={cn(
                           'font-semibold',
-                          transaction.quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                          transaction.quantity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
                         )}
                       >
                         {transaction.quantity > 0 ? '+' : ''}
@@ -357,38 +358,29 @@ export default function ProductEditorPage() {
             </div>
 
             <div className="mt-4 space-y-3">
-              <div className={cn('rounded-md border px-4 py-3', readinessTone(identityReadiness))}>
-                <p className="font-semibold">Identity</p>
-                <p className="mt-1 text-sm">
-                  {identityReadiness === 'ready'
-                    ? 'Name, material, and price are present.'
-                    : identityReadiness === 'warning'
-                      ? 'The product has partial setup but still needs key sellable fields.'
-                      : 'Start with the basic product identity and pricing fields.'}
-                </p>
-              </div>
+              <Callout tone={readinessTone(identityReadiness)} title="Identity">
+                {identityReadiness === 'ready'
+                  ? 'Name, material, and price are present.'
+                  : identityReadiness === 'warning'
+                    ? 'The product has partial setup but still needs key sellable fields.'
+                    : 'Start with the basic product identity and pricing fields.'}
+              </Callout>
 
-              <div className={cn('rounded-md border px-4 py-3', readinessTone(barcodeReadiness))}>
-                <p className="font-semibold">POS readiness</p>
-                <p className="mt-1 text-sm">
-                  {barcodeReadiness === 'ready'
-                    ? 'UPC present. This product can participate in barcode-driven POS flow.'
-                    : 'No UPC yet. Product is still sellable, but manual lookup will be required at the register.'}
-                </p>
-              </div>
+              <Callout tone={readinessTone(barcodeReadiness)} title="POS readiness">
+                {barcodeReadiness === 'ready'
+                  ? 'UPC present. This product can participate in barcode-driven POS flow.'
+                  : 'No UPC yet. Product is still sellable, but manual lookup will be required at the register.'}
+              </Callout>
 
-              <div className={cn('rounded-md border px-4 py-3', readinessTone(stockReadiness))}>
-                <p className="font-semibold">Stock policy</p>
-                <p className="mt-1 text-sm">
-                  {isCreate
-                    ? 'Stock starts after creation. Reorder policy will apply once transactions begin.'
-                    : stockReadiness === 'ready'
-                      ? 'Current stock is above the reorder threshold.'
-                      : stockReadiness === 'warning'
-                        ? 'Current stock is near the reorder point.'
-                        : 'Current stock is at or below zero and needs attention.'}
-                </p>
-              </div>
+              <Callout tone={readinessTone(stockReadiness)} title="Stock policy">
+                {isCreate
+                  ? 'Stock starts after creation. Reorder policy will apply once transactions begin.'
+                  : stockReadiness === 'ready'
+                    ? 'Current stock is above the reorder threshold.'
+                    : stockReadiness === 'warning'
+                      ? 'Current stock is near the reorder point.'
+                      : 'Current stock is at or below zero and needs attention.'}
+              </Callout>
             </div>
 
             <div className="mt-5 space-y-3 rounded-lg bg-background p-4">
@@ -402,13 +394,13 @@ export default function ProductEditorPage() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Margin dollars</span>
-                <span className={cn(marginDollars >= 0 ? 'text-emerald-700' : 'text-red-600')}>
+                <span className={cn(marginDollars >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
                   {formatCurrency(marginDollars)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Margin percent</span>
-                <span className={cn(marginPct >= 0 ? 'text-emerald-700' : 'text-red-600')}>
+                <span className={cn(marginPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
                   {Number.isFinite(marginPct) ? `${marginPct.toFixed(1)}%` : '0.0%'}
                 </span>
               </div>

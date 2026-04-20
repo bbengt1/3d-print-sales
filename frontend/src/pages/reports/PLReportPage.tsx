@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import api from '@/api/client';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import DataTable from '@/components/data/DataTable';
 import { KPIStrip, KPI } from '@/components/layout/KPIStrip';
+import { Callout } from '@/components/ui/Callout';
+import { ChartTooltip, chartCategoricalPalette } from '@/components/charts/ChartTooltip';
 import type { PLReport, PLRow } from '@/types';
 
 const formatTooltipCurrency = (value: string | number | readonly (string | number)[] | undefined) => {
@@ -73,11 +75,10 @@ export default function PLReportPage() {
             />
           </KPIStrip>
 
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-900 dark:text-amber-100">
-            <p className="font-medium">Reporting basis: sales-realized revenue</p>
-            <p className="mt-1">{s.production_estimate_note}</p>
+          <Callout tone="warning" title="Reporting basis: sales-realized revenue">
+            <p>{s.production_estimate_note}</p>
             <p className="mt-1">Operational production estimate shown separately: {formatCurrency(s.operational_production_estimate)}</p>
-          </div>
+          </Callout>
 
           {/* Cost breakdown */}
           <div className="bg-card border border-border rounded-lg p-6">
@@ -111,10 +112,10 @@ export default function PLReportPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={formatTooltipCurrency} contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }} />
+                  <ChartTooltip formatter={formatTooltipCurrency} />
                   <Legend />
-                  <Bar dataKey="sales_revenue" name="Sales Revenue" stackId="rev" fill="#8b5cf6" />
-                  <Bar dataKey="operational_production_estimate" name="Operational Production Estimate" fill="#6366f1" />
+                  <Bar dataKey="sales_revenue" name="Sales Revenue" stackId="rev" fill={chartCategoricalPalette[0]} />
+                  <Bar dataKey="operational_production_estimate" name="Operational Production Estimate" fill={chartCategoricalPalette[2]} />
                   <Bar dataKey="material_costs" name="Materials" stackId="cost" fill="#f87171" />
                   <Bar dataKey="labor_costs" name="Labor" stackId="cost" fill="#fb923c" />
                   <Bar dataKey="machine_costs" name="Machine" stackId="cost" fill="#fbbf24" />
@@ -190,8 +191,8 @@ export default function PLReportPage() {
                       <span
                         className={`font-semibold ${
                           row.gross_profit >= 0
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-red-600 dark:text-red-400'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-destructive'
                         }`}
                       >
                         {formatCurrency(row.gross_profit)}

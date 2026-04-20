@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Callout } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import DataTable, { type Column, type SortDir } from '@/components/data/DataTable';
@@ -694,13 +695,17 @@ export default function InventoryPage() {
             </section>
 
             {materialAlerts.length > 0 ? (
-              <section className="rounded-md border border-amber-300/60 bg-amber-50/80 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-                <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Material signals</h2>
-                  <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                    <Link to="/stock/materials">Open</Link>
-                  </Button>
-                </div>
+              <Callout
+                tone="warning"
+                title={
+                  <span className="flex items-center justify-between gap-2">
+                    <span>Material signals</span>
+                    <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                      <Link to="/stock/materials">Open</Link>
+                    </Button>
+                  </span>
+                }
+              >
                 <ul className="space-y-1 text-sm">
                   {materialAlerts.slice(0, 6).map((alert) => (
                     <li key={`${alert.type}-${alert.id}`} className="flex items-center justify-between gap-3">
@@ -716,7 +721,7 @@ export default function InventoryPage() {
                     </li>
                   ))}
                 </ul>
-              </section>
+              </Callout>
             ) : null}
           </aside>
         </div>

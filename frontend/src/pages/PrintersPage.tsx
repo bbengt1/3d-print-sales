@@ -20,6 +20,7 @@ import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import EmptyState from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { Callout, calloutToneClasses } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import SearchInput from '@/components/data/SearchInput';
@@ -82,7 +83,7 @@ function PrinterWallCard({
         'rounded-md border p-4 shadow-xs',
         !reducedMotion && 'transition-colors',
         needsAttention
-          ? 'border-amber-300/70 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
+          ? calloutToneClasses.warning
           : wallMode
             ? 'border-slate-700/80 bg-slate-950/85 text-slate-50'
             : 'border-border bg-card'
@@ -332,7 +333,7 @@ export default function PrintersPage() {
         emptyText: 'No printers currently need operator attention.',
         icon: AlertTriangle,
         accentClass: 'text-amber-600 dark:text-amber-300',
-        panelTone: 'border-amber-300/70 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/8',
+        panelTone: undefined,
         printers: activePrinters.filter((printer) => ATTENTION_STATUSES.has(printer.monitor_status || printer.status)),
       },
       {
@@ -532,12 +533,8 @@ export default function PrintersPage() {
         <div className={cn('grid gap-4', wallMode ? 'xl:grid-cols-2 2xl:grid-cols-3' : 'xl:grid-cols-3')}>
           {wallGroups.map((group) => {
             const Icon = group.icon;
-
-            return (
-              <section
-                key={group.key}
-                className={cn('rounded-lg border p-4 shadow-xs', group.panelTone || 'border-border bg-card')}
-              >
+            const body = (
+              <>
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -569,6 +566,24 @@ export default function PrintersPage() {
                     {group.emptyText}
                   </div>
                 )}
+              </>
+            );
+
+            if (group.key === 'attention' && group.printers.length > 0) {
+              return (
+                <Callout key={group.key} tone="warning">
+                  <div>{body}</div>
+                </Callout>
+              );
+            }
+
+            const defaultTone = group.key === 'attention' ? undefined : group.panelTone;
+            return (
+              <section
+                key={group.key}
+                className={cn('rounded-lg border p-4 shadow-xs', defaultTone || 'border-border bg-card')}
+              >
+                {body}
               </section>
             );
           })}

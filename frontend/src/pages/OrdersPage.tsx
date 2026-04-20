@@ -10,6 +10,7 @@ import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import TableToolbar from '@/components/data/TableToolbar';
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Callout } from '@/components/ui/Callout';
 import { formatCurrency } from '@/lib/utils';
 import type {
   Customer,
@@ -369,11 +370,11 @@ export default function OrdersPage() {
           </section>
 
           {attentionPrinters.length > 0 ? (
-            <section className="rounded-md border border-amber-300/60 bg-amber-50/80 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-              <div className="mb-2 flex items-center gap-2">
-                <TriangleAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Printers need attention</h2>
-              </div>
+            <Callout
+              tone="warning"
+              icon={<TriangleAlert className="h-4 w-4" aria-hidden="true" />}
+              title="Printers need attention"
+            >
               <ul className="space-y-1 text-sm">
                 {attentionPrinters.slice(0, 6).map((printer) => (
                   <li key={printer.id} className="flex items-center justify-between gap-3">
@@ -389,7 +390,7 @@ export default function OrdersPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Callout>
           ) : null}
         </aside>
       </div>

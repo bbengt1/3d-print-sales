@@ -189,7 +189,7 @@ export default function SalesPage() {
       numeric: true,
       colClassName: 'hidden md:table-cell',
       cell: (s) => (
-        <span className={Number(s.contribution_margin) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+        <span className={Number(s.contribution_margin) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}>
           {formatCurrency(s.contribution_margin)}
         </span>
       ),
@@ -331,7 +331,7 @@ export default function SalesPage() {
                     'tabular-nums',
                     Number(s.contribution_margin) >= 0
                       ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-600 dark:text-red-400',
+                      : 'text-destructive',
                   )}
                 >
                   {formatCurrency(s.contribution_margin)}

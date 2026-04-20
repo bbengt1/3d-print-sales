@@ -163,7 +163,7 @@ export default function JobDetailPage() {
             </div>
             <div className="flex justify-between py-2 mt-2 border-t-2 border-border">
               <span className="font-semibold">Net Profit</span>
-              <span className={`font-semibold text-lg ${job.net_profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+              <span className={`font-semibold text-lg ${job.net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                 {formatCurrency(job.net_profit)}
               </span>
             </div>

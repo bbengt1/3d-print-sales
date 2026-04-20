@@ -116,8 +116,8 @@ export default function SalesReportPage() {
                         <span
                           className={
                             p.contribution_margin >= 0
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-destructive'
                           }
                         >
                           {formatCurrency(p.contribution_margin)}
