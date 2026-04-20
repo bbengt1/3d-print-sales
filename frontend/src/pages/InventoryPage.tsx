@@ -15,6 +15,9 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import EmptyState from '@/components/ui/EmptyState';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
@@ -302,12 +305,13 @@ export default function InventoryPage() {
             <DialogTitle>Stock reconciliation</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Product</label>
+            <div className="space-y-1.5">
+              <Label htmlFor="reconcile-product">Product</Label>
               <select
+                id="reconcile-product"
                 value={reconcileForm.product_id}
                 onChange={(event) => setReconcileForm((form) => ({ ...form, product_id: event.target.value }))}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Select product...</option>
                 {products.map((product) => (
@@ -340,36 +344,36 @@ export default function InventoryPage() {
               </div>
             ) : null}
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Counted quantity</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="reconcile-counted-qty">Counted quantity</Label>
+              <Input
+                id="reconcile-counted-qty"
                 type="number"
                 min="0"
                 value={reconcileForm.counted_qty}
                 onChange={(event) =>
                   setReconcileForm((form) => ({ ...form, counted_qty: Number(event.target.value) }))
                 }
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Reason</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="reconcile-reason">Reason</Label>
+              <Input
+                id="reconcile-reason"
                 value={reconcileForm.reason}
                 onChange={(event) => setReconcileForm((form) => ({ ...form, reason: event.target.value }))}
                 placeholder="Cycle count, shelf recount, received correction..."
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Notes</label>
-              <textarea
+            <div className="space-y-1.5">
+              <Label htmlFor="reconcile-notes">Notes</Label>
+              <Textarea
+                id="reconcile-notes"
                 value={reconcileForm.notes}
                 onChange={(event) => setReconcileForm((form) => ({ ...form, notes: event.target.value }))}
                 rows={3}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -388,12 +392,13 @@ export default function InventoryPage() {
             <DialogTitle>Quick stock adjustment</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Product</label>
+            <div className="space-y-1.5">
+              <Label htmlFor="adjust-product">Product</Label>
               <select
+                id="adjust-product"
                 value={adjustForm.product_id}
                 onChange={(event) => setAdjustForm((form) => ({ ...form, product_id: event.target.value }))}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Select product...</option>
                 {products.map((product) => (
@@ -411,12 +416,13 @@ export default function InventoryPage() {
               </div>
             ) : null}
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Type</label>
+            <div className="space-y-1.5">
+              <Label htmlFor="adjust-type">Type</Label>
               <select
+                id="adjust-type"
                 value={adjustForm.type}
                 onChange={(event) => setAdjustForm((form) => ({ ...form, type: event.target.value }))}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {TYPE_OPTIONS.filter((option) => option.value).map((option) => (
                   <option key={option.value} value={option.value}>
@@ -426,25 +432,25 @@ export default function InventoryPage() {
               </select>
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Quantity</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="adjust-quantity">Quantity</Label>
+              <Input
+                id="adjust-quantity"
                 type="number"
                 value={adjustForm.quantity}
                 onChange={(event) => setAdjustForm((form) => ({ ...form, quantity: Number(event.target.value) }))}
                 placeholder="Positive to add, negative to remove"
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Notes</label>
-              <textarea
+            <div className="space-y-1.5">
+              <Label htmlFor="adjust-notes">Notes</Label>
+              <Textarea
+                id="adjust-notes"
                 value={adjustForm.notes}
                 onChange={(event) => setAdjustForm((form) => ({ ...form, notes: event.target.value }))}
                 rows={3}
                 placeholder="Reason for adjustment"
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -835,24 +841,24 @@ export default function InventoryPage() {
                       placeholder="All types"
                       aria-label="Filter by type"
                     />
-                    <input
+                    <Input
                       type="date"
                       value={dateFrom}
                       onChange={(e) => {
                         setDateFrom(e.target.value);
                         setPage(0);
                       }}
-                      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-auto"
                       aria-label="From date"
                     />
-                    <input
+                    <Input
                       type="date"
                       value={dateTo}
                       onChange={(e) => {
                         setDateTo(e.target.value);
                         setPage(0);
                       }}
-                      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-auto"
                       aria-label="To date"
                     />
                   </TableToolbar>

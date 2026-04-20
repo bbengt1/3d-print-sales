@@ -5,6 +5,9 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import type { Camera, PaginatedCameras, PaginatedPrinters } from '@/types';
 
 type ModalMode = 'create' | 'edit' | null;
@@ -289,58 +292,64 @@ export default function CamerasPage() {
           <div className="space-y-5">
 
               {/* Name */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="camera-name">Name</Label>
+                <Input
+                  id="camera-name"
                   type="text"
                   value={form.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="Wyze Cam - Bay 1"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  invalid={Boolean(errors.name)}
                 />
-                {errors.name && <p className="text-xs text-danger mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-xs text-danger">{errors.name}</p>}
               </div>
 
               {/* Slug */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Slug</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="camera-slug">Slug</Label>
+                <Input
+                  id="camera-slug"
                   type="text"
                   value={form.slug}
                   onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
                   placeholder="wyze-cam-bay-1"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  invalid={Boolean(errors.slug)}
                 />
-                {errors.slug && <p className="text-xs text-danger mt-1">{errors.slug}</p>}
+                {errors.slug && <p className="text-xs text-danger">{errors.slug}</p>}
               </div>
 
               {/* go2rtc Base URL */}
-              <div>
-                <label className="block text-sm font-medium mb-1">go2rtc Base URL</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="camera-base-url">go2rtc Base URL</Label>
+                <Input
+                  id="camera-base-url"
                   type="text"
                   value={form.go2rtc_base_url}
                   onChange={(e) => setForm((f) => ({ ...f, go2rtc_base_url: e.target.value }))}
                   placeholder="http://192.168.1.50:1984"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="font-mono"
+                  invalid={Boolean(errors.go2rtc_base_url)}
                 />
                 {errors.go2rtc_base_url && (
-                  <p className="text-xs text-danger mt-1">{errors.go2rtc_base_url}</p>
+                  <p className="text-xs text-danger">{errors.go2rtc_base_url}</p>
                 )}
               </div>
 
               {/* Stream Name */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Stream Name</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="camera-stream">Stream Name</Label>
+                <Input
+                  id="camera-stream"
                   type="text"
                   value={form.stream_name}
                   onChange={(e) => setForm((f) => ({ ...f, stream_name: e.target.value }))}
                   placeholder="wyze_printer_1"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="font-mono"
+                  invalid={Boolean(errors.stream_name)}
                 />
                 {errors.stream_name && (
-                  <p className="text-xs text-danger mt-1">{errors.stream_name}</p>
+                  <p className="text-xs text-danger">{errors.stream_name}</p>
                 )}
               </div>
 
@@ -348,7 +357,7 @@ export default function CamerasPage() {
               {(form.go2rtc_base_url.trim() && form.stream_name.trim()) && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium">Preview</label>
+                    <Label>Preview</Label>
                     <button
                       type="button"
                       onClick={fetchPreview}
@@ -389,12 +398,13 @@ export default function CamerasPage() {
               )}
 
               {/* Assigned Printer */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Assigned Printer</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="camera-printer">Assigned Printer</Label>
                 <select
+                  id="camera-printer"
                   value={form.printer_id}
                   onChange={(e) => setForm((f) => ({ ...f, printer_id: e.target.value }))}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">None (unassigned)</option>
                   {availablePrinters.map((p) => (
@@ -406,13 +416,14 @@ export default function CamerasPage() {
               </div>
 
               {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Notes</label>
-                <textarea
+              <div className="space-y-1.5">
+                <Label htmlFor="camera-notes">Notes</Label>
+                <Textarea
+                  id="camera-notes"
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={2}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  className="resize-none"
                 />
               </div>
 

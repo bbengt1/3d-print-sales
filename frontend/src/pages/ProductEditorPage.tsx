@@ -16,6 +16,9 @@ import api from '@/api/client';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import PageHeader from '@/components/layout/PageHeader';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { InventoryTransaction, Material, PaginatedTransactions, Product } from '@/types';
@@ -142,8 +145,8 @@ export default function ProductEditorPage() {
     return <p className="py-16 text-center text-muted-foreground">Product not found</p>;
   }
 
-  const inputClass = (field: string) =>
-    `w-full rounded-md border px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring ${
+  const selectClass = (field: string) =>
+    `flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${
       formErrors[field] ? 'border-destructive' : 'border-input'
     }`;
 
@@ -183,60 +186,63 @@ export default function ProductEditorPage() {
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              <div className="lg:col-span-2">
-                <label className="mb-2 block text-sm font-medium">Product name</label>
-                <input
+              <div className="lg:col-span-2 space-y-1.5">
+                <Label htmlFor="product-name">Product name *</Label>
+                <Input
+                  id="product-name"
                   value={form.name}
                   onChange={(event) => {
                     setForm((current) => ({ ...current, name: event.target.value }));
                     setFormErrors((current) => ({ ...current, name: '' }));
                   }}
-                  className={inputClass('name')}
+                  invalid={Boolean(formErrors.name)}
                   placeholder="Desk Dragon, Tool Holder, Display Plaque..."
                 />
-                {formErrors.name ? <p className="mt-1 text-xs text-destructive">{formErrors.name}</p> : null}
+                {formErrors.name ? <p className="text-xs text-destructive">{formErrors.name}</p> : null}
               </div>
 
-              <div className="lg:col-span-2">
-                <label className="mb-2 block text-sm font-medium">Description</label>
-                <textarea
+              <div className="lg:col-span-2 space-y-1.5">
+                <Label htmlFor="product-description">Description</Label>
+                <Textarea
+                  id="product-description"
                   value={form.description}
                   onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                   rows={4}
-                  className={inputClass('description')}
                   placeholder="Short operator-facing or storefront-facing summary."
                 />
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">SKU</label>
+              <div className="space-y-1.5">
+                <Label>SKU</Label>
                 <div className="rounded-md border border-border bg-background px-4 py-3 text-sm">
                   {product?.sku || 'Generated after first save'}
                 </div>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">UPC / barcode</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="product-upc">UPC / barcode</Label>
                 <div className="relative">
-                  <ScanBarcode className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
+                  <ScanBarcode className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="product-upc"
                     value={form.upc}
                     onChange={(event) => setForm((current) => ({ ...current, upc: event.target.value }))}
-                    className={`${inputClass('upc')} pl-10`}
+                    className="pl-9"
                     placeholder="012345678901"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">Material</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="product-material">Material *</Label>
                 <select
+                  id="product-material"
                   value={form.material_id}
                   onChange={(event) => {
                     setForm((current) => ({ ...current, material_id: event.target.value }));
                     setFormErrors((current) => ({ ...current, material_id: '' }));
                   }}
-                  className={inputClass('material_id')}
+                  className={selectClass('material_id')}
                 >
                   <option value="">Select material...</option>
                   {materials.map((material) => (
@@ -245,32 +251,34 @@ export default function ProductEditorPage() {
                     </option>
                   ))}
                 </select>
-                {formErrors.material_id ? <p className="mt-1 text-xs text-destructive">{formErrors.material_id}</p> : null}
+                {formErrors.material_id ? <p className="text-xs text-destructive">{formErrors.material_id}</p> : null}
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">Unit price</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="product-unit-price">Unit price</Label>
+                <Input
+                  id="product-unit-price"
                   type="number"
                   min="0"
                   step="0.01"
                   value={form.unit_price}
                   onChange={(event) => setForm((current) => ({ ...current, unit_price: Number(event.target.value) }))}
-                  className={inputClass('unit_price')}
+                  invalid={Boolean(formErrors.unit_price)}
                 />
-                {formErrors.unit_price ? <p className="mt-1 text-xs text-destructive">{formErrors.unit_price}</p> : null}
+                {formErrors.unit_price ? <p className="text-xs text-destructive">{formErrors.unit_price}</p> : null}
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">Reorder point</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="product-reorder">Reorder point</Label>
+                <Input
+                  id="product-reorder"
                   type="number"
                   min="0"
                   value={form.reorder_point}
                   onChange={(event) => setForm((current) => ({ ...current, reorder_point: Number(event.target.value) }))}
-                  className={inputClass('reorder_point')}
+                  invalid={Boolean(formErrors.reorder_point)}
                 />
-                {formErrors.reorder_point ? <p className="mt-1 text-xs text-destructive">{formErrors.reorder_point}</p> : null}
+                {formErrors.reorder_point ? <p className="text-xs text-destructive">{formErrors.reorder_point}</p> : null}
               </div>
             </div>
 

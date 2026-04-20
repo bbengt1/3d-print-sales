@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { formatCurrency } from '@/lib/utils';
 import type { Material, Job, CalculateResponse, PaginatedProducts, PaginatedPrinters, Product } from '@/types';
 
@@ -20,17 +22,19 @@ interface FieldProps {
 }
 
 function Field({ label, field, type = 'text', value, error, onChange, ...rest }: FieldProps) {
+  const id = `job-${field}`;
   return (
-    <div>
-      <label className="block text-sm font-medium mb-1.5">{label}</label>
-      <input
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
         type={type}
         value={value}
         onChange={(e) => onChange(field, type === 'number' ? Number(e.target.value) : e.target.value)}
-        className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${error ? 'border-destructive' : 'border-input'}`}
+        invalid={Boolean(error)}
         {...rest}
       />
-      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
+      {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );
 }
@@ -282,55 +286,57 @@ export default function JobFormPage() {
             <DialogTitle>Create and link product</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Name *</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="create-product-name">Name *</Label>
+              <Input
+                id="create-product-name"
                 value={productForm.name}
                 onChange={(e) => updateProductForm('name', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.name ? 'border-destructive' : 'border-input'}`}
+                invalid={Boolean(productErrors.name)}
               />
-              {productErrors.name && <p className="text-destructive text-xs mt-1">{productErrors.name}</p>}
+              {productErrors.name && <p className="text-destructive text-xs">{productErrors.name}</p>}
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="create-product-description">Description</Label>
+              <Input
+                id="create-product-description"
                 value={productForm.description}
                 onChange={(e) => updateProductForm('description', e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Material *</label>
+            <div className="space-y-1.5">
+              <Label htmlFor="create-product-material">Material *</Label>
               <select
+                id="create-product-material"
                 value={productForm.material_id}
                 onChange={(e) => updateProductForm('material_id', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.material_id ? 'border-destructive' : 'border-input'}`}
+                className={`flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${productErrors.material_id ? 'border-destructive' : 'border-input'}`}
               >
                 <option value="">Select material...</option>
                 {materials?.map((m) => (
                   <option key={m.id} value={m.id}>{m.name} ({m.brand})</option>
                 ))}
               </select>
-              {productErrors.material_id && <p className="text-destructive text-xs mt-1">{productErrors.material_id}</p>}
+              {productErrors.material_id && <p className="text-destructive text-xs">{productErrors.material_id}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Unit Cost ($)</label>
-                <input type="number" min="0" step="0.01" value={productForm.unit_cost} onChange={(e) => updateProductForm('unit_cost', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <div className="space-y-1.5">
+                <Label htmlFor="create-product-unit-cost">Unit Cost ($)</Label>
+                <Input id="create-product-unit-cost" type="number" min="0" step="0.01" value={productForm.unit_cost} onChange={(e) => updateProductForm('unit_cost', Number(e.target.value))} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Unit Price ($)</label>
-                <input type="number" min="0" step="0.01" value={productForm.unit_price} onChange={(e) => updateProductForm('unit_price', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <div className="space-y-1.5">
+                <Label htmlFor="create-product-unit-price">Unit Price ($)</Label>
+                <Input id="create-product-unit-price" type="number" min="0" step="0.01" value={productForm.unit_price} onChange={(e) => updateProductForm('unit_price', Number(e.target.value))} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Reorder Point</label>
-                <input type="number" min="0" value={productForm.reorder_point} onChange={(e) => updateProductForm('reorder_point', Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <div className="space-y-1.5">
+                <Label htmlFor="create-product-reorder">Reorder Point</Label>
+                <Input id="create-product-reorder" type="number" min="0" value={productForm.reorder_point} onChange={(e) => updateProductForm('reorder_point', Number(e.target.value))} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">UPC/EAN</label>
-                <input value={productForm.upc} onChange={(e) => updateProductForm('upc', e.target.value)} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <div className="space-y-1.5">
+                <Label htmlFor="create-product-upc">UPC/EAN</Label>
+                <Input id="create-product-upc" value={productForm.upc} onChange={(e) => updateProductForm('upc', e.target.value)} />
               </div>
             </div>
           </div>
@@ -360,12 +366,13 @@ export default function JobFormPage() {
               <Field label="Date" field="date" type="date" value={form.date} error={errors.date} onChange={update} />
               <Field label="Customer" field="customer_name" value={form.customer_name} error={errors.customer_name} onChange={update} placeholder="Optional" />
               <Field label="Product Name" field="product_name" value={form.product_name} error={errors.product_name} onChange={update} placeholder="Phone Stand" />
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Status</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="job-status">Status</Label>
                 <select
+                  id="job-status"
                   value={form.status}
                   onChange={(e) => update('status', e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="draft">Draft</option>
                   <option value="in_progress">In Progress</option>
@@ -373,12 +380,13 @@ export default function JobFormPage() {
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Assign Printer (optional)</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="job-printer">Assign Printer (optional)</Label>
                 <select
+                  id="job-printer"
                   value={form.printer_id}
                   onChange={(e) => update('printer_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Unassigned</option>
                   {printersData?.items?.map((printer) => (
@@ -387,11 +395,11 @@ export default function JobFormPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground mt-1">Optional printer assignment for the physical machine running this job.</p>
+                <p className="text-xs text-muted-foreground">Optional printer assignment for the physical machine running this job.</p>
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium">Link to Product (optional)</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="job-product">Link to Product (optional)</Label>
                   <button
                     type="button"
                     onClick={openCreateProduct}
@@ -401,9 +409,10 @@ export default function JobFormPage() {
                   </button>
                 </div>
                 <select
+                  id="job-product"
                   value={form.product_id}
                   onChange={(e) => update('product_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">None</option>
                   {productsData?.items?.map((p) => (
@@ -411,7 +420,7 @@ export default function JobFormPage() {
                   ))}
                 </select>
                 {form.product_id && form.status === 'completed' && (
-                  <p className="text-xs text-muted-foreground mt-1">Inventory will be auto-updated when job is completed</p>
+                  <p className="text-xs text-muted-foreground">Inventory will be auto-updated when job is completed</p>
                 )}
               </div>
             </div>
@@ -421,19 +430,20 @@ export default function JobFormPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Print Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Material</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="job-material">Material</Label>
                 <select
+                  id="job-material"
                   value={form.material_id}
                   onChange={(e) => update('material_id', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${errors.material_id ? 'border-destructive' : 'border-input'}`}
+                  className={`flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${errors.material_id ? 'border-destructive' : 'border-input'}`}
                 >
                   <option value="">Select material...</option>
                   {materials?.map((m) => (
                     <option key={m.id} value={m.id}>{m.name} ({m.brand}) — ${Number(m.cost_per_g).toFixed(4)}/g</option>
                   ))}
                 </select>
-                {errors.material_id && <p className="text-destructive text-xs mt-1">{errors.material_id}</p>}
+                {errors.material_id && <p className="text-destructive text-xs">{errors.material_id}</p>}
               </div>
               <Field label="Qty per Plate" field="qty_per_plate" type="number" value={form.qty_per_plate} error={errors.qty_per_plate} onChange={update} min={1} />
               <Field label="Number of Plates" field="num_plates" type="number" value={form.num_plates} error={errors.num_plates} onChange={update} min={1} />
@@ -449,9 +459,10 @@ export default function JobFormPage() {
               <Field label="Labor Time (mins)" field="labor_mins" type="number" value={form.labor_mins} error={errors.labor_mins} onChange={update} min={0} />
               <Field label="Design Time (hrs)" field="design_time_hrs" type="number" value={form.design_time_hrs} error={errors.design_time_hrs} onChange={update} min={0} step="0.01" />
               <Field label="Shipping Cost ($)" field="shipping_cost" type="number" value={form.shipping_cost} error={errors.shipping_cost} onChange={update} min={0} step="0.01" />
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Target Margin: {form.target_margin_pct}%</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="job-target-margin">Target Margin: {form.target_margin_pct}%</Label>
                 <input
+                  id="job-target-margin"
                   type="range"
                   min={0}
                   max={90}

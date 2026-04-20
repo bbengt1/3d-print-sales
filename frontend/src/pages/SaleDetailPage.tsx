@@ -5,6 +5,7 @@ import { ArrowLeft, Printer, RefreshCw, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
@@ -277,17 +278,17 @@ export default function SaleDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-3">
-              <input value={shipmentForm.shipping_recipient_name} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_recipient_name: e.target.value }))} placeholder="Recipient name" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-              <input value={shipmentForm.shipping_company} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_company: e.target.value }))} placeholder="Company (optional)" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-              <input value={shipmentForm.shipping_address_line1} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_address_line1: e.target.value }))} placeholder="Address line 1" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-              <input value={shipmentForm.shipping_address_line2} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_address_line2: e.target.value }))} placeholder="Address line 2" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <Input value={shipmentForm.shipping_recipient_name} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_recipient_name: e.target.value }))} placeholder="Recipient name" />
+              <Input value={shipmentForm.shipping_company} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_company: e.target.value }))} placeholder="Company (optional)" />
+              <Input value={shipmentForm.shipping_address_line1} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_address_line1: e.target.value }))} placeholder="Address line 1" />
+              <Input value={shipmentForm.shipping_address_line2} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_address_line2: e.target.value }))} placeholder="Address line 2" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input value={shipmentForm.shipping_city} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_city: e.target.value }))} placeholder="City" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={shipmentForm.shipping_state} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_state: e.target.value }))} placeholder="State" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={shipmentForm.shipping_postal_code} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_postal_code: e.target.value }))} placeholder="Postal code" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                <Input value={shipmentForm.shipping_city} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_city: e.target.value }))} placeholder="City" />
+                <Input value={shipmentForm.shipping_state} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_state: e.target.value }))} placeholder="State" />
+                <Input value={shipmentForm.shipping_postal_code} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_postal_code: e.target.value }))} placeholder="Postal code" />
               </div>
-              <input value={shipmentForm.shipping_country} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_country: e.target.value }))} placeholder="Country" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-              <input value={shipmentForm.tracking_number} onChange={(e) => setShipmentForm((prev) => ({ ...prev, tracking_number: e.target.value }))} placeholder="Tracking number" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <Input value={shipmentForm.shipping_country} onChange={(e) => setShipmentForm((prev) => ({ ...prev, shipping_country: e.target.value }))} placeholder="Country" />
+              <Input value={shipmentForm.tracking_number} onChange={(e) => setShipmentForm((prev) => ({ ...prev, tracking_number: e.target.value }))} placeholder="Tracking number" />
             </div>
 
             {shipmentMissingFields.length > 0 ? (
