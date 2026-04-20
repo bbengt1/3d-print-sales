@@ -6,9 +6,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  type DialogSize,
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
 
 export type ConfirmDialogTone = 'default' | 'destructive';
 
@@ -33,7 +33,9 @@ interface ConfirmDialogProps {
   closeOnConfirm?: boolean;
   /** Replace the default confirm button label when pending. */
   pendingLabel?: string;
-  /** Additional classes on the DialogContent (e.g. max-w override). */
+  /** Width token forwarded to DialogContent. Defaults to `sm` (tight confirm layout). */
+  size?: DialogSize;
+  /** Additional classes on the DialogContent. */
   className?: string;
 }
 
@@ -67,6 +69,7 @@ export default function ConfirmDialog({
   onConfirm,
   closeOnConfirm = true,
   pendingLabel,
+  size = 'sm',
   className,
 }: ConfirmDialogProps) {
   const [pending, setPending] = useState(false);
@@ -83,7 +86,7 @@ export default function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
-      <DialogContent className={cn('max-w-md', className)}>
+      <DialogContent size={size} className={className}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}

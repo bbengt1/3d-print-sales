@@ -161,7 +161,7 @@ export default function MaterialsPage() {
       />
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{editing === 'new' ? 'Add material' : 'Edit material'}</DialogTitle>
           </DialogHeader>

@@ -24,20 +24,36 @@ export const DialogOverlay = forwardRef<
   );
 });
 
+export type DialogSize = 'sm' | 'md' | 'lg' | 'xl';
+
+const dialogSizeClasses: Record<DialogSize, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-2xl',
+};
+
 interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
   /** Hide the built-in close X. Use when you want to own the close action yourself. */
   hideClose?: boolean;
+  /**
+   * Standard width token. Maps to `max-w-sm|md|lg|2xl`. Defaults to `md`
+   * (typical form-confirm width). Override via `className` only for
+   * exceptional cases.
+   */
+  size?: DialogSize;
 }
 
 export const DialogContent = forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, DialogContentProps>(
-  function DialogContent({ className, children, hideClose = false, ...props }, ref) {
+  function DialogContent({ className, children, hideClose = false, size = 'md', ...props }, ref) {
     return (
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg',
+            'fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg',
+            dialogSizeClasses[size],
             'data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:zoom-out-95',
             'max-h-[90vh] overflow-y-auto',
             className,
@@ -100,6 +116,7 @@ interface SimpleDialogProps {
   footer?: ReactNode;
   className?: string;
   hideClose?: boolean;
+  size?: DialogSize;
 }
 
 export function SimpleDialog({
@@ -111,10 +128,11 @@ export function SimpleDialog({
   footer,
   className,
   hideClose = false,
+  size = 'md',
 }: SimpleDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={className} hideClose={hideClose}>
+      <DialogContent className={className} hideClose={hideClose} size={size}>
         {(title || description) && (
           <DialogHeader>
             {title && <DialogTitle>{title}</DialogTitle>}

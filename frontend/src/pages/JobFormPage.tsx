@@ -285,7 +285,7 @@ export default function JobFormPage() {
       />
 
       <Dialog open={showCreateProduct} onOpenChange={(open) => !open && setShowCreateProduct(false)}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Create and link product</DialogTitle>
           </DialogHeader>
