@@ -1,22 +1,11 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import {
-  AlertTriangle,
-  ArrowRight,
-  BarChart3,
-  Boxes,
-  ClipboardList,
-  DollarSign,
-  Package,
-  Printer,
-  Receipt,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
+import { AlertTriangle, ArrowRight, Package } from 'lucide-react';
 import api from '@/api/client';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import PageHeader from '@/components/layout/PageHeader';
+import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/auth';
 import { cn, formatCurrency, formatPercent } from '@/lib/utils';
@@ -58,92 +47,6 @@ function formatLayer(printer: PrinterType) {
     return `${printer.monitor_current_layer}/${printer.monitor_total_layers}`;
   }
   return String(printer.monitor_current_layer ?? printer.monitor_total_layers ?? '—');
-}
-
-function ModuleCard({
-  title,
-  description,
-  action,
-  children,
-  tone = 'default',
-}: {
-  title: string;
-  description: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  tone?: 'default' | 'warning' | 'success';
-}) {
-  return (
-    <section
-      className={cn(
-        'rounded-lg border p-5 shadow-md backdrop-blur',
-        tone === 'warning' && 'border-amber-300/60 bg-amber-50/90 dark:border-amber-500/30 dark:bg-amber-500/10',
-        tone === 'success' && 'border-emerald-300/60 bg-emerald-50/90 dark:border-emerald-500/30 dark:bg-emerald-500/10',
-        tone === 'default' && 'border-border bg-card/85'
-      )}
-    >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        </div>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function PriorityStat({
-  icon: Icon,
-  label,
-  value,
-  subtext,
-  emphasis = 'default',
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  subtext?: string;
-  emphasis?: 'default' | 'warning' | 'success';
-}) {
-  return (
-    <div className="rounded-md border border-border bg-card/80 p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {label}
-          </p>
-          <p
-            className={cn(
-              'mt-3 text-3xl font-semibold',
-              emphasis === 'warning' && 'text-amber-600 dark:text-amber-300',
-              emphasis === 'success' && 'text-emerald-600 dark:text-emerald-300',
-              emphasis === 'default' && 'text-foreground'
-            )}
-          >
-            {value}
-          </p>
-          {subtext ? <p className="mt-1 text-sm text-muted-foreground">{subtext}</p> : null}
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary/12 text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ActionLink({ to, label }: { to: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="inline-flex items-center gap-2 rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground no-underline transition-colors hover:border-primary/30 hover:text-primary"
-    >
-      {label}
-      <ArrowRight className="h-4 w-4" />
-    </Link>
-  );
 }
 
 export default function ControlCenterPage() {
@@ -209,11 +112,11 @@ export default function ControlCenterPage() {
   }[roleMode];
 
   const roleDescription = {
-    admin: 'Monitor urgent exceptions first, then scan revenue, inventory value, and open production risk.',
+    admin: 'Monitor urgent exceptions first, then scan revenue, inventory value, and production risk.',
     cashier: 'Keep checkout moving, watch stock blockers, and stay close to the POS lane.',
-    floor: 'Use this page to spot machine exceptions, draft jobs needing assignment, and printing progress.',
-    inventory: 'Prioritize stock blockers, reconciliation pressure, and products drifting below reorder points.',
-    general: 'Start from urgent work, then move into the workspace that matches your next task.',
+    floor: 'Spot machine exceptions, draft jobs needing assignment, and printing progress.',
+    inventory: 'Prioritize stock blockers, reconciliation pressure, and products below reorder points.',
+    general: 'Start from urgent work, then move into the workspace for your next task.',
   }[roleMode];
 
   const quickActions = {
@@ -244,6 +147,8 @@ export default function ControlCenterPage() {
     ],
   }[roleMode];
 
+  const needsAttentionCount = attentionPrinters.length + blockerAlerts.length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -256,71 +161,59 @@ export default function ControlCenterPage() {
                 <Link to={action.to}>{action.label}</Link>
               </Button>
             ))}
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
-            >
-              Classic Dashboard
-            </Link>
+            <Button asChild variant="outline">
+              <Link to="/dashboard">Classic Dashboard</Link>
+            </Button>
           </>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <PriorityStat
-            icon={AlertTriangle}
-            label="Needs Attention"
-            value={String(attentionPrinters.length + blockerAlerts.length)}
-            subtext={`${attentionPrinters.length} printers • ${blockerAlerts.length} stock blockers`}
-            emphasis={attentionPrinters.length + blockerAlerts.length > 0 ? 'warning' : 'success'}
+        <KPIStrip columns={4}>
+          <KPI
+            label="Needs attention"
+            value={needsAttentionCount}
+            sub={`${attentionPrinters.length} printers • ${blockerAlerts.length} stock blockers`}
+            tone={needsAttentionCount > 0 ? 'warning' : 'success'}
           />
-          <PriorityStat
-            icon={ClipboardList}
-            label="Draft Queue"
-            value={String(unassignedDraftJobs.length)}
-            subtext="Draft jobs without printer assignment"
-            emphasis={unassignedDraftJobs.length > 0 ? 'warning' : 'default'}
+          <KPI
+            label="Draft queue"
+            value={unassignedDraftJobs.length}
+            sub="Draft jobs without printer"
+            tone={unassignedDraftJobs.length > 0 ? 'warning' : 'default'}
           />
-        </div>
+          <KPI
+            label="Printing now"
+            value={busyPrinters.length}
+            sub={`${printers.length} active printers in view`}
+            tone={busyPrinters.length > 0 ? 'success' : 'default'}
+          />
+          <KPI
+            label="Low-stock blockers"
+            value={alerts.length}
+            sub={alerts.length ? 'Below reorder point' : 'No blockers'}
+            tone={alerts.length ? 'warning' : 'success'}
+          />
+        </KPIStrip>
       </PageHeader>
-
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-        <PriorityStat
-          icon={Printer}
-          label="Printing Now"
-          value={String(busyPrinters.length)}
-          subtext={`${printers.length} active printers in view`}
-          emphasis={busyPrinters.length > 0 ? 'success' : 'default'}
-        />
-        <PriorityStat
-          icon={Boxes}
-          label="Low-Stock Blockers"
-          value={String(alerts.length)}
-          subtext={alerts.length ? 'Products or materials below reorder point' : 'No stock blockers right now'}
-          emphasis={alerts.length ? 'warning' : 'success'}
-        />
-        <PriorityStat
-          icon={Receipt}
-          label="Sales Pulse"
-          value={salesMetrics ? formatCurrency(salesMetrics.gross_sales) : '—'}
-          subtext={salesMetrics ? `${salesMetrics.total_sales} orders • AOV ${formatCurrency(salesMetrics.avg_order_value)}` : 'Sales metrics unavailable'}
-        />
-        <PriorityStat
-          icon={DollarSign}
-          label="Business Pulse"
-          value={financeData ? formatCurrency(financeData.current_month_net_income) : '—'}
-          subtext={financeData ? `Inventory asset ${formatCurrency(financeData.inventory_asset_value)}` : 'Finance summary unavailable'}
-        />
-      </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
         <div className="space-y-6">
           {(roleMode === 'floor' || roleMode === 'admin' || roleMode === 'general') && (
-            <ModuleCard
-              title="Print-floor priorities"
-              description="Machine conditions and print progress that need fast operational awareness."
-              action={<ActionLink to="/print-floor" label="Open Print Floor" />}
-              tone={attentionPrinters.length > 0 ? 'warning' : 'default'}
+            <section
+              className={cn(
+                'rounded-md border p-5 shadow-xs space-y-4',
+                attentionPrinters.length > 0
+                  ? 'border-amber-300/60 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
+                  : 'border-border bg-card'
+              )}
             >
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-base font-semibold">Print-floor priorities</h2>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/print-floor">
+                    Open Print Floor <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
               {!printers.length ? (
                 <p className="text-sm text-muted-foreground">No active printers are available.</p>
               ) : (
@@ -334,8 +227,8 @@ export default function ControlCenterPage() {
                         className={cn(
                           'grid grid-cols-[88px_minmax(0,1fr)] gap-4 rounded-md border p-3 no-underline transition-colors',
                           needsAttention
-                            ? 'border-amber-300/70 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
-                            : 'border-border bg-background/70 hover:border-primary/30'
+                            ? 'border-amber-300/70 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
+                            : 'border-border bg-background hover:bg-muted'
                         )}
                       >
                         <PrinterThumbnail
@@ -349,7 +242,7 @@ export default function ControlCenterPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-foreground">{printer.name}</p>
-                              <p className="truncate text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                              <p className="truncate text-xs capitalize text-muted-foreground">
                                 {printer.monitor_status || printer.status}
                               </p>
                             </div>
@@ -372,53 +265,69 @@ export default function ControlCenterPage() {
                   })}
                 </div>
               )}
-            </ModuleCard>
+            </section>
           )}
 
           {(roleMode === 'cashier' || roleMode === 'admin' || roleMode === 'general') && (
-            <ModuleCard
-              title="Retail and sales pulse"
-              description="Keep counter checkout moving and watch order mix without leaving the landing page."
-              action={<ActionLink to="/sell" label="Open Sell Workspace" />}
-            >
+            <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-base font-semibold">Retail and sales pulse</h2>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/sell">
+                    Open Sell Workspace <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
               {salesMetrics ? (
-                <div className="grid gap-3 md:grid-cols-3">
-                  <PriorityStat
-                    icon={Receipt}
+                <KPIStrip columns={3}>
+                  <KPI
                     label="Orders"
-                    value={String(salesMetrics.total_sales)}
-                    subtext={`${salesMetrics.total_units_sold} units sold`}
+                    value={salesMetrics.total_sales}
+                    sub={`${salesMetrics.total_units_sold} units sold`}
                   />
-                  <PriorityStat
-                    icon={TrendingUp}
+                  <KPI
                     label="Contribution"
                     value={formatCurrency(salesMetrics.contribution_margin)}
-                    subtext={
+                    sub={
                       salesMetrics.refund_count > 0
                         ? `${salesMetrics.refund_count} refunds • ${formatPercent(salesMetrics.refund_rate)} rate`
                         : 'No refunds recorded'
                     }
+                    tone={salesMetrics.refund_count > 0 ? 'warning' : 'default'}
                   />
-                  <PriorityStat
-                    icon={BarChart3}
-                    label="Avg Order"
+                  <KPI
+                    label="Avg order"
                     value={formatCurrency(salesMetrics.avg_order_value)}
-                    subtext={salesMetrics.payment_method_breakdown[0] ? `Top method ${salesMetrics.payment_method_breakdown[0].payment_method}` : 'Payment mix unavailable'}
+                    sub={
+                      salesMetrics.payment_method_breakdown[0]
+                        ? `Top method ${salesMetrics.payment_method_breakdown[0].payment_method}`
+                        : 'Payment mix unavailable'
+                    }
                   />
-                </div>
+                </KPIStrip>
               ) : (
                 <p className="text-sm text-muted-foreground">Sales metrics are unavailable.</p>
               )}
-            </ModuleCard>
+            </section>
           )}
 
           {(roleMode === 'inventory' || roleMode === 'admin' || roleMode === 'general') && (
-            <ModuleCard
-              title="Stock blockers"
-              description="Products and materials drifting below reorder points or creating near-term operational risk."
-              action={<ActionLink to="/stock" label="Open Stock Workspace" />}
-              tone={blockerAlerts.length ? 'warning' : 'success'}
+            <section
+              className={cn(
+                'rounded-md border p-5 shadow-xs space-y-4',
+                blockerAlerts.length > 0
+                  ? 'border-amber-300/60 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
+                  : 'border-border bg-card'
+              )}
             >
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-base font-semibold">Stock blockers</h2>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/stock">
+                    Open Stock Workspace <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
               {!blockerAlerts.length ? (
                 <p className="text-sm text-muted-foreground">No low-stock blockers are currently open.</p>
               ) : (
@@ -427,11 +336,11 @@ export default function ControlCenterPage() {
                     <Link
                       key={`${alert.type}-${alert.id}`}
                       to={alert.type === 'product' ? `/product-studio/products/${alert.id}` : '/stock/materials'}
-                      className="flex items-center justify-between rounded-md border border-border bg-background/70 px-4 py-3 text-sm no-underline transition-colors hover:border-primary/30"
+                      className="flex items-center justify-between rounded-md border border-border bg-background px-4 py-3 text-sm no-underline transition-colors hover:bg-muted"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{alert.name}</p>
-                        <p className="truncate text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="truncate text-xs text-muted-foreground">
                           {alert.type === 'product' ? alert.sku || 'Product' : 'Material'}
                         </p>
                       </div>
@@ -443,97 +352,83 @@ export default function ControlCenterPage() {
                   ))}
                 </div>
               )}
-            </ModuleCard>
+            </section>
           )}
         </div>
 
         <div className="space-y-6">
-          <ModuleCard
-            title="Needs attention now"
-            description="The shortest path to urgent work across printing, stock, and queue pressure."
-            tone={attentionPrinters.length + unassignedDraftJobs.length + blockerAlerts.length > 0 ? 'warning' : 'success'}
+          <section
+            className={cn(
+              'rounded-md border p-5 shadow-xs space-y-4',
+              attentionPrinters.length + unassignedDraftJobs.length + blockerAlerts.length > 0
+                ? 'border-amber-300/60 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10'
+                : 'border-border bg-card'
+            )}
           >
-            <div className="space-y-3">
-              <div className="rounded-md border border-border bg-background/70 p-4">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  <div>
-                    <p className="font-medium text-foreground">Printers needing attention</p>
-                    <p className="text-sm text-muted-foreground">
-                      {attentionPrinters.length ? `${attentionPrinters.length} printers are paused, offline, or in error.` : 'No printer exceptions currently open.'}
-                    </p>
-                  </div>
+            <h2 className="text-base font-semibold">Needs attention now</h2>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">Printers needing attention</p>
+                  <p className="text-sm text-muted-foreground">
+                    {attentionPrinters.length
+                      ? `${attentionPrinters.length} printers are paused, offline, or in error.`
+                      : 'No printer exceptions currently open.'}
+                  </p>
                 </div>
-              </div>
-              <div className="rounded-md border border-border bg-background/70 p-4">
-                <div className="flex items-center gap-3">
-                  <Package className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">Draft jobs needing assignment</p>
-                    <p className="text-sm text-muted-foreground">
-                      {unassignedDraftJobs.length ? `${unassignedDraftJobs.length} draft jobs are still missing a printer.` : 'No unassigned draft jobs.'}
-                    </p>
-                  </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <Package className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">Draft jobs needing assignment</p>
+                  <p className="text-sm text-muted-foreground">
+                    {unassignedDraftJobs.length
+                      ? `${unassignedDraftJobs.length} draft jobs are still missing a printer.`
+                      : 'No unassigned draft jobs.'}
+                  </p>
                 </div>
-              </div>
-              <div className="rounded-md border border-border bg-background/70 p-4">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-5 w-5 text-cyan-500" />
-                  <div>
-                    <p className="font-medium text-foreground">Classic metrics still available</p>
-                    <p className="text-sm text-muted-foreground">
-                      Jump into the previous dashboard if you need the older chart-heavy overview.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ModuleCard>
+              </li>
+            </ul>
+          </section>
 
-          <ModuleCard
-            title="Business pulse"
-            description="A compact owner view built from the existing finance and dashboard summaries."
-            action={<ActionLink to="/dashboard" label="Classic Dashboard" />}
-          >
-            <div className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <PriorityStat
-                  icon={DollarSign}
-                  label="Revenue"
-                  value={summary ? formatCurrency(summary.total_revenue) : '—'}
-                  subtext={summary ? `${summary.total_jobs} jobs • ${summary.total_pieces} pieces` : 'Dashboard summary unavailable'}
-                />
-                <PriorityStat
-                  icon={TrendingUp}
-                  label="Net Profit"
-                  value={summary ? formatCurrency(summary.total_net_profit) : '—'}
-                  subtext={summary ? `Avg margin ${formatPercent(summary.avg_margin_pct)}` : 'Margin unavailable'}
-                />
+          <section className="rounded-md border border-border bg-card p-5 shadow-xs space-y-4">
+            <h2 className="text-base font-semibold">Business pulse</h2>
+            <KPIStrip columns={2}>
+              <KPI
+                label="Revenue"
+                value={summary ? formatCurrency(summary.total_revenue) : '—'}
+                sub={summary ? `${summary.total_jobs} jobs • ${summary.total_pieces} pieces` : 'Dashboard summary unavailable'}
+              />
+              <KPI
+                label="Net profit"
+                value={summary ? formatCurrency(summary.total_net_profit) : '—'}
+                sub={summary ? `Avg margin ${formatPercent(summary.avg_margin_pct)}` : 'Margin unavailable'}
+              />
+            </KPIStrip>
+            {financeData ? (
+              <div className="rounded-md border border-border bg-background p-4">
+                <dl className="grid gap-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Inventory asset value</dt>
+                    <dd className="font-medium text-foreground">{formatCurrency(financeData.inventory_asset_value)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Cash on hand</dt>
+                    <dd className="font-medium text-foreground">{formatCurrency(financeData.cash_on_hand)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Unpaid invoices</dt>
+                    <dd className="font-medium text-foreground">{formatCurrency(financeData.unpaid_invoices)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Tax payable</dt>
+                    <dd className="font-medium text-foreground">{formatCurrency(financeData.tax_payable)}</dd>
+                  </div>
+                </dl>
               </div>
-              {financeData ? (
-                <div className="rounded-md border border-border bg-background/70 p-4">
-                  <dl className="grid gap-3 text-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <dt className="text-muted-foreground">Inventory asset value</dt>
-                      <dd className="font-medium text-foreground">{formatCurrency(financeData.inventory_asset_value)}</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <dt className="text-muted-foreground">Cash on hand</dt>
-                      <dd className="font-medium text-foreground">{formatCurrency(financeData.cash_on_hand)}</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <dt className="text-muted-foreground">Unpaid invoices</dt>
-                      <dd className="font-medium text-foreground">{formatCurrency(financeData.unpaid_invoices)}</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <dt className="text-muted-foreground">Tax payable</dt>
-                      <dd className="font-medium text-foreground">{formatCurrency(financeData.tax_payable)}</dd>
-                    </div>
-                  </dl>
-                </div>
-              ) : null}
-            </div>
-          </ModuleCard>
+            ) : null}
+          </section>
         </div>
       </div>
     </div>
