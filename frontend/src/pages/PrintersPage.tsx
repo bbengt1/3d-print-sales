@@ -20,6 +20,7 @@ import CameraFeed from '@/components/cameras/CameraFeed';
 import PrinterThumbnail from '@/components/printers/PrinterThumbnail';
 import EmptyState from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Callout, calloutToneClasses } from '@/components/ui/Callout';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
@@ -247,6 +248,7 @@ export default function PrintersPage() {
   const limit = 24;
   const wallMode = searchParams.get('mode') === 'wall';
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [pendingToggle, setPendingToggle] = useState<Printer | null>(null);
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -362,14 +364,6 @@ export default function PrintersPage() {
   const attentionPrinters = wallGroups[0]?.printers || [];
 
   const toggleActive = async (printer: Printer) => {
-    const confirmed = window.confirm(
-      printer.is_active
-        ? `Deactivate ${printer.name}?\n\nThis keeps the printer in historical records but removes it from active assignment.`
-        : `Restore ${printer.name} to active printers?`
-    );
-
-    if (!confirmed) return;
-
     try {
       if (printer.is_active) {
         await api.delete(`/printers/${printer.id}`);
@@ -555,7 +549,7 @@ export default function PrintersPage() {
                         key={printer.id}
                         printer={printer}
                         currentJob={currentJobsByPrinter.get(printer.id)}
-                        onToggleActive={toggleActive}
+                        onToggleActive={setPendingToggle}
                         wallMode={wallMode}
                         reducedMotion={reducedMotion}
                       />
@@ -601,6 +595,24 @@ export default function PrintersPage() {
           }}
         />
       ) : null}
+
+      <ConfirmDialog
+        open={pendingToggle !== null}
+        onOpenChange={(open) => !open && setPendingToggle(null)}
+        title={pendingToggle?.is_active ? 'Deactivate printer?' : 'Restore printer?'}
+        description={
+          pendingToggle
+            ? pendingToggle.is_active
+              ? `${pendingToggle.name} will be kept in historical records but removed from active assignment.`
+              : `${pendingToggle.name} will be restored to active printers.`
+            : undefined
+        }
+        confirmLabel={pendingToggle?.is_active ? 'Deactivate' : 'Restore'}
+        tone={pendingToggle?.is_active ? 'destructive' : 'default'}
+        onConfirm={async () => {
+          if (pendingToggle) await toggleActive(pendingToggle);
+        }}
+      />
     </div>
   );
 }

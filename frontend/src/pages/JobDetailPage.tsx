@@ -5,6 +5,7 @@ import { ArrowLeft, Edit, Calendar, User, Package, Printer, Copy } from 'lucide-
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -25,6 +26,7 @@ export default function JobDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [duplicating, setDuplicating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: job, isLoading } = useQuery<Job>({
     queryKey: ['job', id],
@@ -32,7 +34,6 @@ export default function JobDetailPage() {
   });
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this job?')) return;
     try {
       await api.delete(`/jobs/${id}`);
       toast.success('Job deleted');
@@ -109,13 +110,23 @@ export default function JobDetailPage() {
           </Button>
           <Button
             variant="outline"
-            onClick={handleDelete}
+            onClick={() => setConfirmDelete(true)}
             className="border-destructive/30 text-destructive hover:bg-destructive/10"
           >
             Delete
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete job?"
+        description={`${job?.job_number ?? 'This job'} will be permanently removed. This cannot be undone.`}
+        confirmLabel="Delete"
+        tone="destructive"
+        onConfirm={handleDelete}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
