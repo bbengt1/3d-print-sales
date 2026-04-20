@@ -10,10 +10,11 @@ import {
   ScrollText,
   TrendingDown,
   TriangleAlert,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import EmptyState from '@/components/ui/EmptyState';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
@@ -307,216 +308,166 @@ export default function InventoryPage() {
         </KPIStrip>
       </PageHeader>
 
-      {showReconcile ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(event) => event.target === event.currentTarget && setShowReconcile(false)}
-        >
-          <div className="w-full max-w-lg rounded-md border border-border bg-card p-6 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Stock reconciliation</h2>
-              <button
-                type="button"
-                onClick={() => setShowReconcile(false)}
-                className="rounded-md p-1 transition-colors hover:bg-accent"
+      <Dialog open={showReconcile} onOpenChange={(open) => !open && setShowReconcile(false)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Stock reconciliation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Product</label>
+              <select
+                value={reconcileForm.product_id}
+                onChange={(event) => setReconcileForm((form) => ({ ...form, product_id: event.target.value }))}
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <X className="h-5 w-5" />
-              </button>
+                <option value="">Select product...</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} ({product.sku})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium">Product</label>
-                <select
-                  value={reconcileForm.product_id}
-                  onChange={(event) => setReconcileForm((form) => ({ ...form, product_id: event.target.value }))}
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Select product...</option>
-                  {products.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} ({product.sku})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedProduct ? (
-                <div className="grid grid-cols-2 gap-4 rounded-xl bg-accent/40 p-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Current system qty</p>
-                    <p className="text-lg font-semibold">{selectedProduct.stock_qty}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Variance</p>
-                    <p
-                      className={cn(
-                        'text-lg font-semibold',
-                        variance > 0 && 'text-green-600 dark:text-green-400',
-                        variance < 0 && 'text-red-600 dark:text-red-400'
-                      )}
-                    >
-                      {variance > 0 ? '+' : ''}
-                      {variance}
-                    </p>
-                  </div>
+            {selectedProduct ? (
+              <div className="grid grid-cols-2 gap-4 rounded-xl bg-accent/40 p-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Current system qty</p>
+                  <p className="text-lg font-semibold">{selectedProduct.stock_qty}</p>
                 </div>
-              ) : null}
-
-              <div>
-                <label className="mb-1 block text-sm font-medium">Counted quantity</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={reconcileForm.counted_qty}
-                  onChange={(event) =>
-                    setReconcileForm((form) => ({ ...form, counted_qty: Number(event.target.value) }))
-                  }
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+                <div>
+                  <p className="text-muted-foreground">Variance</p>
+                  <p
+                    className={cn(
+                      'text-lg font-semibold',
+                      variance > 0 && 'text-green-600 dark:text-green-400',
+                      variance < 0 && 'text-red-600 dark:text-red-400'
+                    )}
+                  >
+                    {variance > 0 ? '+' : ''}
+                    {variance}
+                  </p>
+                </div>
               </div>
+            ) : null}
 
-              <div>
-                <label className="mb-1 block text-sm font-medium">Reason</label>
-                <input
-                  value={reconcileForm.reason}
-                  onChange={(event) => setReconcileForm((form) => ({ ...form, reason: event.target.value }))}
-                  placeholder="Cycle count, shelf recount, received correction..."
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium">Notes</label>
-                <textarea
-                  value={reconcileForm.notes}
-                  onChange={(event) => setReconcileForm((form) => ({ ...form, notes: event.target.value }))}
-                  rows={3}
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Counted quantity</label>
+              <input
+                type="number"
+                min="0"
+                value={reconcileForm.counted_qty}
+                onChange={(event) =>
+                  setReconcileForm((form) => ({ ...form, counted_qty: Number(event.target.value) }))
+                }
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              />
             </div>
 
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={submitReconcile}
-                disabled={reconcileSaving}
-                className="flex-1 rounded-xl bg-primary py-2.5 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {reconcileSaving ? 'Submitting...' : 'Submit Reconciliation'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowReconcile(false)}
-                className="rounded-xl border border-border px-4 py-2.5 transition-colors hover:bg-accent"
-              >
-                Cancel
-              </button>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Reason</label>
+              <input
+                value={reconcileForm.reason}
+                onChange={(event) => setReconcileForm((form) => ({ ...form, reason: event.target.value }))}
+                placeholder="Cycle count, shelf recount, received correction..."
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">Notes</label>
+              <textarea
+                value={reconcileForm.notes}
+                onChange={(event) => setReconcileForm((form) => ({ ...form, notes: event.target.value }))}
+                rows={3}
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              />
             </div>
           </div>
-        </div>
-      ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReconcile(false)}>Cancel</Button>
+            <Button onClick={submitReconcile} disabled={reconcileSaving}>
+              {reconcileSaving ? 'Submitting…' : 'Submit reconciliation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {showAdjust ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(event) => event.target === event.currentTarget && setShowAdjust(false)}
-        >
-          <div className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Quick stock adjustment</h2>
-              <button
-                type="button"
-                onClick={() => setShowAdjust(false)}
-                className="rounded-md p-1 transition-colors hover:bg-accent"
+      <Dialog open={showAdjust} onOpenChange={(open) => !open && setShowAdjust(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Quick stock adjustment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Product</label>
+              <select
+                value={adjustForm.product_id}
+                onChange={(event) => setAdjustForm((form) => ({ ...form, product_id: event.target.value }))}
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <X className="h-5 w-5" />
-              </button>
+                <option value="">Select product...</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} ({product.sku})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium">Product</label>
-                <select
-                  value={adjustForm.product_id}
-                  onChange={(event) => setAdjustForm((form) => ({ ...form, product_id: event.target.value }))}
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Select product...</option>
-                  {products.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} ({product.sku})
-                    </option>
-                  ))}
-                </select>
+            {adjustProduct ? (
+              <div className="rounded-xl bg-accent/40 p-3 text-sm">
+                <p className="text-muted-foreground">Current stock</p>
+                <p className="text-lg font-semibold">{adjustProduct.stock_qty}</p>
               </div>
+            ) : null}
 
-              {adjustProduct ? (
-                <div className="rounded-xl bg-accent/40 p-3 text-sm">
-                  <p className="text-muted-foreground">Current stock</p>
-                  <p className="text-lg font-semibold">{adjustProduct.stock_qty}</p>
-                </div>
-              ) : null}
-
-              <div>
-                <label className="mb-1 block text-sm font-medium">Type</label>
-                <select
-                  value={adjustForm.type}
-                  onChange={(event) => setAdjustForm((form) => ({ ...form, type: event.target.value }))}
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {TYPE_OPTIONS.filter((option) => option.value).map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium">Quantity</label>
-                <input
-                  type="number"
-                  value={adjustForm.quantity}
-                  onChange={(event) => setAdjustForm((form) => ({ ...form, quantity: Number(event.target.value) }))}
-                  placeholder="Positive to add, negative to remove"
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium">Notes</label>
-                <textarea
-                  value={adjustForm.notes}
-                  onChange={(event) => setAdjustForm((form) => ({ ...form, notes: event.target.value }))}
-                  rows={3}
-                  placeholder="Reason for adjustment"
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Type</label>
+              <select
+                value={adjustForm.type}
+                onChange={(event) => setAdjustForm((form) => ({ ...form, type: event.target.value }))}
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {TYPE_OPTIONS.filter((option) => option.value).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={submitAdjust}
-                disabled={adjustSaving}
-                className="flex-1 rounded-xl bg-primary py-2.5 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {adjustSaving ? 'Submitting...' : 'Submit Adjustment'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAdjust(false)}
-                className="rounded-xl border border-border px-4 py-2.5 transition-colors hover:bg-accent"
-              >
-                Cancel
-              </button>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Quantity</label>
+              <input
+                type="number"
+                value={adjustForm.quantity}
+                onChange={(event) => setAdjustForm((form) => ({ ...form, quantity: Number(event.target.value) }))}
+                placeholder="Positive to add, negative to remove"
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">Notes</label>
+              <textarea
+                value={adjustForm.notes}
+                onChange={(event) => setAdjustForm((form) => ({ ...form, notes: event.target.value }))}
+                rows={3}
+                placeholder="Reason for adjustment"
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              />
             </div>
           </div>
-        </div>
-      ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdjust(false)}>Cancel</Button>
+            <Button onClick={submitAdjust} disabled={adjustSaving}>
+              {adjustSaving ? 'Submitting…' : 'Submit adjustment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <TaskCard

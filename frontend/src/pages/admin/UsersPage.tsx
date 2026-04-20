@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, Plus, Edit, UserX, X } from 'lucide-react';
+import { Edit, Plus, UserX, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { useAuthStore } from '@/store/auth';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 interface UserRecord {
   id: string;
@@ -96,44 +100,51 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* Modal */}
-      {editing !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && close()}>
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{editing === 'new' ? 'Add User' : 'Edit User'}</h3>
-              <button onClick={close} className="p-1 hover:bg-accent rounded-md"><X className="w-5 h-5" /></button>
+      <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing === 'new' ? 'Add user' : 'Edit user'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="user-name">Full name *</Label>
+              <Input id="user-name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Full Name *</label>
-                <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email *</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-              </div>
-              {editing === 'new' && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Password *</label>
-                  <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 6 characters" className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
-                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="user-email">Email *</Label>
+              <Input id="user-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={save} disabled={saving} className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer">{saving ? 'Saving...' : 'Save'}</button>
-              <button onClick={close} className="px-4 py-2 border border-border rounded-md hover:bg-accent cursor-pointer">Cancel</button>
+            {editing === 'new' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="user-password">Password *</Label>
+                <Input
+                  id="user-password"
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="Min 6 characters"
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="user-role">Role</Label>
+              <select
+                id="user-role"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>Cancel</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="bg-card border border-border rounded-lg p-4 h-48 animate-pulse" />

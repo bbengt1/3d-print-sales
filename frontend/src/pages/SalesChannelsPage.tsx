@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, X } from 'lucide-react';
+import { Edit, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import type { SalesChannel } from '@/types';
 
 const emptyForm = { name: '', platform_fee_pct: 0, fixed_fee: 0, is_active: true };
@@ -67,8 +71,6 @@ export default function SalesChannelsPage() {
     }
   };
 
-  const inputCls = 'w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring';
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -78,37 +80,48 @@ export default function SalesChannelsPage() {
         </button>
       </div>
 
-      {/* Modal */}
-      {editing !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && close()}>
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{editing === 'new' ? 'Add Channel' : 'Edit Channel'}</h3>
-              <button onClick={close} className="p-1 hover:bg-accent rounded-md"><X className="w-5 h-5" /></button>
+      <Dialog open={editing !== null} onOpenChange={(o) => !o && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing === 'new' ? 'Add channel' : 'Edit channel'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="channel-name">Name *</Label>
+              <Input id="channel-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="channel-fee-pct">Platform fee %</Label>
+                <Input
+                  id="channel-fee-pct"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={form.platform_fee_pct}
+                  onChange={(e) => setForm({ ...form, platform_fee_pct: Number(e.target.value) })}
+                />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Platform Fee %</label>
-                  <input type="number" step="0.1" min="0" max="100" value={form.platform_fee_pct} onChange={(e) => setForm({ ...form, platform_fee_pct: Number(e.target.value) })} className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Fixed Fee ($)</label>
-                  <input type="number" step="0.01" min="0" value={form.fixed_fee} onChange={(e) => setForm({ ...form, fixed_fee: Number(e.target.value) })} className={inputCls} />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="channel-fixed-fee">Fixed fee ($)</Label>
+                <Input
+                  id="channel-fixed-fee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.fixed_fee}
+                  onChange={(e) => setForm({ ...form, fixed_fee: Number(e.target.value) })}
+                />
               </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={save} disabled={saving} className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer">{saving ? 'Saving...' : 'Save'}</button>
-              <button onClick={close} className="px-4 py-2 border border-border rounded-md hover:bg-accent cursor-pointer">Cancel</button>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>Cancel</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <SkeletonTable rows={4} cols={5} />

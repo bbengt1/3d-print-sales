@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Camera as CameraIcon, Plus, Pencil, Trash2, Link2, Link2Off, Video } from 'lucide-react';
+import { Camera as CameraIcon, Link2, Link2Off, Pencil, Plus, Trash2, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import type { Camera, PaginatedCameras, PaginatedPrinters } from '@/types';
 
 type ModalMode = 'create' | 'edit' | null;
@@ -283,14 +284,12 @@ export default function CamerasPage() {
         </div>
       )}
 
-      {/* Modal */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-md shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="p-6 space-y-5">
-              <h2 className="text-lg font-display font-bold">
-                {modal === 'create' ? 'Add Camera' : 'Edit Camera'}
-              </h2>
+      <Dialog open={Boolean(modal)} onOpenChange={(o) => !o && closeModal()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{modal === 'create' ? 'Add camera' : 'Edit camera'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
 
               {/* Name */}
               <div>
@@ -438,10 +437,9 @@ export default function CamerasPage() {
                   {saveMutation.isPending ? 'Saving...' : modal === 'create' ? 'Add Camera' : 'Save Changes'}
                 </button>
               </div>
-            </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
