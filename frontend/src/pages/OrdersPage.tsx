@@ -1,42 +1,32 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowRight,
-  Boxes,
-  Eye,
-  PackageOpen,
-  Printer,
-  Receipt,
-  TriangleAlert,
-  User,
-} from 'lucide-react';
+import { ArrowRight, PackageOpen, Printer as PrinterIcon, TriangleAlert, User } from 'lucide-react';
 import api from '@/api/client';
-import EmptyState from '@/components/ui/EmptyState';
-import { SkeletonTable } from '@/components/ui/Skeleton';
 import PageHeader from '@/components/layout/PageHeader';
 import { KPI, KPIStrip } from '@/components/layout/KPIStrip';
+import DataTable, { type Column } from '@/components/data/DataTable';
+import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
+import TableToolbar from '@/components/data/TableToolbar';
 import { Button } from '@/components/ui/Button';
-import { cn, formatCurrency } from '@/lib/utils';
-import type { Customer, Job, PaginatedJobs, PaginatedPrinters, PaginatedSales, SaleListItem } from '@/types';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { formatCurrency } from '@/lib/utils';
+import type {
+  Customer,
+  Job,
+  PaginatedJobs,
+  PaginatedPrinters,
+  PaginatedSales,
+  SaleListItem,
+} from '@/types';
 
 const ATTENTION_PRINTER_STATUSES = new Set(['paused', 'maintenance', 'offline', 'error']);
 
-function statusTone(status: string) {
-  if (status === 'completed' || status === 'delivered' || status === 'shipped') {
-    return 'bg-emerald-50 text-emerald-900 border-emerald-300/50';
-  }
-  if (status === 'in_progress' || status === 'paid' || status === 'printing') {
-    return 'bg-blue-50 text-blue-900 border-blue-300/50';
-  }
-  if (status === 'pending' || status === 'draft') {
-    return 'bg-amber-50 text-amber-900 border-amber-300/50';
-  }
-  return 'bg-slate-100 text-slate-800 border-slate-300/50';
-}
+type QueueFilter = 'all' | 'needs-assignment' | 'in-progress' | 'draft';
 
 export default function OrdersPage() {
-  const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'needs-assignment' | 'in-progress' | 'draft'>('all');
+  const navigate = useNavigate();
+  const [queueFilter, setQueueFilter] = useState<QueueFilter>('all');
 
   const { data: jobsData, isLoading: jobsLoading } = useQuery<PaginatedJobs>({
     queryKey: ['jobs', 'orders-queue'],
@@ -53,7 +43,7 @@ export default function OrdersPage() {
     queryFn: () => api.get('/printers?is_active=true&limit=100').then((r) => r.data),
   });
 
-  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
+  const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ['customers', 'orders-queue'],
     queryFn: () => api.get('/customers').then((r) => r.data),
   });
@@ -63,19 +53,19 @@ export default function OrdersPage() {
   const printers = printersData?.items || [];
 
   const jobsNeedingAssignment = jobs.filter(
-    (job) => job.status !== 'completed' && job.status !== 'cancelled' && !job.printer_id
+    (job) => job.status !== 'completed' && job.status !== 'cancelled' && !job.printer_id,
   );
   const productionActive = jobs.filter((job) => job.status === 'in_progress');
   const draftJobs = jobs.filter((job) => job.status === 'draft');
   const fulfillmentSales = sales.filter((sale) => sale.status === 'pending' || sale.status === 'paid');
   const readyPrinters = printers.filter((printer) => (printer.monitor_status || printer.status) === 'idle');
   const attentionPrinters = printers.filter((printer) =>
-    ATTENTION_PRINTER_STATUSES.has(printer.monitor_status || printer.status)
+    ATTENTION_PRINTER_STATUSES.has(printer.monitor_status || printer.status),
   );
   const topCustomers = [...customers].sort((a, b) => b.job_count - a.job_count).slice(0, 5);
 
   const visibleJobs = useMemo(() => {
-    switch (jobStatusFilter) {
+    switch (queueFilter) {
       case 'needs-assignment':
         return jobsNeedingAssignment;
       case 'in-progress':
@@ -83,11 +73,147 @@ export default function OrdersPage() {
       case 'draft':
         return draftJobs;
       default:
-        return jobs.slice(0, 12);
+        return jobs.slice(0, 20);
     }
-  }, [draftJobs, jobStatusFilter, jobs, jobsNeedingAssignment, productionActive]);
+  }, [queueFilter, jobs, jobsNeedingAssignment, productionActive, draftJobs]);
 
-  const loading = jobsLoading || salesLoading || printersLoading;
+  const jobColumns: Column<Job>[] = [
+    {
+      key: 'job_number',
+      header: 'Job',
+      cell: (j) => <span className="font-medium text-foreground">{j.job_number}</span>,
+    },
+    {
+      key: 'product_name',
+      header: 'Product',
+      cell: (j) => <span className="truncate">{j.product_name}</span>,
+    },
+    {
+      key: 'customer_name',
+      header: 'Customer',
+      colClassName: 'hidden md:table-cell',
+      cell: (j) => j.customer_name || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      key: 'total_pieces',
+      header: 'Pieces',
+      numeric: true,
+      cell: (j) => j.total_pieces,
+    },
+    {
+      key: 'total_revenue',
+      header: 'Revenue',
+      numeric: true,
+      cell: (j) => formatCurrency(j.total_revenue),
+    },
+    {
+      key: 'printer',
+      header: 'Printer',
+      colClassName: 'hidden lg:table-cell',
+      cell: (j) =>
+        j.printer ? (
+          <span className="text-foreground">{j.printer.name}</span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300">
+            <TriangleAlert className="h-3 w-3" aria-hidden="true" />
+            Unassigned
+          </span>
+        ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (j) => (
+        <StatusBadge tone={defaultStatusTone(j.status)}>{j.status.replace('_', ' ')}</StatusBadge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '120px',
+      cell: (j) => (
+        <div className="flex justify-end gap-1">
+          {j.printer ? (
+            <Button asChild variant="ghost" size="sm">
+              <Link
+                to={`/print-floor/printers/${j.printer.id}`}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Open ${j.printer.name}`}
+              >
+                <PrinterIcon className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="outline" size="sm">
+            <Link
+              to={`/orders/jobs/${j.id}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Open
+            </Link>
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const saleColumns: Column<SaleListItem>[] = [
+    {
+      key: 'sale_number',
+      header: 'Sale',
+      cell: (s) => <span className="font-medium text-foreground">{s.sale_number}</span>,
+    },
+    {
+      key: 'customer_name',
+      header: 'Customer',
+      cell: (s) => s.customer_name || <span className="text-muted-foreground">Guest</span>,
+    },
+    {
+      key: 'channel_name',
+      header: 'Channel',
+      colClassName: 'hidden md:table-cell',
+      cell: (s) => s.channel_name || <span className="text-muted-foreground">Direct</span>,
+    },
+    {
+      key: 'item_count',
+      header: 'Items',
+      numeric: true,
+      cell: (s) => s.item_count,
+    },
+    {
+      key: 'total',
+      header: 'Total',
+      numeric: true,
+      cell: (s) => formatCurrency(s.total),
+    },
+    {
+      key: 'payment_method',
+      header: 'Payment',
+      colClassName: 'hidden lg:table-cell',
+      cell: (s) => (
+        <span className="capitalize text-muted-foreground">{s.payment_method || 'Unknown'}</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (s) => <StatusBadge tone={defaultStatusTone(s.status)}>{s.status}</StatusBadge>,
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '88px',
+      cell: (s) => (
+        <div className="flex justify-end">
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/sell/sales/${s.id}`} onClick={(e) => e.stopPropagation()}>
+              Open
+            </Link>
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -96,22 +222,18 @@ export default function OrdersPage() {
         description={
           jobsNeedingAssignment.length > 0
             ? `${jobsNeedingAssignment.length} ${jobsNeedingAssignment.length === 1 ? 'job needs' : 'jobs need'} a printer assignment`
-            : 'Production and fulfillment queue'
+            : 'Production and fulfillment queue.'
         }
         actions={
           <>
+            <Button asChild variant="outline">
+              <Link to="/orders/jobs">Open jobs</Link>
+            </Button>
             <Button asChild>
               <Link to="/orders/jobs/new">
-                <PackageOpen className="h-4 w-4" />
-                New job
+                <PackageOpen className="h-4 w-4" /> New job
               </Link>
             </Button>
-            <Link
-              to="/orders/jobs"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline hover:bg-muted transition-colors"
-            >
-              Open jobs
-            </Link>
           </>
         }
       >
@@ -122,255 +244,153 @@ export default function OrdersPage() {
             sub="Jobs missing a printer"
             tone={jobsNeedingAssignment.length > 0 ? 'warning' : 'default'}
           />
-          <KPI
-            label="In progress"
-            value={productionActive.length}
-            sub="Jobs on the production floor"
-          />
-          <KPI
-            label="Fulfillment queue"
-            value={fulfillmentSales.length}
-            sub="Sales pending ship/deliver"
-          />
+          <KPI label="In progress" value={productionActive.length} sub="Jobs on the production floor" />
+          <KPI label="Fulfillment queue" value={fulfillmentSales.length} sub="Sales pending ship/deliver" />
           <KPI
             label="Ready printers"
             value={readyPrinters.length}
-            sub="Idle, available for assignment"
-            tone={readyPrinters.length === 0 ? 'warning' : 'default'}
+            sub={
+              attentionPrinters.length > 0
+                ? `${attentionPrinters.length} printer${attentionPrinters.length === 1 ? '' : 's'} need attention`
+                : 'Idle, available for assignment'
+            }
+            tone={readyPrinters.length === 0 ? 'warning' : attentionPrinters.length > 0 ? 'warning' : 'default'}
           />
         </KPIStrip>
       </PageHeader>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.92fr)]">
-        <section className="space-y-6">
-          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Boxes className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Production queue</h2>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Surface missing printer assignments first, then the active floor queue. The existing job detail pages stay intact behind these links.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {[
-                  ['all', 'All queue', `${jobs.length} recent jobs`],
-                  ['needs-assignment', 'Needs assignment', `${jobsNeedingAssignment.length} jobs`],
-                  ['in-progress', 'In progress', `${productionActive.length} jobs`],
-                  ['draft', 'Draft', `${draftJobs.length} jobs`],
-                ].map(([value, label, detail]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setJobStatusFilter(value as typeof jobStatusFilter)}
-                    className={cn(
-                      'rounded-md border px-4 py-3 text-left transition-colors',
-                      jobStatusFilter === value
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border bg-background hover:border-primary/35'
-                    )}
-                  >
-                    <p className="text-sm font-semibold">{label}</p>
-                    <p className={cn('mt-1 text-xs', jobStatusFilter === value ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
-                      {detail}
-                    </p>
-                  </button>
-                ))}
-              </div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-6">
+          {/* Production queue */}
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold">Production queue</h2>
+              <Tabs value={queueFilter} onValueChange={(v) => setQueueFilter(v as QueueFilter)}>
+                <TabsList>
+                  <TabsTrigger value="all">
+                    All <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{jobs.length}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="needs-assignment">
+                    Needs assignment
+                    <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">
+                      {jobsNeedingAssignment.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="in-progress">
+                    In progress
+                    <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">
+                      {productionActive.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="draft">
+                    Draft
+                    <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">{draftJobs.length}</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
-            {loading ? (
-              <div className="mt-4">
-                <SkeletonTable rows={5} cols={6} />
-              </div>
-            ) : !visibleJobs.length ? (
-              <EmptyState
-                icon="jobs"
-                title="No queue items in this view"
-                description="Try another queue filter or open the full jobs list."
-                className="py-10"
-              />
-            ) : (
-              <div className="mt-4 space-y-3">
-                {visibleJobs.map((job: Job) => {
-                  const missingAssignment = !job.printer_id && job.status !== 'completed' && job.status !== 'cancelled';
-                  return (
-                    <div key={job.id} className={cn('rounded-md border p-4', missingAssignment ? 'border-amber-300/60 bg-amber-50/70' : 'border-border bg-background/80')}>
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Link to={`/orders/jobs/${job.id}`} className="font-semibold text-foreground no-underline hover:underline">
-                              {job.job_number}
-                            </Link>
-                            <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize', statusTone(job.status))}>
-                              {job.status.replace('_', ' ')}
-                            </span>
-                            {missingAssignment ? (
-                              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
-                                Missing printer
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-2 text-sm font-medium">{job.product_name}</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {job.customer_name || 'No customer'} • {job.total_pieces} pieces • {formatCurrency(job.total_revenue)}
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Printer: {job.printer?.name || 'Unassigned'}
-                          </p>
-                        </div>
+            <DataTable<Job>
+              data={visibleJobs}
+              columns={jobColumns}
+              rowKey={(j) => j.id}
+              onRowClick={(j) => navigate(`/orders/jobs/${j.id}`)}
+              loading={jobsLoading || printersLoading}
+              emptyState={
+                queueFilter === 'needs-assignment'
+                  ? 'No jobs waiting for a printer assignment.'
+                  : queueFilter === 'in-progress'
+                    ? 'No jobs currently on the production floor.'
+                    : queueFilter === 'draft'
+                      ? 'No drafts in the queue.'
+                      : 'No recent jobs yet.'
+              }
+              toolbar={<TableToolbar total={visibleJobs.length} />}
+            />
+          </section>
 
-                        <div className="flex flex-wrap gap-2">
-                          {job.printer ? (
-                            <Link
-                              to={`/print-floor/printers/${job.printer.id}`}
-                              className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
-                            >
-                              <Printer className="h-4 w-4" />
-                              Printer
-                            </Link>
-                          ) : null}
-                          <Button asChild>
-                            <Link to={`/orders/jobs/${job.id}`}>
-                              <Eye className="h-4 w-4" />
-                              Open job
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Fulfillment-relevant sales</h2>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  First pass uses existing sales statuses to surface orders most likely to need packaging or shipment follow-up.
-                </p>
-              </div>
-              <Link
-                to="/sell/sales"
-                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
-              >
-                Open sales inbox
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+          {/* Fulfillment queue */}
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold">Fulfillment queue</h2>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/sell/sales">
+                  Open sales inbox <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
             </div>
+            <DataTable<SaleListItem>
+              data={fulfillmentSales.slice(0, 10)}
+              columns={saleColumns}
+              rowKey={(s) => s.id}
+              onRowClick={(s) => navigate(`/sell/sales/${s.id}`)}
+              loading={salesLoading}
+              emptyState="No pending or paid sales in the current window."
+              toolbar={<TableToolbar total={fulfillmentSales.length} />}
+            />
+          </section>
+        </div>
 
-            {!fulfillmentSales.length ? (
-              <p className="mt-4 text-sm text-muted-foreground">No pending or paid sales in the current queue window.</p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {fulfillmentSales.slice(0, 8).map((sale: SaleListItem) => (
-                  <div key={sale.id} className="rounded-md border border-border bg-background/80 p-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Link to={`/sell/sales/${sale.id}`} className="font-semibold text-foreground no-underline hover:underline">
-                            {sale.sale_number}
-                          </Link>
-                          <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize', statusTone(sale.status))}>
-                            {sale.status}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {sale.customer_name || 'Guest'} • {sale.channel_name || 'Direct'} • {sale.item_count} items
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">{formatCurrency(sale.total)}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{sale.payment_method || 'Unknown payment'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
+        {/* Side rail */}
         <aside className="space-y-4">
-          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <TriangleAlert className="h-5 w-5 text-amber-600" />
-              <h2 className="text-xl font-semibold">Assignment pressure</h2>
-            </div>
-            <div className="mt-4 space-y-3">
-              <div className="rounded-md bg-background px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Unassigned jobs</p>
-                <p className="mt-2 text-2xl font-semibold">{jobsNeedingAssignment.length}</p>
-                <p className="mt-1 text-sm text-muted-foreground">Jobs that need printer selection or reassignment.</p>
-              </div>
-              <div className="rounded-md bg-background px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Ready printers</p>
-                <p className="mt-2 text-2xl font-semibold">{readyPrinters.length}</p>
-                <p className="mt-1 text-sm text-muted-foreground">Idle machines available for production work.</p>
-              </div>
-              <div className="rounded-md bg-background px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Attention printers</p>
-                <p className="mt-2 text-2xl font-semibold">{attentionPrinters.length}</p>
-                <p className="mt-1 text-sm text-muted-foreground">Paused, offline, maintenance, or error states.</p>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
+          <section className="rounded-md border border-border bg-card p-4 shadow-xs">
+            <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-xl font-semibold">Customer load</h2>
+                <User className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <h2 className="text-sm font-semibold">Top customers</h2>
               </div>
-              <Link
-                to="/orders/customers"
-                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-accent"
-              >
-                Open customers
+              <Link to="/orders/customers" className="text-xs text-primary no-underline hover:underline">
+                Open
               </Link>
             </div>
-
-            {customersLoading ? (
-              <div className="mt-4">
-                <SkeletonTable rows={4} cols={2} />
-              </div>
-            ) : !topCustomers.length ? (
-              <p className="mt-4 text-sm text-muted-foreground">No customer activity yet.</p>
+            {topCustomers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No customer activity yet.</p>
             ) : (
-              <div className="mt-4 space-y-3">
+              <ul className="space-y-2">
                 {topCustomers.map((customer) => (
-                  <div key={customer.id} className="rounded-md border border-border bg-background/80 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-medium">{customer.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{customer.email || customer.phone || 'No contact info'}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold">{customer.job_count}</p>
-                        <p className="text-xs text-muted-foreground">jobs</p>
-                      </div>
+                  <li
+                    key={customer.id}
+                    className="flex items-center justify-between gap-3 rounded-sm px-1 py-1"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">{customer.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {customer.email || customer.phone || 'No contact info'}
+                      </p>
                     </div>
-                  </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-semibold tabular-nums text-foreground">{customer.job_count}</p>
+                      <p className="text-xs text-muted-foreground">jobs</p>
+                    </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-xl font-semibold">Known gap</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              This first pass stitches jobs, sales, printers, and customers client-side. Quote-specific queueing and a dedicated backend fulfillment queue endpoint are still separate follow-on work.
-            </p>
-          </section>
+          {attentionPrinters.length > 0 ? (
+            <section className="rounded-md border border-amber-300/60 bg-amber-50/80 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+              <div className="mb-2 flex items-center gap-2">
+                <TriangleAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Printers need attention</h2>
+              </div>
+              <ul className="space-y-1 text-sm">
+                {attentionPrinters.slice(0, 6).map((printer) => (
+                  <li key={printer.id} className="flex items-center justify-between gap-3">
+                    <Link
+                      to={`/print-floor/printers/${printer.id}`}
+                      className="truncate text-foreground no-underline hover:underline"
+                    >
+                      {printer.name}
+                    </Link>
+                    <StatusBadge tone={defaultStatusTone(printer.monitor_status || printer.status)} hideDot>
+                      {(printer.monitor_status || printer.status).replace('_', ' ')}
+                    </StatusBadge>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </aside>
       </div>
     </div>
