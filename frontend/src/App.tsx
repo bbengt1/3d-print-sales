@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
+import AppToaster from '@/components/ui/AppToaster';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { TooltipProvider } from '@/components/ui/Tooltip';
@@ -168,7 +168,7 @@ export default function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
-        <Toaster richColors position="top-right" />
+        <AppToaster />
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

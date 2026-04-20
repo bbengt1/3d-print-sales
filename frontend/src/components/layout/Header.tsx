@@ -21,7 +21,7 @@ export default function Header({ onOpenMobileNav, onOpenCommandPalette }: Header
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card">
-      <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[88rem] px-4 sm:px-6 lg:px-8">
         <div className="flex min-h-14 items-center justify-between gap-4 py-2">
           <div className="flex min-w-0 items-center gap-3">
             <Button
