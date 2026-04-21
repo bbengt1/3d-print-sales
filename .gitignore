@@ -21,3 +21,5 @@ pgdata/
 .idea/
 *.swp
 *.swo
+.claude
+.codex
