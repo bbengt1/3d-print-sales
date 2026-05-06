@@ -123,7 +123,7 @@ export default function JobsPage() {
       numeric: true,
       colClassName: 'hidden md:table-cell',
       cell: (j) => (
-        <span className={j.net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}>
+        <span className={j.net_profit >= 0 ? 'text-success' : 'text-destructive'}>
           {formatCurrency(j.net_profit)}
         </span>
       ),

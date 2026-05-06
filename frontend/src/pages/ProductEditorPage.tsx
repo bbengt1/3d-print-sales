@@ -336,7 +336,7 @@ export default function ProductEditorPage() {
                       <p
                         className={cn(
                           'font-semibold',
-                          transaction.quantity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+                          transaction.quantity > 0 ? 'text-success' : 'text-destructive'
                         )}
                       >
                         {transaction.quantity > 0 ? '+' : ''}
@@ -395,13 +395,13 @@ export default function ProductEditorPage() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Margin dollars</span>
-                <span className={cn(marginDollars >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
+                <span className={cn(marginDollars >= 0 ? 'text-success' : 'text-destructive')}>
                   {formatCurrency(marginDollars)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Margin percent</span>
-                <span className={cn(marginPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
+                <span className={cn(marginPct >= 0 ? 'text-success' : 'text-destructive')}>
                   {Number.isFinite(marginPct) ? `${marginPct.toFixed(1)}%` : '0.0%'}
                 </span>
               </div>

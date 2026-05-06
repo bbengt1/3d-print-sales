@@ -260,7 +260,7 @@ export default function CalculatorPage() {
                   <span
                     className={
                       result.net_profit >= 0
-                        ? 'tabular-nums text-emerald-600 dark:text-emerald-400'
+                        ? 'tabular-nums text-success'
                         : 'tabular-nums text-destructive'
                     }
                   >

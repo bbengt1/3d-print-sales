@@ -117,7 +117,7 @@ export default function ProductsPage() {
       cell: (p) => {
         const low = p.stock_qty <= p.reorder_point;
         return (
-          <span className={low ? 'text-amber-600 dark:text-amber-400' : ''}>
+          <span className={low ? 'text-warning' : ''}>
             {low ? <AlertTriangle className="mr-1 inline h-3 w-3" /> : null}
             {p.stock_qty}
           </span>
@@ -216,7 +216,7 @@ export default function ProductsPage() {
           <>
             <span className="tabular-nums">{total.toLocaleString()} total</span>
             {lowStockCount > 0 ? (
-              <span className="ml-3 text-amber-600 dark:text-amber-400">· {lowStockCount} low stock</span>
+              <span className="ml-3 text-warning">· {lowStockCount} low stock</span>
             ) : null}
           </>
         }
@@ -303,7 +303,7 @@ export default function ProductsPage() {
                 <p
                   className={
                     product.stock_qty <= product.reorder_point
-                      ? 'tabular-nums text-amber-600 dark:text-amber-400'
+                      ? 'tabular-nums text-warning'
                       : 'tabular-nums'
                   }
                 >

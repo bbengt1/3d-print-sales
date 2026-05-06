@@ -27,15 +27,14 @@ export function ChartTooltip(props: ChartTooltipProps) {
 }
 
 /**
- * Palette derived from the trust-blue primary. Use for categorical series
- * (pie slices, multi-series bars) so charts never drift off-brand. Ordered
- * for legibility when the first N colors are used.
+ * Color-blind friendly categorical palette for report charts. Pair series
+ * with legends/labels; hue alone should never carry the meaning.
  */
 export const chartCategoricalPalette = [
-  '#2563eb', // primary trust-blue
-  '#0ea5e9', // sky-500
-  '#14b8a6', // teal-500
-  '#64748b', // slate-500
-  '#94a3b8', // slate-400
-  '#475569', // slate-600
+  '#005ea8', // operational blue
+  '#7a4a00', // brown-amber
+  '#006b5b', // blue-green
+  '#b42318', // vermillion red
+  '#5b677a', // slate
+  '#6d3f8f', // purple
 ] as const;

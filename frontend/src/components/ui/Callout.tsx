@@ -12,12 +12,12 @@ export type CalloutTone = 'warning' | 'success' | 'info' | 'danger' | 'neutral';
  */
 export const calloutToneClasses: Record<CalloutTone, string> = {
   warning:
-    'border-amber-300/60 bg-amber-50/80 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200',
+    'border-warning-border bg-warning-surface text-warning dark:border-warning/40 dark:bg-warning/15 dark:text-warning',
   success:
-    'border-emerald-300/60 bg-emerald-50/80 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
-  info: 'border-sky-300/60 bg-sky-50/80 text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200',
+    'border-success-border bg-success-surface text-success dark:border-success/40 dark:bg-success/15 dark:text-success',
+  info: 'border-info-border bg-info-surface text-info dark:border-info/40 dark:bg-info/15 dark:text-info',
   danger:
-    'border-destructive/40 bg-destructive/10 text-destructive dark:border-destructive/30 dark:bg-destructive/15',
+    'border-destructive-border bg-destructive-surface text-destructive dark:border-destructive/40 dark:bg-destructive/15',
   neutral: 'border-border bg-muted text-foreground',
 };
 
@@ -33,7 +33,7 @@ export interface CalloutProps extends Omit<HTMLAttributes<HTMLDivElement>, 'titl
 
 /**
  * Shared "banner" / "panel" component for inline warnings, confirmations,
- * and info notes. Replaces hand-rolled `bg-amber-50 border-amber-300/60`
+ * and info notes. Replaces hand-rolled low-contrast status tints
  * panels. Keep copy short — this is shop-floor chrome, not marketing.
  *
  * Usage:

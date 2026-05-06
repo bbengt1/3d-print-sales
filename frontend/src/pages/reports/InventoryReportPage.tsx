@@ -82,7 +82,7 @@ export default function InventoryReportPage() {
                     cell: (row) => (
                       <span
                         className={
-                          row.is_low_stock ? 'text-amber-600 dark:text-amber-400 font-semibold' : ''
+                          row.is_low_stock ? 'text-warning font-semibold' : ''
                         }
                       >
                         {row.stock_qty}

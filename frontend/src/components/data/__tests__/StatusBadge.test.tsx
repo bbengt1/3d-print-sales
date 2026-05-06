@@ -8,6 +8,14 @@ describe('StatusBadge', () => {
     expect(screen.getByText('Paid')).toBeTruthy();
   });
 
+  it('uses semantic light-mode surface, border, and text tokens', () => {
+    render(<StatusBadge tone="warning">Pending</StatusBadge>);
+    const badge = screen.getByText('Pending');
+    expect(badge.className).toContain('bg-warning-surface');
+    expect(badge.className).toContain('border-warning-border');
+    expect(badge.className).toContain('text-warning');
+  });
+
   it('renders a leading dot by default', () => {
     const { container } = render(<StatusBadge tone="warning">Pending</StatusBadge>);
     // Dot is a span with rounded-full

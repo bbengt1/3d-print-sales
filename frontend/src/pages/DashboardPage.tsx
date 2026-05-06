@@ -177,7 +177,7 @@ export default function DashboardPage() {
                   <p className="truncate font-medium text-foreground">{a.name}</p>
                   <p className="truncate text-xs text-muted-foreground">{a.type === 'product' ? a.sku : 'Material'}</p>
                 </div>
-                <span className="shrink-0 font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+                <span className="shrink-0 font-semibold tabular-nums text-warning">
                   {a.current_stock}
                 </span>
               </Link>

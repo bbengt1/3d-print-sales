@@ -203,7 +203,7 @@ export default function InventoryPage() {
       header: 'Stock',
       numeric: true,
       cell: (a) => (
-        <span className={a.current_stock <= 0 ? 'font-semibold text-destructive' : 'text-amber-700 dark:text-amber-300'}>
+        <span className={a.current_stock <= 0 ? 'font-semibold text-destructive' : 'text-warning'}>
           {a.current_stock}
         </span>
       ),
@@ -309,7 +309,7 @@ export default function InventoryPage() {
           className={cn(
             'font-medium',
             t.quantity > 0
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-success'
               : t.quantity < 0
                 ? 'text-destructive'
                 : 'text-foreground',
@@ -439,7 +439,7 @@ export default function InventoryPage() {
                   <p
                     className={cn(
                       'mt-0.5 text-lg font-semibold tabular-nums',
-                      variance > 0 && 'text-emerald-600 dark:text-emerald-400',
+                      variance > 0 && 'text-success',
                       variance < 0 && 'text-destructive',
                     )}
                   >
@@ -633,7 +633,7 @@ export default function InventoryPage() {
                       className={cn(
                         'font-semibold tabular-nums',
                         nearReorderProducts.length > 0
-                          ? 'text-amber-700 dark:text-amber-300'
+                          ? 'text-warning'
                           : 'text-foreground',
                       )}
                     >
@@ -681,7 +681,7 @@ export default function InventoryPage() {
                           className={cn(
                             'font-semibold tabular-nums',
                             transaction.quantity > 0
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-success'
                               : 'text-destructive',
                           )}
                         >

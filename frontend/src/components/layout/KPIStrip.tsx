@@ -34,8 +34,8 @@ interface KPIProps {
 
 const toneStyles: Record<NonNullable<KPIProps['tone']>, string> = {
   default: 'text-foreground',
-  warning: 'text-amber-600 dark:text-amber-300',
-  success: 'text-emerald-600 dark:text-emerald-300',
+  warning: 'text-warning',
+  success: 'text-success',
   destructive: 'text-destructive',
 };
 
@@ -74,7 +74,7 @@ function KPIBody({ label, value, delta, icon, tone = 'default', sub, sparkline, 
         <span
           className={cn(
             'shrink-0 text-xs font-medium tabular-nums',
-            delta.positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive',
+            delta.positive ? 'text-success' : 'text-destructive',
           )}
         >
           {delta.value}

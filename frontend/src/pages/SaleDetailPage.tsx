@@ -267,7 +267,7 @@ export default function SaleDetailPage() {
               <div className="flex justify-between"><span className="text-muted-foreground">Gross Profit</span><span>{formatCurrency(sale.gross_profit)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Platform fees</span><span>-{formatCurrency(sale.platform_fees)}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Shipping cost</span><span>-{formatCurrency(sale.shipping_cost)}</span></div>
-              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.contribution_margin) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+              <div className={`flex justify-between font-semibold border-t border-border pt-2 ${Number(sale.contribution_margin) >= 0 ? 'text-success' : 'text-destructive'}`}>
                 <span>Contribution Margin</span>
                 <span>{formatCurrency(sale.contribution_margin)}</span>
               </div>

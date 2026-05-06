@@ -20,6 +20,7 @@ Start here if you need the maintained documentation path for this repository.
 ## Feature And Workflow Guides
 
 - [Camera Setup](camera-setup.md)
+- [Frontend Design System](frontend_design_system.md)
 - [Shipping Label Printing](shipping_label_printing.md)
 - [AI Insights](ai_insights.md)
 - [POS Barcode Scanning](pos_barcode_scanning.md)

@@ -116,7 +116,7 @@ export default function OrdersPage() {
         j.printer ? (
           <span className="text-foreground">{j.printer.name}</span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300">
+          <span className="inline-flex items-center gap-1 text-warning">
             <TriangleAlert className="h-3 w-3" aria-hidden="true" />
             Unassigned
           </span>

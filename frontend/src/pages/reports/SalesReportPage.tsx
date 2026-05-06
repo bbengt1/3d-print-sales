@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import api from '@/api/client';
-import { ChartTooltip } from '@/components/charts/ChartTooltip';
+import { ChartTooltip, chartCategoricalPalette } from '@/components/charts/ChartTooltip';
 import { formatCurrency } from '@/lib/utils';
 import ReportControls from '@/components/ui/ReportControls';
 import { SkeletonTable } from '@/components/ui/Skeleton';
@@ -84,9 +84,9 @@ export default function SalesReportPage() {
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
                   <ChartTooltip formatter={formatTooltipCurrency} />
                   <Legend />
-                  <Line type="monotone" dataKey="gross_sales" name="Gross Sales" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="gross_profit" name="Gross Profit" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="contribution_margin" name="Contribution Margin" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="gross_sales" name="Gross Sales" stroke={chartCategoricalPalette[0]} strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="gross_profit" name="Gross Profit" stroke={chartCategoricalPalette[2]} strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="contribution_margin" name="Contribution Margin" stroke={chartCategoricalPalette[1]} strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -117,7 +117,7 @@ export default function SalesReportPage() {
                         <span
                           className={
                             p.contribution_margin >= 0
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-success'
                               : 'text-destructive'
                           }
                         >
@@ -141,8 +141,8 @@ export default function SalesReportPage() {
                     <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" tickFormatter={(v) => `$${v}`} />
                     <ChartTooltip formatter={formatTooltipCurrency} />
                     <Legend />
-                    <Bar dataKey="gross_sales" name="Gross Sales" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="contribution_margin" name="Contribution Margin" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="gross_sales" name="Gross Sales" fill={chartCategoricalPalette[0]} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="contribution_margin" name="Contribution Margin" fill={chartCategoricalPalette[2]} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="mt-4">

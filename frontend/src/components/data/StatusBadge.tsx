@@ -3,12 +3,12 @@ import { cn } from '@/lib/utils';
 
 export type StatusTone = 'success' | 'warning' | 'destructive' | 'info' | 'neutral';
 
-const toneStyles: Record<StatusTone, { dot: string; text: string; bg: string }> = {
-  success: { dot: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-  warning: { dot: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-  destructive: { dot: 'bg-red-500', text: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-500/10' },
-  info: { dot: 'bg-sky-500', text: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-50 dark:bg-sky-500/10' },
-  neutral: { dot: 'bg-muted-foreground', text: 'text-muted-foreground', bg: 'bg-muted' },
+const toneStyles: Record<StatusTone, { dot: string; text: string; surface: string; border: string }> = {
+  success: { dot: 'bg-success', text: 'text-success dark:text-success', surface: 'bg-success-surface dark:bg-success/15', border: 'border-success-border dark:border-success/40' },
+  warning: { dot: 'bg-warning', text: 'text-warning dark:text-warning', surface: 'bg-warning-surface dark:bg-warning/15', border: 'border-warning-border dark:border-warning/40' },
+  destructive: { dot: 'bg-destructive', text: 'text-destructive dark:text-destructive', surface: 'bg-destructive-surface dark:bg-destructive/15', border: 'border-destructive-border dark:border-destructive/40' },
+  info: { dot: 'bg-info', text: 'text-info dark:text-info', surface: 'bg-info-surface dark:bg-info/15', border: 'border-info-border dark:border-info/40' },
+  neutral: { dot: 'bg-muted-foreground', text: 'text-foreground', surface: 'bg-muted', border: 'border-border' },
 };
 
 /**
@@ -37,8 +37,9 @@ export default function StatusBadge({ tone = 'neutral', children, className, hid
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-medium',
-        styles.bg,
+        'inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 text-xs font-medium',
+        styles.surface,
+        styles.border,
         styles.text,
         className,
       )}

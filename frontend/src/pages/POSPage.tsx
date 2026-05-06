@@ -499,7 +499,7 @@ export default function POSPage() {
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                       <div className="rounded-md bg-background px-3 py-3">
                         <p className="text-xs text-muted-foreground">Stock</p>
-                        <p className={cn('mt-2 text-lg font-semibold tabular-nums', lowStock && 'text-amber-600')}>
+                        <p className={cn('mt-2 text-lg font-semibold tabular-nums', lowStock && 'text-warning')}>
                           {product.stock_qty}
                         </p>
                       </div>

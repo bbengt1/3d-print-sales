@@ -3,18 +3,26 @@
 
 @theme {
   /* Colors — light */
-  --color-primary: #2563eb;              /* trust blue */
+  --color-primary: #005ea8;              /* high-contrast operational blue */
   --color-primary-foreground: #ffffff;
-  --color-secondary: #eff6ff;
+  --color-secondary: #d8e7f5;
   --color-secondary-foreground: #0f172a;
-  --color-destructive: #dc2626;
+  --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
-  --color-success: #10b981;              /* reserved for paid/complete status */
-  --color-success-foreground: #042f1c;
-  --color-warning: #f59e0b;
-  --color-warning-foreground: #1f1300;
-  --color-info: #0ea5e9;
-  --color-info-foreground: #051f2d;
+  --color-success: #006b5b;              /* blue-green, color-blind safer than bright green */
+  --color-success-foreground: #ffffff;
+  --color-success-surface: #cfe7df;
+  --color-success-border: #00806d;
+  --color-warning: #7a4a00;              /* brown-amber reads apart from success/error */
+  --color-warning-foreground: #ffffff;
+  --color-warning-surface: #ead3a6;
+  --color-warning-border: #9b6500;
+  --color-info: #005ea8;
+  --color-info-foreground: #ffffff;
+  --color-info-surface: #c8ddf2;
+  --color-info-border: #2b6fab;
+  --color-destructive-surface: #f1cfcb;
+  --color-destructive-border: #d92d20;
   --color-muted: #f1f5f9;
   --color-muted-foreground: #475569;     /* 4.5:1 contrast vs muted */
   --color-accent: #f1f5f9;
@@ -23,7 +31,7 @@
   --color-card-foreground: #0f172a;
   --color-border: #e2e8f0;
   --color-input: #cbd5e1;
-  --color-ring: #2563eb;
+  --color-ring: #005ea8;
   --color-background: #f8fafc;           /* flat */
   --color-foreground: #0f172a;
 

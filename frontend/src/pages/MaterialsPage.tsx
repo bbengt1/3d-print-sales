@@ -104,7 +104,7 @@ export default function MaterialsPage() {
       header: 'Spools',
       numeric: true,
       cell: (m) => (
-        <span className={m.spools_in_stock <= m.reorder_point ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}>
+        <span className={m.spools_in_stock <= m.reorder_point ? 'text-warning font-medium' : ''}>
           {m.spools_in_stock}
         </span>
       ),

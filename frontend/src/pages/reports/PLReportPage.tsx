@@ -116,9 +116,9 @@ export default function PLReportPage() {
                   <Legend />
                   <Bar dataKey="sales_revenue" name="Sales Revenue" stackId="rev" fill={chartCategoricalPalette[0]} />
                   <Bar dataKey="operational_production_estimate" name="Operational Production Estimate" fill={chartCategoricalPalette[2]} />
-                  <Bar dataKey="material_costs" name="Materials" stackId="cost" fill="#f87171" />
-                  <Bar dataKey="labor_costs" name="Labor" stackId="cost" fill="#fb923c" />
-                  <Bar dataKey="machine_costs" name="Machine" stackId="cost" fill="#fbbf24" />
+                  <Bar dataKey="material_costs" name="Materials" stackId="cost" fill={chartCategoricalPalette[3]} />
+                  <Bar dataKey="labor_costs" name="Labor" stackId="cost" fill={chartCategoricalPalette[1]} />
+                  <Bar dataKey="machine_costs" name="Machine" stackId="cost" fill={chartCategoricalPalette[5]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -191,7 +191,7 @@ export default function PLReportPage() {
                       <span
                         className={`font-semibold ${
                           row.gross_profit >= 0
-                            ? 'text-emerald-600 dark:text-emerald-400'
+                            ? 'text-success'
                             : 'text-destructive'
                         }`}
                       >

@@ -154,7 +154,7 @@ function PrinterWallCard({
               className={cn(
                 'h-2 rounded-md',
                 !reducedMotion && 'transition-[width]',
-                needsAttention ? 'bg-amber-500' : liveStatus === 'printing' ? 'bg-primary' : 'bg-sky-500'
+                needsAttention ? 'bg-warning' : liveStatus === 'printing' ? 'bg-primary' : 'bg-info'
               )}
               style={{ width: `${Math.max(6, progress)}%` }}
             />
@@ -335,7 +335,7 @@ export default function PrintersPage() {
         description: 'Paused, offline, maintenance, or error states that need operator awareness first.',
         emptyText: 'No printers currently need operator attention.',
         icon: AlertTriangle,
-        accentClass: 'text-amber-600 dark:text-amber-300',
+        accentClass: 'text-warning',
         panelTone: undefined,
         printers: activePrinters.filter((printer) => ATTENTION_STATUSES.has(printer.monitor_status || printer.status)),
       },
@@ -345,8 +345,8 @@ export default function PrintersPage() {
         description: 'Machines actively producing parts with live telemetry and current job context.',
         emptyText: 'Nothing is actively printing right now.',
         icon: Activity,
-        accentClass: 'text-sky-600 dark:text-sky-300',
-        panelTone: 'border-sky-300/70 bg-sky-50/70 dark:border-sky-500/30 dark:bg-sky-500/8',
+        accentClass: 'text-info',
+        panelTone: 'border-info-border bg-info-surface text-info dark:border-info/40 dark:bg-info/15 dark:text-info',
         printers: activePrinters.filter((printer) => (printer.monitor_status || printer.status) === 'printing'),
       },
       {
@@ -355,8 +355,8 @@ export default function PrintersPage() {
         description: 'Idle or unblocked printers that can take the next assignment quickly.',
         emptyText: 'No idle printers in this filtered view.',
         icon: Layers3,
-        accentClass: 'text-emerald-600 dark:text-emerald-300',
-        panelTone: 'border-emerald-300/70 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/8',
+        accentClass: 'text-success',
+        panelTone: 'border-success-border bg-success-surface text-success dark:border-success/40 dark:bg-success/15 dark:text-success',
         printers: activePrinters.filter((printer) => (printer.monitor_status || printer.status) === 'idle'),
       },
     ];
@@ -452,7 +452,7 @@ export default function PrintersPage() {
 
       {attentionPrinters.length > 0 ? (
         <p className="text-sm text-muted-foreground">
-          <TriangleAlert className="mr-1 inline h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <TriangleAlert className="mr-1 inline h-3.5 w-3.5 text-warning" aria-hidden="true" />
           {attentionPrinters.length} printer{attentionPrinters.length === 1 ? '' : 's'} need attention — start here.
         </p>
       ) : null}

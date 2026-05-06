@@ -82,8 +82,8 @@ function ConsoleStat({
           <p
             className={cn(
               'mt-3 text-2xl font-semibold',
-              emphasis === 'warning' && 'text-amber-600 dark:text-amber-300',
-              emphasis === 'success' && 'text-emerald-600 dark:text-emerald-300'
+              emphasis === 'warning' && 'text-warning',
+              emphasis === 'success' && 'text-success'
             )}
           >
             {value}
@@ -237,7 +237,7 @@ export default function PrinterDetailPage() {
 
           <div className="mt-4 h-2 rounded-full bg-muted">
             <div
-              className={cn('h-2 rounded-full transition-[width]', needsAttention ? 'bg-amber-500' : 'bg-primary')}
+              className={cn('h-2 rounded-full transition-[width]', needsAttention ? 'bg-warning' : 'bg-primary')}
               style={{ width: `${Math.max(6, progress)}%` }}
             />
           </div>
@@ -352,7 +352,7 @@ export default function PrinterDetailPage() {
               </div>
 
               {printer.monitor_last_error ? (
-                <div className="rounded-md border border-red-300/60 bg-red-50/80 p-4 dark:border-red-500/30 dark:bg-red-500/10">
+                <div className="rounded-md border border-destructive-border bg-destructive-surface p-4 dark:border-destructive/40 dark:bg-destructive/15">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
                     <div>

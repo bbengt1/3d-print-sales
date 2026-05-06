@@ -346,7 +346,7 @@ export default function ControlCenterPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-amber-600 dark:text-amber-300">{alert.current_stock}</p>
+                          <p className="font-semibold text-warning">{alert.current_stock}</p>
                           <p className="text-xs text-muted-foreground">reorder {alert.reorder_point}</p>
                         </div>
                       </Link>
@@ -371,7 +371,7 @@ export default function ControlCenterPage() {
                 <h2 className="text-base font-semibold">Needs attention now</h2>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
-                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">Printers needing attention</p>
                       <p className="text-sm text-muted-foreground">

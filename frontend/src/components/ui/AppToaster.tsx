@@ -27,10 +27,10 @@ export default function AppToaster() {
             'rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-foreground hover:bg-muted',
           closeButton:
             'rounded-md border border-border bg-card text-muted-foreground hover:bg-muted',
-          success: 'border-emerald-300/60 bg-emerald-50/90 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
-          error: 'border-destructive/40 bg-destructive/10 text-destructive',
-          warning: 'border-amber-300/60 bg-amber-50/90 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200',
-          info: 'border-sky-300/60 bg-sky-50/90 text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200',
+          success: 'border-success-border bg-success-surface text-success dark:border-success/40 dark:bg-success/15 dark:text-success',
+          error: 'border-destructive-border bg-destructive-surface text-destructive dark:border-destructive/40 dark:bg-destructive/15',
+          warning: 'border-warning-border bg-warning-surface text-warning dark:border-warning/40 dark:bg-warning/15 dark:text-warning',
+          info: 'border-info-border bg-info-surface text-info dark:border-info/40 dark:bg-info/15 dark:text-info',
         },
       }}
     />

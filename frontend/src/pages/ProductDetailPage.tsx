@@ -184,7 +184,7 @@ export default function ProductDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Stock on Hand</p>
-            <p className={`text-lg font-semibold ${product.stock_qty <= product.reorder_point ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+            <p className={`text-lg font-semibold ${product.stock_qty <= product.reorder_point ? 'text-warning' : ''}`}>
               {product.stock_qty}
             </p>
           </div>
@@ -378,7 +378,7 @@ export default function ProductDetailPage() {
                   <td className="px-4 py-3">
                     <StatusBadge tone={defaultStatusTone(t.type)}>{t.type}</StatusBadge>
                   </td>
-                  <td className={`px-4 py-3 text-right font-medium ${t.quantity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                  <td className={`px-4 py-3 text-right font-medium ${t.quantity > 0 ? 'text-success' : 'text-destructive'}`}>
                     {t.quantity > 0 ? '+' : ''}{t.quantity}
                   </td>
                   <td className="px-4 py-3 text-right">{formatCurrency(t.unit_cost)}</td>
