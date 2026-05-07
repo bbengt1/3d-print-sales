@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Printer } from 'lucide-react';
+import { toast } from 'sonner';
 import api from '@/api/client';
 import PageHeader from '@/components/layout/PageHeader';
 import DataTable, { type Column } from '@/components/data/DataTable';
@@ -52,13 +53,17 @@ export default function ProductLabelsPage() {
   const activeFormat = formatOverride ?? labelSettings.defaultFormat;
   const activeIncludePrice = includePrice ?? labelSettings.includePrice;
 
-  const handlePrintSheet = () => {
+  const handlePrintSheet = async () => {
     if (!selectedProducts.length) return;
-    printProductLabels(selectedProducts, {
-      format: activeFormat,
-      includePrice: activeIncludePrice,
-      sheet: true,
-    });
+    try {
+      await printProductLabels(selectedProducts, {
+        format: activeFormat,
+        includePrice: activeIncludePrice,
+        sheet: true,
+      });
+    } catch (err) {
+      toast.error((err as Error)?.message || 'Failed to open label sheet');
+    }
   };
 
   const previewProducts = selectedProducts.slice(0, 30);

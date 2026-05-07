@@ -1,6 +1,6 @@
 import { fetchBarcodeDataUrl, type BarcodeFormat } from '@/lib/barcode';
+import { openBlankPrintWindow, writePrintWindow } from '@/lib/printWindow';
 import { formatCurrency } from '@/lib/utils';
-import { openPrintWindow } from '@/components/labels/ProductLabel';
 import type { Product } from '@/types';
 
 export interface PrintOptions {
@@ -57,12 +57,15 @@ export async function printProductLabels(
 ): Promise<void> {
   if (!products.length) return;
 
+  const printWindow = openBlankPrintWindow('Preparing labels');
+
   const html = await Promise.all(
     products.map((p) => renderLabelHtml(p, opts.format, opts.includePrice ?? false)),
   );
 
   if (opts.sheet) {
-    openPrintWindow(
+    writePrintWindow(
+      printWindow,
       `Labels (${products.length})`,
       `<div class="sheet">${html.join('\n')}</div>`,
     );
@@ -70,7 +73,8 @@ export async function printProductLabels(
   }
 
   const title = products[0]?.name ? `Label — ${products[0].name}` : 'Label';
-  openPrintWindow(
+  writePrintWindow(
+    printWindow,
     title,
     `<h1>${escapeHtml(title)}</h1><div style="max-width: 360px; margin: 0 auto;">${html.join('\n')}</div>`,
   );

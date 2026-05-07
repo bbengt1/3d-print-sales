@@ -64,6 +64,17 @@ export default function ProductsPage() {
     }
   };
 
+  const handlePrintLabel = async (product: Product) => {
+    try {
+      await printProductLabels([product], {
+        format: labelSettings.defaultFormat,
+        includePrice: labelSettings.includePrice,
+      });
+    } catch (err) {
+      toast.error((err as Error)?.message || 'Failed to open product label');
+    }
+  };
+
   const handleSortChange = (key: string, dir: SortDir | null) => {
     if (!key || !dir) {
       setSortKey('name');
@@ -176,12 +187,7 @@ export default function ProductsPage() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() =>
-                  printProductLabels([p], {
-                    format: labelSettings.defaultFormat,
-                    includePrice: labelSettings.includePrice,
-                  })
-                }
+                onClick={() => handlePrintLabel(p)}
                 aria-label={`Print label for ${p.name}`}
               >
                 <Printer className="h-4 w-4" />

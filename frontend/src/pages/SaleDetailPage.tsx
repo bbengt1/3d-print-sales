@@ -14,6 +14,7 @@ import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import { getShippingLabelActionLabel, getShippingLabelMissingFields } from '@/lib/shippingLabels';
 import { formatCurrency } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { openBlankPrintWindow, PrintWindowBlockedError, printWindowWhenReady } from '@/lib/printWindow';
 import type { Sale, SalesChannel } from '@/types';
 
 export default function SaleDetailPage() {
@@ -121,9 +122,15 @@ export default function SaleDetailPage() {
   };
 
   const handlePrintLabel = async () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Popup blocked. Allow popups for this workstation to print labels.');
+    let printWindow: Window;
+    try {
+      printWindow = openBlankPrintWindow('Preparing shipping label');
+    } catch (err) {
+      toast.error(
+        err instanceof PrintWindowBlockedError
+          ? err.message
+          : 'Failed to open shipping label popup',
+      );
       return;
     }
 
@@ -139,10 +146,7 @@ export default function SaleDetailPage() {
       printWindow.document.open();
       printWindow.document.write(resp.data as string);
       printWindow.document.close();
-      printWindow.focus();
-      window.setTimeout(() => {
-        printWindow.print();
-      }, 250);
+      printWindowWhenReady(printWindow, 250);
       await queryClient.invalidateQueries({ queryKey: ['sale', id] });
       toast.success('Print dialog opened on this workstation. Mark the label printed after a successful thermal print.');
     } catch (err) {

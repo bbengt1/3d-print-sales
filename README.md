@@ -245,6 +245,7 @@ Notes:
 - Frontend routes are lazy-loaded and chart-heavy dependencies are split into separate build chunks to keep the initial bundle healthier.
 - Production nginx keeps hashed `/assets/` files immutable, but serves `index.html` and SPA fallbacks as non-cacheable so browsers do not stay pinned to stale lazy-loaded chunks after deploys.
 - `frontend/package.json` may use `overrides` to pin patched transitive dependencies when upstream toolchain ranges lag behind published security fixes.
+- Product label printing behavior is documented in [docs/product_label_printing.md](docs/product_label_printing.md).
 - Barcode scanning for POS is documented in [docs/pos_barcode_scanning.md](docs/pos_barcode_scanning.md).
 
 ```bash

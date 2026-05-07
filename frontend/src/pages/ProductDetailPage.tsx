@@ -95,6 +95,17 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handlePrintLabel = async (product: Product) => {
+    try {
+      await printProductLabels([product], {
+        format: labelFormat ?? labelSettings.defaultFormat,
+        includePrice: labelSettings.includePrice,
+      });
+    } catch (err) {
+      toast.error((err as Error)?.message || 'Failed to open product label');
+    }
+  };
+
   const submitZeroStock = async () => {
     if (currentProduct.stock_qty === 0) {
       toast.error('Product stock is already 0');
@@ -231,12 +242,7 @@ export default function ProductDetailPage() {
             })}
             <Button
               size="sm"
-              onClick={() =>
-                printProductLabels([currentProduct], {
-                  format: labelFormat ?? labelSettings.defaultFormat,
-                  includePrice: labelSettings.includePrice,
-                })
-              }
+              onClick={() => handlePrintLabel(currentProduct)}
             >
               <Printer className="h-3.5 w-3.5" /> Print label
             </Button>

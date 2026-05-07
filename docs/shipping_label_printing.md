@@ -71,6 +71,8 @@ The sales UI now supports:
 
 Behavior rules:
 
+- the popup opens synchronously with a preparation state so browser popup blockers do not treat it as a delayed async window
+- the print dialog opens only after the returned label document and its images have loaded
 - unsaved shipment edits block printing until saved
 - missing shipment fields block printing and are listed in the UI
 - canceling the browser print dialog does not mark the label printed
