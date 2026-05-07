@@ -243,6 +243,7 @@ Notes:
 - `npm run build` is the expected baseline validation step for frontend changes.
 - `npm test` runs the Vitest frontend suite, including POS cashier workflow coverage.
 - Frontend routes are lazy-loaded and chart-heavy dependencies are split into separate build chunks to keep the initial bundle healthier.
+- Production nginx keeps hashed `/assets/` files immutable, but serves `index.html` and SPA fallbacks as non-cacheable so browsers do not stay pinned to stale lazy-loaded chunks after deploys.
 - `frontend/package.json` may use `overrides` to pin patched transitive dependencies when upstream toolchain ranges lag behind published security fixes.
 - Barcode scanning for POS is documented in [docs/pos_barcode_scanning.md](docs/pos_barcode_scanning.md).
 

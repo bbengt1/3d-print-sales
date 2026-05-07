@@ -3,8 +3,17 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
+const appBuildId =
+  process.env.VITE_APP_VERSION ||
+  process.env.SOURCE_VERSION ||
+  process.env.GIT_COMMIT ||
+  new Date().toISOString()
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    __APP_BUILD_ID__: JSON.stringify(appBuildId),
+  },
   build: {
     rollupOptions: {
       output: {

@@ -35,6 +35,11 @@ The frontend production container runs nginx and:
 - serves the SPA
 - proxies `/api/` requests to the backend container
 - proxies `/health` to the backend health endpoint
+- serves `index.html` and SPA route fallbacks with `Cache-Control: no-store, no-cache, must-revalidate`
+- serves existing hashed `/assets/` files with long-lived immutable caching
+- returns missing `/assets/` files as non-cacheable 404s, which prevents stale route chunks from being pinned by browsers or proxies after deploys
+
+The frontend also performs one automatic hard reload per build and route when a dynamic import/module chunk fails. This is a recovery path for browsers that were open during a deploy and still reference an old Vite chunk.
 
 ### Server name
 The nginx config recognizes:
@@ -108,6 +113,9 @@ Expected behavior:
 - frontend routes work
 - API requests succeed through nginx proxying
 - no direct backend port exposure is required for normal browser access
+- `GET /` or any SPA route returns non-cacheable `index.html`
+- known `/assets/*.js` files return `application/javascript` and immutable cache headers
+- missing `/assets/*.js` files return a non-cacheable `404`
 
 ---
 

@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { recoverFromModuleLoadError } from '@/lib/moduleLoadRecovery';
 
 interface InnerProps {
   children: ReactNode;
@@ -21,6 +22,8 @@ class InnerBoundary extends Component<InnerProps, InnerState> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    if (recoverFromModuleLoadError(error)) return;
+
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.error('[QueryErrorBoundary]', error, info);

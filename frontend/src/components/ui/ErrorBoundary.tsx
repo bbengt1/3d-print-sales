@@ -1,6 +1,7 @@
-import { Component, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { recoverFromModuleLoadError } from '@/lib/moduleLoadRecovery';
 
 interface Props {
   children: ReactNode;
@@ -17,6 +18,10 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, _info: ErrorInfo) {
+    recoverFromModuleLoadError(error);
   }
 
   render() {
