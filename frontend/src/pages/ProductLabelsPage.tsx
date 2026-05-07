@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Printer } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Printer, WandSparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import PageHeader from '@/components/layout/PageHeader';
@@ -15,10 +15,12 @@ import ProductLabel from '@/components/labels/ProductLabel';
 import { printProductLabels } from '@/lib/printLabels';
 import { useLabelSettings } from '@/hooks/useLabelSettings';
 import { formatCurrency } from '@/lib/utils';
-import type { BarcodeFormat } from '@/lib/barcode';
-import type { PaginatedProducts, Product } from '@/types';
+import { canRenderUpcA, type BarcodeFormat } from '@/lib/barcode';
+import { getApiErrorMessage } from '@/lib/apiError';
+import type { PaginatedProducts, Product, ProductBarcodeGenerateResponse } from '@/types';
 
 export default function ProductLabelsPage() {
+  const queryClient = useQueryClient();
   const labelSettings = useLabelSettings();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -26,8 +28,9 @@ export default function ProductLabelsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [formatOverride, setFormatOverride] = useState<BarcodeFormat | null>(null);
   const [includePrice, setIncludePrice] = useState<boolean | null>(null);
+  const [generatingUpcs, setGeneratingUpcs] = useState(false);
 
-  const { data, isLoading } = useQuery<PaginatedProducts>({
+  const { data, isLoading, refetch } = useQuery<PaginatedProducts>({
     queryKey: ['products', 'labels', search, page, pageSize],
     queryFn: () =>
       api
@@ -52,9 +55,18 @@ export default function ProductLabelsPage() {
 
   const activeFormat = formatOverride ?? labelSettings.defaultFormat;
   const activeIncludePrice = includePrice ?? labelSettings.includePrice;
+  const selectedWithoutRenderableUpc = useMemo(
+    () => selectedProducts.filter((product) => !canRenderUpcA(product.upc)),
+    [selectedProducts],
+  );
+  const upcPrintBlocked = activeFormat === 'upc' && selectedWithoutRenderableUpc.length > 0;
 
   const handlePrintSheet = async () => {
     if (!selectedProducts.length) return;
+    if (upcPrintBlocked) {
+      toast.error('Generate UPCs for the selected products before printing UPC-A labels.');
+      return;
+    }
     try {
       await printProductLabels(selectedProducts, {
         format: activeFormat,
@@ -63,6 +75,28 @@ export default function ProductLabelsPage() {
       });
     } catch (err) {
       toast.error((err as Error)?.message || 'Failed to open label sheet');
+    }
+  };
+
+  const handleGenerateUpcs = async () => {
+    if (!selectedWithoutRenderableUpc.length) return;
+
+    setGeneratingUpcs(true);
+    try {
+      for (const product of selectedWithoutRenderableUpc) {
+        const response = await api.post<ProductBarcodeGenerateResponse>('/products/barcode/generate');
+        await api.put(`/products/${product.id}`, { upc: response.data.upc });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await refetch();
+      toast.success(
+        `Generated UPC${selectedWithoutRenderableUpc.length === 1 ? '' : 's'} for ${selectedWithoutRenderableUpc.length} selected product${selectedWithoutRenderableUpc.length === 1 ? '' : 's'}`,
+      );
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to generate UPCs for selected products'));
+    } finally {
+      setGeneratingUpcs(false);
     }
   };
 
@@ -103,10 +137,25 @@ export default function ProductLabelsPage() {
             : 'Select products below to build a printable label sheet.'
         }
         actions={
-          <Button onClick={handlePrintSheet} disabled={!selected.size}>
-            <Printer className="h-4 w-4" />
-            {selected.size ? `Print sheet (${selected.size})` : 'Print sheet'}
-          </Button>
+          <>
+            {activeFormat === 'upc' && selectedWithoutRenderableUpc.length ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGenerateUpcs}
+                disabled={generatingUpcs}
+              >
+                <WandSparkles className="h-4 w-4" />
+                {generatingUpcs
+                  ? 'Generating...'
+                  : `Generate UPC${selectedWithoutRenderableUpc.length === 1 ? '' : 's'} (${selectedWithoutRenderableUpc.length})`}
+              </Button>
+            ) : null}
+            <Button onClick={handlePrintSheet} disabled={!selected.size || upcPrintBlocked}>
+              <Printer className="h-4 w-4" />
+              {selected.size ? `Print sheet (${selected.size})` : 'Print sheet'}
+            </Button>
+          </>
         }
       />
 
@@ -136,6 +185,11 @@ export default function ProductLabelsPage() {
         <p className="text-xs text-muted-foreground">
           Sheet layout is Avery 5160 (30 labels, 2.625 × 1 in). Use Admin → Settings to change the default format or price display for new prints.
         </p>
+        {upcPrintBlocked ? (
+          <p className="text-xs font-medium text-warning">
+            {selectedWithoutRenderableUpc.length} selected product{selectedWithoutRenderableUpc.length === 1 ? '' : 's'} need a saved 12-digit UPC before UPC-A labels can print.
+          </p>
+        ) : null}
       </section>
 
       <DataTable<Product>

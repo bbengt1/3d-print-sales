@@ -4,6 +4,7 @@ import { fetchBarcodeDataUrl } from '@/lib/barcode';
 import type { Product } from '@/types';
 
 vi.mock('@/lib/barcode', () => ({
+  canRenderUpcA: (value: string | null | undefined) => /^\d{12}$/.test((value || '').trim()),
   fetchBarcodeDataUrl: vi.fn(),
 }));
 
@@ -82,5 +83,15 @@ describe('printProductLabels', () => {
 
     expect(state.html).toContain('<div class="sheet">');
     expect(state.html).toContain('Calibration Cube');
+  });
+
+  it('shows an inline UPC requirement instead of fetching UPC images without a saved UPC', async () => {
+    const { printWindow, state } = createPrintWindow();
+    vi.spyOn(window, 'open').mockReturnValue(printWindow);
+
+    await printProductLabels([{ ...product, upc: null }], { format: 'upc' });
+
+    expect(fetchBarcodeDataUrl).not.toHaveBeenCalled();
+    expect(state.html).toContain('UPC-A labels need a saved 12-digit UPC');
   });
 });

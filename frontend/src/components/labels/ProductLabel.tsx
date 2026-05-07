@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { cn, formatCurrency } from '@/lib/utils';
-import { fetchBarcodeObjectUrl, type BarcodeFormat } from '@/lib/barcode';
+import { canRenderUpcA, fetchBarcodeObjectUrl, type BarcodeFormat } from '@/lib/barcode';
 import type { Product } from '@/types';
 
 interface ProductLabelProps {
@@ -33,6 +33,13 @@ export default function ProductLabel({
     let cancelled = false;
     setError(null);
     setSrc(null);
+
+    if (format === 'upc' && !canRenderUpcA(product.upc)) {
+      setError('UPC-A labels need a saved 12-digit UPC. Generate one or switch to Code128.');
+      return () => {
+        cancelled = true;
+      };
+    }
 
     fetchBarcodeObjectUrl(product.id, { format, size: variant === 'compact' ? 2 : 3 })
       .then((url) => {

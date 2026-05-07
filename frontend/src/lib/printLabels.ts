@@ -1,4 +1,4 @@
-import { fetchBarcodeDataUrl, type BarcodeFormat } from '@/lib/barcode';
+import { canRenderUpcA, fetchBarcodeDataUrl, type BarcodeFormat } from '@/lib/barcode';
 import { openBlankPrintWindow, writePrintWindow } from '@/lib/printWindow';
 import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -25,13 +25,17 @@ async function renderLabelHtml(
   includePrice: boolean,
 ): Promise<string> {
   let imgTag = '';
-  try {
-    const dataUrl = await fetchBarcodeDataUrl(product.id, { format });
-    imgTag = `<img src="${dataUrl}" alt="${escapeHtml(product.name)} ${format} barcode" />`;
-  } catch (err) {
-    imgTag = `<span class="err">${escapeHtml(
-      (err as Error)?.message ?? 'Unable to render barcode',
-    )}</span>`;
+  if (format === 'upc' && !canRenderUpcA(product.upc)) {
+    imgTag = '<span class="err">UPC-A labels need a saved 12-digit UPC. Generate one or use Code128.</span>';
+  } else {
+    try {
+      const dataUrl = await fetchBarcodeDataUrl(product.id, { format });
+      imgTag = `<img src="${dataUrl}" alt="${escapeHtml(product.name)} ${format} barcode" />`;
+    } catch (err) {
+      imgTag = `<span class="err">${escapeHtml(
+        (err as Error)?.message ?? 'Unable to render barcode',
+      )}</span>`;
+    }
   }
   const priceHtml = includePrice
     ? `<div class="price">${escapeHtml(formatCurrency(product.unit_price))}</div>`

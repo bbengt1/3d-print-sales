@@ -9,7 +9,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { printProductLabels } from '@/lib/printLabels';
 import { useLabelSettings } from '@/hooks/useLabelSettings';
 import ProductLabel from '@/components/labels/ProductLabel';
-import type { BarcodeFormat } from '@/lib/barcode';
+import { canRenderUpcA, type BarcodeFormat } from '@/lib/barcode';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -226,7 +226,7 @@ export default function ProductDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             {(['code128', 'upc', 'qr'] as const).map((fmt) => {
               const active = (labelFormat ?? labelSettings.defaultFormat) === fmt;
-              const disabled = fmt === 'upc' && !currentProduct.upc;
+              const disabled = fmt === 'upc' && !canRenderUpcA(currentProduct.upc);
               return (
                 <Button
                   key={fmt}
@@ -234,7 +234,7 @@ export default function ProductDetailPage() {
                   size="sm"
                   disabled={disabled}
                   onClick={() => setLabelFormat(fmt)}
-                  title={disabled ? 'Product has no UPC assigned' : undefined}
+                  title={disabled ? 'Product needs a saved 12-digit UPC' : undefined}
                 >
                   {fmt === 'qr' ? 'QR' : fmt === 'upc' ? 'UPC' : 'Code128'}
                 </Button>

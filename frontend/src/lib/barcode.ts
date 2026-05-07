@@ -9,6 +9,10 @@ export interface BarcodeOptions {
   url?: boolean;
 }
 
+export function canRenderUpcA(value: string | null | undefined): boolean {
+  return /^\d{12}$/.test((value || '').trim());
+}
+
 /** Build the relative URL (uses client baseURL) for direct <img src> use. */
 export function buildBarcodeUrl(productId: string, opts: BarcodeOptions = {}): string {
   const params = new URLSearchParams();
