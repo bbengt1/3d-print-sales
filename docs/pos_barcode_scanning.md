@@ -33,6 +33,21 @@ The products API now also:
 
 - searches by UPC in the main product list search
 - rejects duplicate UPC assignment during create and update with `409 Conflict`
+- generates internal UPC-A values for Product Studio with `POST /api/v1/products/barcode/generate`
+
+## Product Studio UPC Generation
+
+Product Studio includes a generate action inside the `UPC / barcode` field on the product create/edit page. Use it when the product does not already have a manufacturer UPC or another known barcode.
+
+Generated values:
+
+- are 12-digit UPC-A values with a valid check digit
+- use the internal-use `04` prefix namespace
+- are intended for this app's POS and label workflows, not for external GS1 retail UPC assignment
+- are checked against existing product UPC values, including archived products, before being returned
+- are reserved only after the product is saved
+
+If the field already has a value, the UI asks for confirmation before replacing it. Manual UPC/barcode entry remains supported and follows the same product save validation path.
 
 ## Error Behavior
 
@@ -52,6 +67,10 @@ The POS UI shows the failure inline in the scan panel and leaves the cart unchan
   - response: standard `ProductResponse`
   - `404`: no active product matches the code
   - `409`: duplicate, inactive, or out-of-stock conflict
+- `POST /api/v1/products/barcode/generate`
+  - response: `{ "upc": "040000000013", "format": "upc-a", "namespace": "internal-upc-a-04", "note": "..." }`
+  - `401`: authentication required
+  - `409`: internal namespace exhausted
 
 ## Validation
 

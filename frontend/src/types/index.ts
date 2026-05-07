@@ -309,6 +309,13 @@ export interface Product {
   updated_at: string | null;
 }
 
+export interface ProductBarcodeGenerateResponse {
+  upc: string;
+  format: 'upc-a';
+  namespace: string;
+  note: string;
+}
+
 export interface PaginatedProducts {
   items: Product[];
   total: number;

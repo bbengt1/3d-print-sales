@@ -10,6 +10,7 @@ import {
   ReceiptText,
   Save,
   ScanBarcode,
+  WandSparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
@@ -20,10 +21,17 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Callout, type CalloutTone } from '@/components/ui/Callout';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import PageHeader from '@/components/layout/PageHeader';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { InventoryTransaction, Material, PaginatedTransactions, Product } from '@/types';
+import type {
+  InventoryTransaction,
+  Material,
+  PaginatedTransactions,
+  Product,
+  ProductBarcodeGenerateResponse,
+} from '@/types';
 
 const emptyForm = {
   name: '',
@@ -49,6 +57,8 @@ export default function ProductEditorPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState(emptyForm);
   const [initialized, setInitialized] = useState(false);
+  const [generatingBarcode, setGeneratingBarcode] = useState(false);
+  const [barcodeGenerateError, setBarcodeGenerateError] = useState<string | null>(null);
 
   const { data: materials = [], isLoading: materialsLoading } = useQuery<Material[]>({
     queryKey: ['materials', 'active'],
@@ -139,6 +149,30 @@ export default function ProductEditorPage() {
     }
   };
 
+  const generateBarcode = async () => {
+    setBarcodeGenerateError(null);
+
+    if (form.upc.trim()) {
+      const shouldReplace = window.confirm(
+        'Replace the current UPC / barcode with a newly generated internal UPC-A code?',
+      );
+      if (!shouldReplace) return;
+    }
+
+    setGeneratingBarcode(true);
+    try {
+      const response = await api.post<ProductBarcodeGenerateResponse>('/products/barcode/generate');
+      setForm((current) => ({ ...current, upc: response.data.upc }));
+      toast.success('Generated internal UPC-A barcode');
+    } catch (err) {
+      const message = getApiErrorMessage(err, 'Failed to generate barcode');
+      setBarcodeGenerateError(message);
+      toast.error(message);
+    } finally {
+      setGeneratingBarcode(false);
+    }
+  };
+
   if ((productLoading && !isCreate) || materialsLoading) {
     return <SkeletonTable rows={6} cols={5} />;
   }
@@ -220,16 +254,49 @@ export default function ProductEditorPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="product-upc">UPC / barcode</Label>
-                <div className="relative">
-                  <ScanBarcode className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="product-upc"
-                    value={form.upc}
-                    onChange={(event) => setForm((current) => ({ ...current, upc: event.target.value }))}
-                    className="pl-9"
-                    placeholder="012345678901"
-                  />
-                </div>
+                <TooltipProvider>
+                  <div className="relative">
+                    <ScanBarcode className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="product-upc"
+                      value={form.upc}
+                      onChange={(event) => {
+                        setForm((current) => ({ ...current, upc: event.target.value }));
+                        setBarcodeGenerateError(null);
+                      }}
+                      className="pl-9 pr-11"
+                      placeholder="012345678901"
+                      aria-describedby={barcodeGenerateError ? 'product-upc-generate-error' : undefined}
+                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                          onClick={generateBarcode}
+                          disabled={generatingBarcode || saving}
+                          aria-label={form.upc.trim() ? 'Replace UPC barcode' : 'Generate UPC barcode'}
+                        >
+                          <WandSparkles className={cn('h-4 w-4', generatingBarcode && 'animate-pulse')} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {form.upc.trim() ? 'Replace with generated internal UPC-A' : 'Generate internal UPC-A'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+                {barcodeGenerateError ? (
+                  <p id="product-upc-generate-error" className="text-xs text-destructive">
+                    {barcodeGenerateError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Generated codes use the internal UPC-A 04 namespace and are reserved when saved.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">

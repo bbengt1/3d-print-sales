@@ -9,12 +9,17 @@ from app.api.deps import DB, CurrentUser
 from app.models.product import Product
 from app.schemas.product import (
     PaginatedProducts,
+    ProductBarcodeGenerateResponse,
     ProductCreate,
     ProductResponse,
     ProductUpdate,
 )
 from app.services.barcode_service import BarcodeFormat, render_barcode
 from app.services.inventory_service import generate_sku
+from app.services.product_barcode_service import (
+    INTERNAL_UPC_NAMESPACE,
+    generate_unique_internal_upc_a,
+)
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -62,6 +67,32 @@ async def list_products(
     items = result.scalars().all()
 
     return PaginatedProducts(items=items, total=total, skip=skip, limit=limit)
+
+
+@router.post(
+    "/barcode/generate",
+    response_model=ProductBarcodeGenerateResponse,
+    summary="Generate a unique internal UPC-A barcode",
+    description=(
+        "Returns a unique 12-digit UPC-A value from the app's internal-use `04` namespace. "
+        "The value includes a valid UPC-A check digit and is intended for in-store/product-studio "
+        "barcode workflows, not manufacturer-issued GS1 retail UPC assignment."
+    ),
+)
+async def generate_product_barcode(user: CurrentUser, db: DB):
+    try:
+        upc = await generate_unique_internal_upc_a(db)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    return ProductBarcodeGenerateResponse(
+        upc=upc,
+        namespace=INTERNAL_UPC_NAMESPACE,
+        note=(
+            "Generated from the internal UPC-A 04 namespace with a valid check digit. "
+            "Save the product to reserve this barcode."
+        ),
+    )
 
 
 @router.get(

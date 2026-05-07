@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.material import Material
 from app.models.product import Product
+from app.services.product_barcode_service import calculate_upc_a_check_digit
 
 
 @pytest.mark.asyncio
@@ -154,6 +155,42 @@ async def test_update_product_rejects_duplicate_upc(client: AsyncClient, auth_he
         json={"upc": "012345678901"},
     )
     assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_generate_product_barcode_requires_auth(client: AsyncClient):
+    resp = await client.post("/api/v1/products/barcode/generate")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_generate_product_barcode_returns_internal_upc_a(client: AsyncClient, auth_headers: dict):
+    resp = await client.post("/api/v1/products/barcode/generate", headers=auth_headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["format"] == "upc-a"
+    assert data["namespace"] == "internal-upc-a-04"
+    assert data["upc"].startswith("04")
+    assert len(data["upc"]) == 12
+    assert data["upc"].isdigit()
+    assert calculate_upc_a_check_digit(data["upc"][:11]) == data["upc"][-1]
+
+
+@pytest.mark.asyncio
+async def test_generate_product_barcode_skips_existing_internal_upc(
+    client: AsyncClient, auth_headers: dict, seed_material: Material
+):
+    first = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Existing internal UPC", "material_id": str(seed_material.id), "upc": "040000000013"},
+    )
+    assert first.status_code == 201, first.text
+
+    resp = await client.post("/api/v1/products/barcode/generate", headers=auth_headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["upc"] == "040000000020"
 
 
 @pytest.mark.asyncio

@@ -50,6 +50,13 @@ class ProductResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProductBarcodeGenerateResponse(BaseModel):
+    upc: str = Field(..., min_length=12, max_length=12, examples=["040000000013"])
+    format: str = Field("upc-a", examples=["upc-a"])
+    namespace: str = Field(..., examples=["internal-upc-a-04"])
+    note: str
+
+
 class POSProductScanRequest(BaseModel):
     code: str = Field(..., min_length=1, max_length=64, examples=["012345678901"])
 
