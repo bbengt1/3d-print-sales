@@ -210,6 +210,112 @@ async def test_product_bom_reports_blockers(client: AsyncClient, auth_headers: d
 
 
 @pytest.mark.asyncio
+async def test_product_bom_tracks_supply_components(client: AsyncClient, auth_headers: dict, seed_material: Material):
+    create_resp = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Light-up sign", "material_id": str(seed_material.id), "unit_price": 45},
+    )
+    product_id = create_resp.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/products/{product_id}/bom",
+        headers=auth_headers,
+        json={
+            "items": [
+                {
+                    "component_type": "supply",
+                    "component_name": "LED strip segment",
+                    "component_sku": "LED-5V-COB",
+                    "quantity": 1,
+                    "unit": "each",
+                    "unit_cost": 3.5,
+                    "available_quantity": 4,
+                    "notes": "Cut to finished sign length",
+                },
+                {
+                    "component_type": "supply",
+                    "component_name": "10x3mm magnet",
+                    "quantity": 4,
+                    "unit": "each",
+                    "unit_cost": 0.18,
+                    "available_quantity": 6,
+                    "waste_factor_pct": 0,
+                },
+            ]
+        },
+    )
+
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["buildable_quantity"] == 1
+    assert len(data["items"]) == 2
+    assert data["items"][0]["component_type"] == "supply"
+    assert data["items"][0]["component_name"] == "LED strip segment"
+    assert data["items"][0]["component_sku"] == "LED-5V-COB"
+    assert float(data["items"][0]["estimated_unit_cost"]) == pytest.approx(3.5)
+    assert data["items"][1]["blocker"] is None
+    assert float(data["estimated_unit_cost"]) == pytest.approx(4.22)
+
+
+@pytest.mark.asyncio
+async def test_product_bom_reports_supply_stock_blockers(
+    client: AsyncClient, auth_headers: dict, seed_material: Material
+):
+    create_resp = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Magnet tile", "material_id": str(seed_material.id)},
+    )
+    product_id = create_resp.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/products/{product_id}/bom",
+        headers=auth_headers,
+        json={
+            "items": [
+                {
+                    "component_type": "supply",
+                    "component_name": "6x3mm magnet",
+                    "quantity": 8,
+                    "unit": "each",
+                    "unit_cost": 0.12,
+                    "available_quantity": 3,
+                }
+            ]
+        },
+    )
+
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["buildable_quantity"] == 0
+    assert data["items"][0]["is_blocked"] is True
+    assert data["items"][0]["blocker"] == "Insufficient supply stock."
+    assert "6x3mm magnet: Insufficient supply stock." in data["blockers"]
+
+
+@pytest.mark.asyncio
+async def test_product_bom_rejects_supply_without_name(
+    client: AsyncClient, auth_headers: dict, seed_material: Material
+):
+    create_resp = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Hardware kit", "material_id": str(seed_material.id)},
+    )
+    product_id = create_resp.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/products/{product_id}/bom",
+        headers=auth_headers,
+        json={"items": [{"component_type": "supply", "quantity": 1, "unit": "each", "unit_cost": 0.05}]},
+    )
+
+    assert resp.status_code == 400
+    assert "component name" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
 async def test_product_bom_rejects_duplicate_and_circular_components(
     client: AsyncClient,
     auth_headers: dict,

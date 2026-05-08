@@ -58,16 +58,20 @@ class ProductBarcodeGenerateResponse(BaseModel):
     note: str
 
 
-ProductBOMComponentType = Literal["material", "product"]
+ProductBOMComponentType = Literal["material", "product", "supply"]
 
 
 class ProductBOMItemBase(BaseModel):
     component_type: ProductBOMComponentType
     material_id: uuid.UUID | None = None
     component_product_id: uuid.UUID | None = None
+    component_name: str | None = Field(None, min_length=1, max_length=200, examples=["M3 screw"])
+    component_sku: str | None = Field(None, max_length=100, examples=["M3x12-BLK"])
     quantity: Decimal = Field(..., gt=0, examples=[Decimal("12.5")])
     unit: str = Field("each", min_length=1, max_length=20, examples=["g"])
     waste_factor_pct: Decimal = Field(Decimal(0), ge=0, examples=[Decimal("5")])
+    unit_cost: Decimal | None = Field(None, ge=0, examples=[Decimal("0.08")])
+    available_quantity: Decimal | None = Field(None, ge=0, examples=[Decimal("250")])
     notes: str | None = Field(None, max_length=500)
 
 

@@ -84,11 +84,24 @@ async def _validate_item(
             raise ProductBOMValidationError("BOM would create a circular product dependency.")
         return
 
+    if item.component_type == "supply":
+        if item.material_id or item.component_product_id:
+            raise ProductBOMValidationError("Supply BOM rows cannot reference a material or product.")
+        if not item.component_name or not item.component_name.strip():
+            raise ProductBOMValidationError("Supply BOM rows must include a component name.")
+        return
+
     raise ProductBOMValidationError("Unsupported BOM component type.")
 
 
-def _row_key(item: ProductBOMItemCreate) -> tuple[str, uuid.UUID | None, uuid.UUID | None]:
-    return (item.component_type, item.material_id, item.component_product_id)
+def _row_key(item: ProductBOMItemCreate) -> tuple[str, uuid.UUID | None, uuid.UUID | None, str | None, str | None]:
+    return (
+        item.component_type,
+        item.material_id,
+        item.component_product_id,
+        item.component_name.strip().casefold() if item.component_name else None,
+        item.component_sku.strip().casefold() if item.component_sku else None,
+    )
 
 
 async def replace_product_bom(
@@ -99,7 +112,7 @@ async def replace_product_bom(
 ) -> ProductBOMSummary:
     await get_product_or_raise(db, product_id)
 
-    seen: set[tuple[str, uuid.UUID | None, uuid.UUID | None]] = set()
+    seen: set[tuple[str, uuid.UUID | None, uuid.UUID | None, str | None, str | None]] = set()
     for item in items:
         key = _row_key(item)
         if key in seen:
@@ -161,6 +174,30 @@ async def _item_response(db: AsyncSession, item: ProductBOMItem) -> ProductBOMIt
             blocker=blocker,
         )
 
+    if item.component_type == "supply":
+        available = Decimal(item.available_quantity) if item.available_quantity is not None else None
+        unit_cost = Decimal(item.unit_cost or 0)
+        estimated_cost = required * unit_cost
+        if available is not None and available < required:
+            blocker = "Insufficient supply stock."
+        return ProductBOMItemResponse(
+            id=item.id,
+            component_type="supply",
+            material_id=None,
+            component_product_id=None,
+            component_name=item.component_name or "Supply component",
+            component_sku=item.component_sku,
+            quantity=item.quantity,
+            unit=item.unit,
+            waste_factor_pct=item.waste_factor_pct,
+            notes=item.notes,
+            available_quantity=available,
+            unit_cost=unit_cost,
+            estimated_unit_cost=estimated_cost,
+            is_blocked=blocker is not None,
+            blocker=blocker,
+        )
+
     component = (await db.execute(select(Product).where(Product.id == item.component_product_id))).scalar_one()
     available = Decimal(component.stock_qty or 0)
     unit_cost = Decimal(component.unit_cost or 0)
@@ -206,10 +243,12 @@ async def get_product_bom_summary(db: AsyncSession, *, product_id: uuid.UUID) ->
     if responses:
         buildable_values: list[int] = []
         for source, response in zip(rows, responses, strict=True):
+            if response.available_quantity is None:
+                continue
             available = Decimal(response.available_quantity or 0)
             required = _required_quantity(source)
             buildable_values.append(int((available / required).to_integral_value(rounding=ROUND_FLOOR)))
-        buildable = min(buildable_values)
+        buildable = min(buildable_values) if buildable_values else None
 
     return ProductBOMSummary(
         product_id=product_id,

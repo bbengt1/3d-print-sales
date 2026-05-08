@@ -116,7 +116,7 @@ Thirteen tables (6 seeded from the original spreadsheet + 2 for inventory + 3 fo
 - **jobs** — Full job tracking with 17 computed cost/pricing fields, optional product link
 - **users** — Admin authentication
 - **products** — Product catalog with auto-generated SKU, optional UPC, stock tracking, reorder points
-- **product_bom_items** — Product Studio bill of materials rows for material and product components
+- **product_bom_items** — Product Studio bill of materials rows for material, supply, and product components
 - **inventory_transactions** — Stock movement ledger (production, sale, adjustment, return, waste)
 - **sales_channels** — Sales platforms (Etsy, Amazon, Direct) with platform fee % and fixed fee per order
 - **sales** — Order tracking with auto-generated sale number (S-YYYY-NNNN), status flow, computed totals and contribution margin
@@ -195,7 +195,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - [Shipping Label Printing](docs/shipping_label_printing.md) — remote-compatible 4x6 shipping-label workflow, backend contract, workstation print path, and operator rules for print/cancel/reprint
 - [AI Insights Guide](docs/ai_insights.md) — provider configuration, safety boundaries, endpoints, and UX rationale for issue `#112`
 - [Role-Based Frontend Redesign User Story](docs/frontend_role_based_redesign_user_story.md) — issue-ready redesign brief for print monitoring, live views, POS, inventory, product studio, and role-based workspaces.
-- [Product BOM Tracking](docs/product_bom_tracking.md) — maintained guide for Product Studio material/product component rows, cost estimates, buildability, and validation rules.
+- [Product BOM Tracking](docs/product_bom_tracking.md) — maintained guide for Product Studio material, supply, and product component rows, cost estimates, buildability, and validation rules.
 
 ## Testing
 

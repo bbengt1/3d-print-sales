@@ -316,15 +316,19 @@ export interface ProductBarcodeGenerateResponse {
   note: string;
 }
 
-export type ProductBOMComponentType = 'material' | 'product';
+export type ProductBOMComponentType = 'material' | 'product' | 'supply';
 
 export interface ProductBOMItemRequest {
   component_type: ProductBOMComponentType;
   material_id?: string | null;
   component_product_id?: string | null;
+  component_name?: string | null;
+  component_sku?: string | null;
   quantity: number;
   unit: string;
   waste_factor_pct: number;
+  unit_cost?: number | null;
+  available_quantity?: number | null;
   notes?: string | null;
 }
 

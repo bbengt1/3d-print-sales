@@ -55,9 +55,13 @@ const newBomRow = (): BomDraftRow => ({
   component_type: 'material',
   material_id: '',
   component_product_id: '',
+  component_name: '',
+  component_sku: '',
   quantity: 1,
   unit: 'g',
   waste_factor_pct: 0,
+  unit_cost: null,
+  available_quantity: null,
   notes: '',
 });
 
@@ -133,9 +137,16 @@ export default function ProductEditorPage() {
         component_type: item.component_type,
         material_id: item.material_id || '',
         component_product_id: item.component_product_id || '',
+        component_name: item.component_type === 'supply' ? item.component_name : '',
+        component_sku: item.component_sku || '',
         quantity: Number(item.quantity),
         unit: item.unit,
         waste_factor_pct: Number(item.waste_factor_pct || 0),
+        unit_cost: item.component_type === 'supply' ? Number(item.unit_cost || 0) : null,
+        available_quantity:
+          item.component_type === 'supply' && item.available_quantity !== null
+            ? Number(item.available_quantity)
+            : null,
         notes: item.notes || '',
       })),
     );
@@ -231,7 +242,8 @@ export default function ProductEditorPage() {
     const invalidRow = bomRows.find((row) => {
       if (Number(row.quantity) <= 0 || Number(row.waste_factor_pct) < 0 || !row.unit.trim()) return true;
       if (row.component_type === 'material') return !row.material_id;
-      return !row.component_product_id;
+      if (row.component_type === 'product') return !row.component_product_id;
+      return !row.component_name?.trim() || Number(row.unit_cost || 0) < 0 || Number(row.available_quantity || 0) < 0;
     });
 
     if (invalidRow) {
@@ -245,9 +257,16 @@ export default function ProductEditorPage() {
         component_type: row.component_type,
         material_id: row.component_type === 'material' ? row.material_id : null,
         component_product_id: row.component_type === 'product' ? row.component_product_id : null,
+        component_name: row.component_type === 'supply' ? row.component_name?.trim() || null : null,
+        component_sku: row.component_type === 'supply' ? row.component_sku?.trim() || null : null,
         quantity: Number(row.quantity),
         unit: row.unit.trim(),
         waste_factor_pct: Number(row.waste_factor_pct || 0),
+        unit_cost: row.component_type === 'supply' ? Number(row.unit_cost || 0) : null,
+        available_quantity:
+          row.component_type === 'supply' && row.available_quantity !== null && row.available_quantity !== undefined
+            ? Number(row.available_quantity)
+            : null,
         notes: row.notes?.trim() || null,
       }));
       await api.put(`/products/${id}/bom`, { items });
@@ -267,11 +286,25 @@ export default function ProductEditorPage() {
         const next = { ...row, ...updates };
         if (updates.component_type === 'material') {
           next.component_product_id = '';
+          next.component_name = '';
+          next.component_sku = '';
+          next.unit_cost = null;
+          next.available_quantity = null;
           if (!updates.unit) next.unit = 'g';
         }
         if (updates.component_type === 'product') {
           next.material_id = '';
+          next.component_name = '';
+          next.component_sku = '';
+          next.unit_cost = null;
+          next.available_quantity = null;
           if (!updates.unit) next.unit = 'each';
+        }
+        if (updates.component_type === 'supply') {
+          next.material_id = '';
+          next.component_product_id = '';
+          if (!updates.unit) next.unit = 'each';
+          if (next.unit_cost === null || next.unit_cost === undefined) next.unit_cost = 0;
         }
         return next;
       }),
@@ -490,7 +523,7 @@ export default function ProductEditorPage() {
               <EmptyState
                 icon="products"
                 title="Parts can be added after creation"
-                description="Save the product first, then attach raw materials or stocked component products."
+                description="Save the product first, then attach materials, supplies, or stocked component products."
                 className="py-10"
               />
             ) : bomLoading ? (
@@ -500,7 +533,7 @@ export default function ProductEditorPage() {
                 compact
                 icon="products"
                 title="No parts tracked yet."
-                description="Add material or product components to estimate cost and buildable quantity."
+                description="Add material, supply, or product components to estimate cost and buildable quantity."
                 className="mt-4"
               />
             ) : (
@@ -532,6 +565,7 @@ export default function ProductEditorPage() {
                         >
                           <option value="material">Material</option>
                           <option value="product">Product</option>
+                          <option value="supply">Supply</option>
                         </select>
                       </div>
                       <div className="space-y-1.5">
@@ -550,7 +584,7 @@ export default function ProductEditorPage() {
                               </option>
                             ))}
                           </select>
-                        ) : (
+                        ) : row.component_type === 'product' ? (
                           <select
                             id={`bom-component-${row.key}`}
                             value={row.component_product_id || ''}
@@ -564,6 +598,13 @@ export default function ProductEditorPage() {
                               </option>
                             ))}
                           </select>
+                        ) : (
+                          <Input
+                            id={`bom-component-${row.key}`}
+                            value={row.component_name || ''}
+                            onChange={(event) => updateBomRow(row.key, { component_name: event.target.value })}
+                            placeholder="LED strip, magnet, screw..."
+                          />
                         )}
                       </div>
                       <div className="space-y-1.5">
@@ -597,6 +638,47 @@ export default function ProductEditorPage() {
                         />
                       </div>
                     </div>
+                    {row.component_type === 'supply' ? (
+                      <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`bom-sku-${row.key}`}>Part number</Label>
+                          <Input
+                            id={`bom-sku-${row.key}`}
+                            value={row.component_sku || ''}
+                            onChange={(event) => updateBomRow(row.key, { component_sku: event.target.value })}
+                            placeholder="Optional SKU or supplier part"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`bom-unit-cost-${row.key}`}>Unit cost</Label>
+                          <Input
+                            id={`bom-unit-cost-${row.key}`}
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            value={row.unit_cost ?? 0}
+                            onChange={(event) => updateBomRow(row.key, { unit_cost: Number(event.target.value) })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`bom-available-${row.key}`}>Available qty</Label>
+                          <Input
+                            id={`bom-available-${row.key}`}
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            value={row.available_quantity ?? ''}
+                            onChange={(event) =>
+                              updateBomRow(row.key, {
+                                available_quantity:
+                                  event.target.value === '' ? null : Number(event.target.value),
+                              })
+                            }
+                            placeholder="Unknown"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="mt-3 space-y-1.5">
                       <Label htmlFor={`bom-notes-${row.key}`}>Notes</Label>
                       <Input

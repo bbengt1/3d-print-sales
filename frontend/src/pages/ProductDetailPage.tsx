@@ -239,7 +239,7 @@ export default function ProductDetailPage() {
             compact
             icon="products"
             title="No parts tracked yet"
-            description="Add material or product components in the editor to estimate cost and buildable stock."
+            description="Add material, supply, or product components in the editor to estimate cost and buildable stock."
           />
         ) : (
           <div className="space-y-4">
