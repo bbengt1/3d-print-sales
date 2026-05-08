@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Plus, Archive, ArchiveRestore, Printer, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, Archive, ArchiveRestore, Boxes, Printer, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/api/client';
 import { formatCurrency } from '@/lib/utils';
@@ -20,7 +20,7 @@ import { SkeletonTable } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import StatusBadge, { defaultStatusTone } from '@/components/data/StatusBadge';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
-import type { Product, PaginatedTransactions } from '@/types';
+import type { Product, PaginatedTransactions, ProductBOMSummary } from '@/types';
 
 const TXN_TYPES = [
   { value: 'adjustment', label: 'Adjustment' },
@@ -42,6 +42,12 @@ export default function ProductDetailPage() {
   const { data: transactions, isLoading: txnLoading } = useQuery<PaginatedTransactions>({
     queryKey: ['transactions', id],
     queryFn: () => api.get('/inventory/transactions', { params: { product_id: id, limit: 50 } }).then((r) => r.data),
+  });
+
+  const { data: bomSummary, isLoading: bomLoading } = useQuery<ProductBOMSummary>({
+    queryKey: ['product-bom', id],
+    enabled: Boolean(id),
+    queryFn: () => api.get(`/products/${id}/bom`).then((r) => r.data),
   });
 
   const [showAdjust, setShowAdjust] = useState(false);
@@ -210,6 +216,89 @@ export default function ProductDetailPage() {
               Margin: {((1 - Number(product.unit_cost) / Number(product.unit_price)) * 100).toFixed(1)}%
               &nbsp;|&nbsp; Inventory Value: {formatCurrency(Number(product.unit_cost) * product.stock_qty)}
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Bill of materials */}
+      <div className="mb-6 rounded-md border border-border bg-card p-5 shadow-xs">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Boxes className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-base font-semibold">Bill of Materials</h2>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/product-studio/products/${currentProduct.id}/edit`}>Edit parts</Link>
+          </Button>
+        </div>
+
+        {bomLoading ? (
+          <SkeletonTable rows={3} cols={5} />
+        ) : !bomSummary?.items.length ? (
+          <EmptyState
+            compact
+            icon="products"
+            title="No parts tracked yet"
+            description="Add material or product components in the editor to estimate cost and buildable stock."
+          />
+        ) : (
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-md bg-background px-4 py-3">
+                <p className="text-xs text-muted-foreground">Estimated BOM Cost</p>
+                <p className="mt-1 text-lg font-semibold">{formatCurrency(bomSummary.estimated_unit_cost)}</p>
+              </div>
+              <div className="rounded-md bg-background px-4 py-3">
+                <p className="text-xs text-muted-foreground">Buildable Quantity</p>
+                <p className="mt-1 text-lg font-semibold">{bomSummary.buildable_quantity ?? '-'}</p>
+              </div>
+              <div className="rounded-md bg-background px-4 py-3">
+                <p className="text-xs text-muted-foreground">Readiness</p>
+                <p className={`mt-1 text-lg font-semibold ${bomSummary.blockers.length ? 'text-warning' : 'text-success'}`}>
+                  {bomSummary.blockers.length ? 'Blocked' : 'Ready'}
+                </p>
+              </div>
+            </div>
+
+            {bomSummary.blockers.length ? (
+              <div className="rounded-md border border-warning/35 bg-warning/10 px-4 py-3 text-sm text-warning">
+                {bomSummary.blockers[0]}
+              </div>
+            ) : null}
+
+            <div className="overflow-x-auto rounded-md border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="px-4 py-3 font-medium">Component</th>
+                    <th className="px-4 py-3 font-medium">Type</th>
+                    <th className="px-4 py-3 font-medium text-right">Qty</th>
+                    <th className="px-4 py-3 font-medium text-right">Available</th>
+                    <th className="px-4 py-3 font-medium text-right">Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bomSummary.items.map((item) => (
+                    <tr key={item.id} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3">
+                        <p className="font-medium">{item.component_name}</p>
+                        {item.component_sku ? <p className="text-xs text-muted-foreground">{item.component_sku}</p> : null}
+                        {item.blocker ? <p className="mt-1 text-xs text-warning">{item.blocker}</p> : null}
+                      </td>
+                      <td className="px-4 py-3 capitalize">{item.component_type}</td>
+                      <td className="px-4 py-3 text-right">
+                        {Number(item.quantity).toLocaleString()} {item.unit}
+                        {Number(item.waste_factor_pct) > 0 ? (
+                          <span className="block text-xs text-muted-foreground">+{Number(item.waste_factor_pct)}% waste</span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-right">{item.available_quantity ?? '-'}</td>
+                      <td className="px-4 py-3 text-right">{formatCurrency(item.estimated_unit_cost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

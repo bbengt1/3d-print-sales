@@ -10,6 +10,9 @@ from app.models.product import Product
 from app.schemas.product import (
     PaginatedProducts,
     ProductBarcodeGenerateResponse,
+    ProductBOMAvailability,
+    ProductBOMReplace,
+    ProductBOMSummary,
     ProductCreate,
     ProductResponse,
     ProductUpdate,
@@ -19,6 +22,11 @@ from app.services.inventory_service import generate_sku
 from app.services.product_barcode_service import (
     INTERNAL_UPC_NAMESPACE,
     generate_unique_internal_upc_a,
+)
+from app.services.product_bom_service import (
+    ProductBOMValidationError,
+    get_product_bom_summary,
+    replace_product_bom,
 )
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -107,6 +115,47 @@ async def get_product(product_id: uuid.UUID, db: DB):
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
+
+
+@router.get(
+    "/{product_id}/bom",
+    response_model=ProductBOMSummary,
+    summary="Get a product bill of materials",
+    description="Returns BOM component rows with estimated cost, stock readiness, and buildable quantity.",
+)
+async def get_product_bom(product_id: uuid.UUID, db: DB):
+    try:
+        return await get_product_bom_summary(db, product_id=product_id)
+    except ProductBOMValidationError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.put(
+    "/{product_id}/bom",
+    response_model=ProductBOMSummary,
+    summary="Replace a product bill of materials",
+    description="Replaces all BOM rows for a product. Editing the BOM does not consume inventory or change product unit cost.",
+)
+async def put_product_bom(product_id: uuid.UUID, body: ProductBOMReplace, user: CurrentUser, db: DB):
+    try:
+        return await replace_product_bom(db, product_id=product_id, items=body.items)
+    except ProductBOMValidationError as exc:
+        message = str(exc)
+        status_code = 404 if message == "Product not found" else 400
+        raise HTTPException(status_code=status_code, detail=message) from exc
+
+
+@router.get(
+    "/{product_id}/bom/availability",
+    response_model=ProductBOMAvailability,
+    summary="Get product BOM availability",
+    description="Returns current stock blockers and buildable quantity for a product BOM.",
+)
+async def get_product_bom_availability(product_id: uuid.UUID, db: DB):
+    try:
+        return await get_product_bom_summary(db, product_id=product_id)
+    except ProductBOMValidationError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post(

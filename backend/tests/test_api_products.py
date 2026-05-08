@@ -104,6 +104,160 @@ async def test_get_product_not_found(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_product_bom_tracks_material_and_product_components(
+    client: AsyncClient,
+    auth_headers: dict,
+    db_session: AsyncSession,
+    seed_material: Material,
+):
+    seed_material.spools_in_stock = 2
+    await db_session.commit()
+
+    component = Product(
+        sku="PRD-PLA-PART",
+        name="Printed hinge",
+        material_id=seed_material.id,
+        unit_cost=3,
+        unit_price=6,
+        stock_qty=7,
+    )
+    db_session.add(component)
+    await db_session.commit()
+    await db_session.refresh(component)
+
+    create_resp = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Desk organizer", "material_id": str(seed_material.id), "unit_price": 18},
+    )
+    assert create_resp.status_code == 201, create_resp.text
+    product_id = create_resp.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/products/{product_id}/bom",
+        headers=auth_headers,
+        json={
+            "items": [
+                {
+                    "component_type": "material",
+                    "material_id": str(seed_material.id),
+                    "quantity": 100,
+                    "unit": "g",
+                    "waste_factor_pct": 10,
+                    "notes": "body and inserts",
+                },
+                {
+                    "component_type": "product",
+                    "component_product_id": str(component.id),
+                    "quantity": 2,
+                    "unit": "each",
+                },
+            ]
+        },
+    )
+
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["has_bom"] is True
+    assert data["buildable_quantity"] == 3
+    assert data["blockers"] == []
+    assert len(data["items"]) == 2
+    assert data["items"][0]["component_name"] == "PLA (Generic)"
+    assert float(data["items"][0]["estimated_unit_cost"]) == pytest.approx(2.3158, rel=0.001)
+    assert data["items"][1]["component_name"] == "Printed hinge"
+    assert data["items"][1]["component_sku"] == "PRD-PLA-PART"
+    assert float(data["estimated_unit_cost"]) == pytest.approx(8.3158, rel=0.001)
+
+    product_check = await client.get(f"/api/v1/products/{product_id}")
+    assert product_check.json()["stock_qty"] == 0
+    assert float(product_check.json()["unit_cost"]) == 0
+
+    summary = await client.get(f"/api/v1/products/{product_id}/bom")
+    assert summary.status_code == 200
+    assert summary.json()["buildable_quantity"] == 3
+
+
+@pytest.mark.asyncio
+async def test_product_bom_reports_blockers(client: AsyncClient, auth_headers: dict, seed_material: Material):
+    create_resp = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Large planter", "material_id": str(seed_material.id)},
+    )
+    product_id = create_resp.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/products/{product_id}/bom",
+        headers=auth_headers,
+        json={
+            "items": [
+                {
+                    "component_type": "material",
+                    "material_id": str(seed_material.id),
+                    "quantity": 25,
+                    "unit": "g",
+                }
+            ]
+        },
+    )
+
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["buildable_quantity"] == 0
+    assert data["items"][0]["is_blocked"] is True
+    assert data["items"][0]["blocker"] == "Insufficient material stock."
+    assert "PLA (Generic): Insufficient material stock." in data["blockers"]
+
+
+@pytest.mark.asyncio
+async def test_product_bom_rejects_duplicate_and_circular_components(
+    client: AsyncClient,
+    auth_headers: dict,
+    seed_material: Material,
+):
+    first = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Assembly A", "material_id": str(seed_material.id)},
+    )
+    second = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Assembly B", "material_id": str(seed_material.id)},
+    )
+    first_id = first.json()["id"]
+    second_id = second.json()["id"]
+
+    duplicate = await client.put(
+        f"/api/v1/products/{first_id}/bom",
+        headers=auth_headers,
+        json={
+            "items": [
+                {"component_type": "material", "material_id": str(seed_material.id), "quantity": 5, "unit": "g"},
+                {"component_type": "material", "material_id": str(seed_material.id), "quantity": 7, "unit": "g"},
+            ]
+        },
+    )
+    assert duplicate.status_code == 400
+    assert "Duplicate" in duplicate.json()["detail"]
+
+    seed = await client.put(
+        f"/api/v1/products/{first_id}/bom",
+        headers=auth_headers,
+        json={"items": [{"component_type": "product", "component_product_id": second_id, "quantity": 1}]},
+    )
+    assert seed.status_code == 200, seed.text
+
+    circular = await client.put(
+        f"/api/v1/products/{second_id}/bom",
+        headers=auth_headers,
+        json={"items": [{"component_type": "product", "component_product_id": first_id, "quantity": 1}]},
+    )
+    assert circular.status_code == 400
+    assert "circular" in circular.json()["detail"]
+
+
+@pytest.mark.asyncio
 async def test_update_product(client: AsyncClient, auth_headers: dict, seed_material: Material):
     create_resp = await client.post(
         "/api/v1/products",

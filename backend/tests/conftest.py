@@ -26,6 +26,7 @@ from app.models.setting import Setting
 from app.models.user import User
 from app.models.camera import Camera  # noqa: F401
 from app.models.printer_history_event import PrinterHistoryEvent  # noqa: F401
+from app.models.product_bom_item import ProductBOMItem  # noqa: F401
 from app.services.accounting_service import seed_chart_of_accounts
 from app.services.settings_defaults import SETTINGS_DATA
 

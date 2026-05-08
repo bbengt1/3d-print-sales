@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -7,9 +7,11 @@ import {
   ArrowRight,
   BadgeDollarSign,
   Boxes,
+  Plus,
   ReceiptText,
   Save,
   ScanBarcode,
+  Trash2,
   WandSparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,9 +30,13 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type {
   InventoryTransaction,
   Material,
+  PaginatedProducts,
   PaginatedTransactions,
   Product,
   ProductBarcodeGenerateResponse,
+  ProductBOMComponentType,
+  ProductBOMItemRequest,
+  ProductBOMSummary,
 } from '@/types';
 
 const emptyForm = {
@@ -41,6 +47,19 @@ const emptyForm = {
   unit_price: 0,
   reorder_point: 5,
 };
+
+type BomDraftRow = ProductBOMItemRequest & { key: string };
+
+const newBomRow = (): BomDraftRow => ({
+  key: crypto.randomUUID(),
+  component_type: 'material',
+  material_id: '',
+  component_product_id: '',
+  quantity: 1,
+  unit: 'g',
+  waste_factor_pct: 0,
+  notes: '',
+});
 
 function readinessTone(value: 'ready' | 'warning' | 'draft'): CalloutTone {
   if (value === 'ready') return 'success';
@@ -59,6 +78,9 @@ export default function ProductEditorPage() {
   const [initialized, setInitialized] = useState(false);
   const [generatingBarcode, setGeneratingBarcode] = useState(false);
   const [barcodeGenerateError, setBarcodeGenerateError] = useState<string | null>(null);
+  const [bomRows, setBomRows] = useState<BomDraftRow[]>([]);
+  const [bomInitializedFor, setBomInitializedFor] = useState<string | null>(null);
+  const [savingBom, setSavingBom] = useState(false);
 
   const { data: materials = [], isLoading: materialsLoading } = useQuery<Material[]>({
     queryKey: ['materials', 'active'],
@@ -71,6 +93,18 @@ export default function ProductEditorPage() {
     queryFn: () => api.get(`/products/${id}`).then((r) => r.data),
   });
 
+  const { data: productOptionsData } = useQuery<PaginatedProducts>({
+    queryKey: ['products', 'active-options'],
+    enabled: Boolean(id),
+    queryFn: () => api.get('/products', { params: { is_active: true, limit: 100 } }).then((r) => r.data),
+  });
+
+  const { data: bomSummary, isLoading: bomLoading } = useQuery<ProductBOMSummary>({
+    queryKey: ['product-bom', id],
+    enabled: Boolean(id),
+    queryFn: () => api.get(`/products/${id}/bom`).then((r) => r.data),
+  });
+
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery<PaginatedTransactions>({
     queryKey: ['transactions', id, 'editor'],
     enabled: Boolean(id),
@@ -78,7 +112,8 @@ export default function ProductEditorPage() {
       api.get('/inventory/transactions', { params: { product_id: id, limit: 6 } }).then((r) => r.data),
   });
 
-  if (product && !initialized) {
+  useEffect(() => {
+    if (!product || initialized) return;
     setForm({
       name: product.name,
       description: product.description || '',
@@ -88,7 +123,24 @@ export default function ProductEditorPage() {
       reorder_point: product.reorder_point,
     });
     setInitialized(true);
-  }
+  }, [initialized, product]);
+
+  useEffect(() => {
+    if (!id || !bomSummary || bomInitializedFor === id) return;
+    setBomRows(
+      bomSummary.items.map((item) => ({
+        key: item.id,
+        component_type: item.component_type,
+        material_id: item.material_id || '',
+        component_product_id: item.component_product_id || '',
+        quantity: Number(item.quantity),
+        unit: item.unit,
+        waste_factor_pct: Number(item.waste_factor_pct || 0),
+        notes: item.notes || '',
+      })),
+    );
+    setBomInitializedFor(id);
+  }, [bomInitializedFor, bomSummary, id]);
 
   const selectedMaterial = materials.find((material) => material.id === form.material_id) || null;
   const unitCost = product?.unit_cost ?? 0;
@@ -97,6 +149,7 @@ export default function ProductEditorPage() {
   const marginPct = Number(form.unit_price || 0) > 0 ? (marginDollars / Number(form.unit_price || 1)) * 100 : 0;
   const inventoryValue = stockQty * Number(unitCost || 0);
   const recentTransactions = transactionsData?.items || [];
+  const productOptions = (productOptionsData?.items || []).filter((candidate) => candidate.id !== id);
 
   const identityReadiness = useMemo(() => {
     if (form.name.trim() && form.material_id && Number(form.unit_price) > 0) return 'ready';
@@ -171,6 +224,58 @@ export default function ProductEditorPage() {
     } finally {
       setGeneratingBarcode(false);
     }
+  };
+
+  const saveBom = async () => {
+    if (!id) return;
+    const invalidRow = bomRows.find((row) => {
+      if (Number(row.quantity) <= 0 || Number(row.waste_factor_pct) < 0 || !row.unit.trim()) return true;
+      if (row.component_type === 'material') return !row.material_id;
+      return !row.component_product_id;
+    });
+
+    if (invalidRow) {
+      toast.error('Complete each BOM row before saving');
+      return;
+    }
+
+    setSavingBom(true);
+    try {
+      const items = bomRows.map((row) => ({
+        component_type: row.component_type,
+        material_id: row.component_type === 'material' ? row.material_id : null,
+        component_product_id: row.component_type === 'product' ? row.component_product_id : null,
+        quantity: Number(row.quantity),
+        unit: row.unit.trim(),
+        waste_factor_pct: Number(row.waste_factor_pct || 0),
+        notes: row.notes?.trim() || null,
+      }));
+      await api.put(`/products/${id}/bom`, { items });
+      toast.success('Bill of materials saved');
+      queryClient.invalidateQueries({ queryKey: ['product-bom', id] });
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save bill of materials'));
+    } finally {
+      setSavingBom(false);
+    }
+  };
+
+  const updateBomRow = (key: string, updates: Partial<BomDraftRow>) => {
+    setBomRows((current) =>
+      current.map((row) => {
+        if (row.key !== key) return row;
+        const next = { ...row, ...updates };
+        if (updates.component_type === 'material') {
+          next.component_product_id = '';
+          if (!updates.unit) next.unit = 'g';
+        }
+        if (updates.component_type === 'product') {
+          next.material_id = '';
+          if (!updates.unit) next.unit = 'each';
+        }
+        return next;
+      }),
+    );
   };
 
   if ((productLoading && !isCreate) || materialsLoading) {
@@ -365,6 +470,171 @@ export default function ProductEditorPage() {
                 </Button>
               ) : null}
             </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Boxes className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-base font-semibold">Bill of materials</h2>
+              </div>
+              {!isCreate ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => setBomRows((current) => [...current, newBomRow()])}>
+                  <Plus className="h-4 w-4" />
+                  Add part
+                </Button>
+              ) : null}
+            </div>
+
+            {isCreate ? (
+              <EmptyState
+                icon="products"
+                title="Parts can be added after creation"
+                description="Save the product first, then attach raw materials or stocked component products."
+                className="py-10"
+              />
+            ) : bomLoading ? (
+              <SkeletonTable rows={3} cols={5} />
+            ) : !bomRows.length ? (
+              <EmptyState
+                compact
+                icon="products"
+                title="No parts tracked yet."
+                description="Add material or product components to estimate cost and buildable quantity."
+                className="mt-4"
+              />
+            ) : (
+              <div className="mt-5 space-y-4">
+                {bomRows.map((row, index) => (
+                  <div key={row.key} className="rounded-md border border-border bg-background p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium">Part {index + 1}</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setBomRows((current) => current.filter((item) => item.key !== row.key))}
+                        aria-label={`Remove part ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-[0.8fr_1.4fr_0.6fr_0.6fr_0.7fr]">
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`bom-type-${row.key}`}>Type</Label>
+                        <select
+                          id={`bom-type-${row.key}`}
+                          value={row.component_type}
+                          onChange={(event) =>
+                            updateBomRow(row.key, { component_type: event.target.value as ProductBOMComponentType })
+                          }
+                          className={selectClass('bom')}
+                        >
+                          <option value="material">Material</option>
+                          <option value="product">Product</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`bom-component-${row.key}`}>Component</Label>
+                        {row.component_type === 'material' ? (
+                          <select
+                            id={`bom-component-${row.key}`}
+                            value={row.material_id || ''}
+                            onChange={(event) => updateBomRow(row.key, { material_id: event.target.value })}
+                            className={selectClass('bom')}
+                          >
+                            <option value="">Select material...</option>
+                            {materials.map((material) => (
+                              <option key={material.id} value={material.id}>
+                                {material.name} ({material.brand})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <select
+                            id={`bom-component-${row.key}`}
+                            value={row.component_product_id || ''}
+                            onChange={(event) => updateBomRow(row.key, { component_product_id: event.target.value })}
+                            className={selectClass('bom')}
+                          >
+                            <option value="">Select product...</option>
+                            {productOptions.map((candidate) => (
+                              <option key={candidate.id} value={candidate.id}>
+                                {candidate.sku} - {candidate.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`bom-qty-${row.key}`}>Qty</Label>
+                        <Input
+                          id={`bom-qty-${row.key}`}
+                          type="number"
+                          min="0.0001"
+                          step="0.0001"
+                          value={row.quantity}
+                          onChange={(event) => updateBomRow(row.key, { quantity: Number(event.target.value) })}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`bom-unit-${row.key}`}>Unit</Label>
+                        <Input
+                          id={`bom-unit-${row.key}`}
+                          value={row.unit}
+                          onChange={(event) => updateBomRow(row.key, { unit: event.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`bom-waste-${row.key}`}>Waste %</Label>
+                        <Input
+                          id={`bom-waste-${row.key}`}
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={row.waste_factor_pct}
+                          onChange={(event) => updateBomRow(row.key, { waste_factor_pct: Number(event.target.value) })}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 space-y-1.5">
+                      <Label htmlFor={`bom-notes-${row.key}`}>Notes</Label>
+                      <Input
+                        id={`bom-notes-${row.key}`}
+                        value={row.notes || ''}
+                        onChange={(event) => updateBomRow(row.key, { notes: event.target.value })}
+                        placeholder="Optional production note"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!isCreate ? (
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Estimated BOM cost </span>
+                  <span className="font-semibold">{formatCurrency(Number(bomSummary?.estimated_unit_cost || 0))}</span>
+                  <span className="mx-2 text-muted-foreground">|</span>
+                  <span className="text-muted-foreground">Buildable </span>
+                  <span className="font-semibold">{bomSummary?.buildable_quantity ?? '-'}</span>
+                </div>
+                <Button type="button" onClick={saveBom} disabled={savingBom}>
+                  <Save className="h-4 w-4" />
+                  {savingBom ? 'Saving...' : 'Save BOM'}
+                </Button>
+              </div>
+            ) : null}
+
+            {bomSummary?.blockers.length ? (
+              <div className="mt-4 rounded-md border border-warning/35 bg-warning/10 px-4 py-3 text-sm text-warning">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>{bomSummary.blockers[0]}</p>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-lg border border-border bg-card p-5 shadow-sm">

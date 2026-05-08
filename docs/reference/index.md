@@ -36,4 +36,4 @@ This is the authoritative technical reference index for the current codebase.
 
 - [`../index.md`](../index.md) - task-oriented documentation hub
 - `deployment_web01_*` docs - current `web01` deployment story
-- finance and workflow docs under `docs/` - feature-area technical references that should stay aligned with code changes
+- finance and workflow docs under `docs/` - feature-area technical references that should stay aligned with code changes, including Product Studio BOM behavior in [`../product_bom_tracking.md`](../product_bom_tracking.md)

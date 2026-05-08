@@ -35,3 +35,9 @@ class Product(Base):
 
     material = relationship("Material")
     inventory_transactions = relationship("InventoryTransaction", back_populates="product")
+    bom_items = relationship(
+        "ProductBOMItem",
+        foreign_keys="ProductBOMItem.product_id",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )

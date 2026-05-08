@@ -316,6 +316,38 @@ export interface ProductBarcodeGenerateResponse {
   note: string;
 }
 
+export type ProductBOMComponentType = 'material' | 'product';
+
+export interface ProductBOMItemRequest {
+  component_type: ProductBOMComponentType;
+  material_id?: string | null;
+  component_product_id?: string | null;
+  quantity: number;
+  unit: string;
+  waste_factor_pct: number;
+  notes?: string | null;
+}
+
+export interface ProductBOMItem extends ProductBOMItemRequest {
+  id: string;
+  component_name: string;
+  component_sku: string | null;
+  available_quantity: number | null;
+  unit_cost: number;
+  estimated_unit_cost: number;
+  is_blocked: boolean;
+  blocker: string | null;
+}
+
+export interface ProductBOMSummary {
+  product_id: string;
+  items: ProductBOMItem[];
+  estimated_unit_cost: number;
+  buildable_quantity: number | null;
+  blockers: string[];
+  has_bom: boolean;
+}
+
 export interface PaginatedProducts {
   items: Product[];
   total: number;

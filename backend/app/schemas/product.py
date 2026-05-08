@@ -6,6 +6,7 @@ from decimal import Decimal
 from enum import Enum
 
 from pydantic import BaseModel, Field
+from typing import Literal
 
 
 class ProductCreate(BaseModel):
@@ -55,6 +56,53 @@ class ProductBarcodeGenerateResponse(BaseModel):
     format: str = Field("upc-a", examples=["upc-a"])
     namespace: str = Field(..., examples=["internal-upc-a-04"])
     note: str
+
+
+ProductBOMComponentType = Literal["material", "product"]
+
+
+class ProductBOMItemBase(BaseModel):
+    component_type: ProductBOMComponentType
+    material_id: uuid.UUID | None = None
+    component_product_id: uuid.UUID | None = None
+    quantity: Decimal = Field(..., gt=0, examples=[Decimal("12.5")])
+    unit: str = Field("each", min_length=1, max_length=20, examples=["g"])
+    waste_factor_pct: Decimal = Field(Decimal(0), ge=0, examples=[Decimal("5")])
+    notes: str | None = Field(None, max_length=500)
+
+
+class ProductBOMItemCreate(ProductBOMItemBase):
+    pass
+
+
+class ProductBOMItemResponse(ProductBOMItemBase):
+    id: uuid.UUID
+    component_name: str
+    component_sku: str | None = None
+    available_quantity: Decimal | int | None = None
+    unit_cost: Decimal
+    estimated_unit_cost: Decimal
+    is_blocked: bool = False
+    blocker: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ProductBOMReplace(BaseModel):
+    items: list[ProductBOMItemCreate] = Field(default_factory=list)
+
+
+class ProductBOMSummary(BaseModel):
+    product_id: uuid.UUID
+    items: list[ProductBOMItemResponse]
+    estimated_unit_cost: Decimal
+    buildable_quantity: int | None
+    blockers: list[str] = Field(default_factory=list)
+    has_bom: bool
+
+
+class ProductBOMAvailability(ProductBOMSummary):
+    pass
 
 
 class POSProductScanRequest(BaseModel):
