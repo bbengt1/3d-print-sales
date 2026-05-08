@@ -37,6 +37,7 @@ import type {
   ProductBOMComponentType,
   ProductBOMItemRequest,
   ProductBOMSummary,
+  Supply,
 } from '@/types';
 
 const emptyForm = {
@@ -55,6 +56,7 @@ const newBomRow = (): BomDraftRow => ({
   component_type: 'material',
   material_id: '',
   component_product_id: '',
+  supply_id: '',
   component_name: '',
   component_sku: '',
   quantity: 1,
@@ -103,6 +105,12 @@ export default function ProductEditorPage() {
     queryFn: () => api.get('/products', { params: { is_active: true, limit: 100 } }).then((r) => r.data),
   });
 
+  const { data: supplies = [] } = useQuery<Supply[]>({
+    queryKey: ['supplies', 'active'],
+    enabled: Boolean(id),
+    queryFn: () => api.get('/supplies', { params: { active: true, limit: 200 } }).then((r) => r.data),
+  });
+
   const { data: bomSummary, isLoading: bomLoading } = useQuery<ProductBOMSummary>({
     queryKey: ['product-bom', id],
     enabled: Boolean(id),
@@ -137,7 +145,8 @@ export default function ProductEditorPage() {
         component_type: item.component_type,
         material_id: item.material_id || '',
         component_product_id: item.component_product_id || '',
-        component_name: item.component_type === 'supply' ? item.component_name : '',
+        supply_id: item.supply_id || '',
+        component_name: item.component_type === 'supply' && !item.supply_id ? item.component_name : '',
         component_sku: item.component_sku || '',
         quantity: Number(item.quantity),
         unit: item.unit,
@@ -243,6 +252,7 @@ export default function ProductEditorPage() {
       if (Number(row.quantity) <= 0 || Number(row.waste_factor_pct) < 0 || !row.unit.trim()) return true;
       if (row.component_type === 'material') return !row.material_id;
       if (row.component_type === 'product') return !row.component_product_id;
+      if (row.supply_id) return false;
       return !row.component_name?.trim() || Number(row.unit_cost || 0) < 0 || Number(row.available_quantity || 0) < 0;
     });
 
@@ -257,14 +267,18 @@ export default function ProductEditorPage() {
         component_type: row.component_type,
         material_id: row.component_type === 'material' ? row.material_id : null,
         component_product_id: row.component_type === 'product' ? row.component_product_id : null,
-        component_name: row.component_type === 'supply' ? row.component_name?.trim() || null : null,
-        component_sku: row.component_type === 'supply' ? row.component_sku?.trim() || null : null,
+        supply_id: row.component_type === 'supply' && row.supply_id ? row.supply_id : null,
+        component_name: row.component_type === 'supply' && !row.supply_id ? row.component_name?.trim() || null : null,
+        component_sku: row.component_type === 'supply' && !row.supply_id ? row.component_sku?.trim() || null : null,
         quantity: Number(row.quantity),
         unit: row.unit.trim(),
         waste_factor_pct: Number(row.waste_factor_pct || 0),
-        unit_cost: row.component_type === 'supply' ? Number(row.unit_cost || 0) : null,
+        unit_cost: row.component_type === 'supply' && !row.supply_id ? Number(row.unit_cost || 0) : null,
         available_quantity:
-          row.component_type === 'supply' && row.available_quantity !== null && row.available_quantity !== undefined
+          row.component_type === 'supply' &&
+          !row.supply_id &&
+          row.available_quantity !== null &&
+          row.available_quantity !== undefined
             ? Number(row.available_quantity)
             : null,
         notes: row.notes?.trim() || null,
@@ -288,6 +302,7 @@ export default function ProductEditorPage() {
           next.component_product_id = '';
           next.component_name = '';
           next.component_sku = '';
+          next.supply_id = '';
           next.unit_cost = null;
           next.available_quantity = null;
           if (!updates.unit) next.unit = 'g';
@@ -296,6 +311,7 @@ export default function ProductEditorPage() {
           next.material_id = '';
           next.component_name = '';
           next.component_sku = '';
+          next.supply_id = '';
           next.unit_cost = null;
           next.available_quantity = null;
           if (!updates.unit) next.unit = 'each';
@@ -303,6 +319,7 @@ export default function ProductEditorPage() {
         if (updates.component_type === 'supply') {
           next.material_id = '';
           next.component_product_id = '';
+          next.supply_id = '';
           if (!updates.unit) next.unit = 'each';
           if (next.unit_cost === null || next.unit_cost === undefined) next.unit_cost = 0;
         }
@@ -599,12 +616,30 @@ export default function ProductEditorPage() {
                             ))}
                           </select>
                         ) : (
-                          <Input
+                          <select
                             id={`bom-component-${row.key}`}
-                            value={row.component_name || ''}
-                            onChange={(event) => updateBomRow(row.key, { component_name: event.target.value })}
-                            placeholder="LED strip, magnet, screw..."
-                          />
+                            value={row.supply_id || '__custom'}
+                            onChange={(event) => {
+                              const supplyId = event.target.value === '__custom' ? '' : event.target.value;
+                              const supply = supplies.find((candidate) => candidate.id === supplyId);
+                              updateBomRow(row.key, {
+                                supply_id: supplyId,
+                                component_name: '',
+                                component_sku: supply?.sku || '',
+                                unit: supply?.unit || row.unit || 'each',
+                                unit_cost: supply ? null : row.unit_cost,
+                                available_quantity: supply ? null : row.available_quantity,
+                              });
+                            }}
+                            className={selectClass('bom')}
+                          >
+                            <option value="__custom">Custom supply...</option>
+                            {supplies.map((supply) => (
+                              <option key={supply.id} value={supply.id}>
+                                {supply.sku ? `${supply.sku} - ` : ''}{supply.name}
+                              </option>
+                            ))}
+                          </select>
                         )}
                       </div>
                       <div className="space-y-1.5">
@@ -638,8 +673,28 @@ export default function ProductEditorPage() {
                         />
                       </div>
                     </div>
-                    {row.component_type === 'supply' ? (
+                    {row.component_type === 'supply' && row.supply_id ? (
+                      <div className="mt-3 rounded-md bg-card px-3 py-2 text-xs text-muted-foreground">
+                        {(() => {
+                          const selectedSupply = supplies.find((supply) => supply.id === row.supply_id);
+                          if (!selectedSupply) return 'Linked supply inventory will provide current cost and availability.';
+                          return `${formatCurrency(selectedSupply.unit_cost)} per ${selectedSupply.unit} · ${Number(
+                            selectedSupply.quantity_on_hand,
+                          ).toLocaleString()} ${selectedSupply.unit} on hand`;
+                        })()}
+                      </div>
+                    ) : null}
+                    {row.component_type === 'supply' && !row.supply_id ? (
                       <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                        <div className="space-y-1.5 lg:col-span-3">
+                          <Label htmlFor={`bom-supply-name-${row.key}`}>Supply name</Label>
+                          <Input
+                            id={`bom-supply-name-${row.key}`}
+                            value={row.component_name || ''}
+                            onChange={(event) => updateBomRow(row.key, { component_name: event.target.value })}
+                            placeholder="LED strip, magnet, screw..."
+                          />
+                        </div>
                         <div className="space-y-1.5">
                           <Label htmlFor={`bom-sku-${row.key}`}>Part number</Label>
                           <Input

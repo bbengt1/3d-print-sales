@@ -54,6 +54,23 @@ export interface Material {
   active: boolean;
 }
 
+export interface Supply {
+  id: string;
+  name: string;
+  sku: string | null;
+  category: string | null;
+  unit: string;
+  unit_cost: number;
+  quantity_on_hand: number;
+  reorder_point: number;
+  supplier: string | null;
+  supplier_url: string | null;
+  notes: string | null;
+  active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export interface Rate {
   id: string;
   name: string;
@@ -322,6 +339,7 @@ export interface ProductBOMItemRequest {
   component_type: ProductBOMComponentType;
   material_id?: string | null;
   component_product_id?: string | null;
+  supply_id?: string | null;
   component_name?: string | null;
   component_sku?: string | null;
   quantity: number;

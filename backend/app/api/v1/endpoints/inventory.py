@@ -12,6 +12,7 @@ from app.models.approval_request import ApprovalRequest
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.material import Material
 from app.models.product import Product
+from app.models.supply import Supply
 from app.schemas.product import (
     InventoryAlert,
     InventoryReconcileRequest,
@@ -290,7 +291,7 @@ async def reconcile_inventory(body: InventoryReconcileRequest, user: CurrentUser
     "/alerts",
     response_model=list[InventoryAlert],
     summary="Get low-stock alerts",
-    description="Returns products and materials that are below their reorder points.",
+    description="Returns products, materials, and supplies that are below their reorder points.",
 )
 async def get_alerts(db: DB):
     alerts: list[InventoryAlert] = []
@@ -327,6 +328,23 @@ async def get_alerts(db: DB):
             sku=None,
             current_stock=m.spools_in_stock,
             reorder_point=m.reorder_point,
+        ))
+
+    # Supplies below reorder point
+    result = await db.execute(
+        select(Supply).where(
+            Supply.active == True,
+            Supply.quantity_on_hand <= Supply.reorder_point,
+        )
+    )
+    for s in result.scalars().all():
+        alerts.append(InventoryAlert(
+            type="supply",
+            id=s.id,
+            name=s.name,
+            sku=s.sku,
+            current_stock=s.quantity_on_hand,
+            reorder_point=s.reorder_point,
         ))
 
     return alerts

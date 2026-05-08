@@ -11,7 +11,8 @@ Product Studio supports a direct bill of materials (BOM) for finished products. 
 - Non-gram material rows use spool count and `materials.spool_price`.
 - Product rows use component product stock and current product `unit_cost`.
 - Supply rows support purchased parts such as LED strips, magnets, screws, heat-set inserts, wiring, switches, and adhesives.
-- Supply rows store their own component name, optional part number/SKU, unit cost, and optional available quantity.
+- Supply rows can link to reusable supply inventory or store one-off inline component details.
+- Linked supply rows use the supply inventory item for current name, SKU, unit cost, and available quantity.
 - Waste percentage increases the required quantity and estimated component cost.
 - BOM editing does not consume inventory, create production receipts, or update accounting ledgers.
 
@@ -47,12 +48,9 @@ Example replace payload:
     },
     {
       "component_type": "supply",
-      "component_name": "10x3mm magnet",
-      "component_sku": "MAG-10X3",
+      "supply_id": "00000000-0000-0000-0000-000000000003",
       "quantity": 4,
       "unit": "each",
-      "unit_cost": 0.18,
-      "available_quantity": 200,
       "waste_factor_pct": 0,
       "notes": "Press-fit after print cleanup"
     }
@@ -64,7 +62,8 @@ Example replace payload:
 
 - A material row must reference exactly one material and no component product.
 - A product row must reference exactly one component product and no material.
-- A supply row must include a component name and cannot reference a material or product.
+- A supply row must either reference a saved `supply_id` or include an inline component name.
+- Linked supply rows cannot reference a material or product and cannot override the component name.
 - Quantity must be greater than zero.
 - Waste percentage cannot be negative.
 - Supply unit cost cannot be negative.
@@ -80,9 +79,10 @@ Buildable quantity is calculated from current stock only:
 - material grams: `spools_in_stock * net_usable_g`
 - other material units: `spools_in_stock`
 - product components: `stock_qty`
-- supply components: `available_quantity` when provided
+- linked supply components: `supplies.quantity_on_hand`
+- inline supply components: `available_quantity` when provided
 
-Each row with known availability divides available quantity by required quantity, where required quantity includes waste. The product-level buildable quantity is the minimum known row result. Supply rows with unknown availability are included in estimated cost but do not constrain buildable quantity. Missing stock, inactive materials, archived component products, and insufficient known supply quantity are reported as blockers.
+Each row with known availability divides available quantity by required quantity, where required quantity includes waste. The product-level buildable quantity is the minimum known row result. Inline supply rows with unknown availability are included in estimated cost but do not constrain buildable quantity. Missing stock, inactive materials, archived component products, inactive linked supplies, and insufficient known supply quantity are reported as blockers.
 
 ## Data Model
 
@@ -91,8 +91,9 @@ Each row with known availability divides available quantity by required quantity
 - `product_id` is the parent finished product.
 - `component_type` is `material`, `product`, or `supply`.
 - `material_id` or `component_product_id` identifies the component.
-- `component_name`, `component_sku`, `unit_cost`, and `available_quantity` describe generic supply rows.
+- `supply_id` links a supply row to reusable supply inventory.
+- `component_name`, `component_sku`, `unit_cost`, and `available_quantity` describe inline one-off supply rows.
 - `quantity`, `unit`, and `waste_factor_pct` describe per-unit build requirements.
 - `notes` holds operator-facing production context.
 
-Future production workflows can consume this BOM when creating production receipts, but that ledger behavior is intentionally out of scope for the current Product Studio tracking slice.
+See [Supply Inventory](supply_inventory.md) for reusable purchased/shop component tracking. Future production workflows can consume this BOM when creating production receipts, but that ledger behavior is intentionally out of scope for the current Product Studio tracking slice.

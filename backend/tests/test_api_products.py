@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.material import Material
 from app.models.product import Product
+from app.models.supply import Supply
 from app.services.product_barcode_service import calculate_upc_a_check_digit
 
 
@@ -313,6 +314,66 @@ async def test_product_bom_rejects_supply_without_name(
 
     assert resp.status_code == 400
     assert "component name" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_product_bom_uses_linked_supply_inventory(
+    client: AsyncClient,
+    auth_headers: dict,
+    db_session: AsyncSession,
+    seed_material: Material,
+):
+    supply = Supply(
+        name="M3 screw",
+        sku="SCREW-M3",
+        category="hardware",
+        unit="each",
+        unit_cost=0.05,
+        quantity_on_hand=12,
+        reorder_point=20,
+    )
+    db_session.add(supply)
+    await db_session.commit()
+    await db_session.refresh(supply)
+
+    create_resp = await client.post(
+        "/api/v1/products",
+        headers=auth_headers,
+        json={"name": "Screw-mounted bracket", "material_id": str(seed_material.id)},
+    )
+    product_id = create_resp.json()["id"]
+
+    resp = await client.put(
+        f"/api/v1/products/{product_id}/bom",
+        headers=auth_headers,
+        json={
+            "items": [
+                {
+                    "component_type": "supply",
+                    "supply_id": str(supply.id),
+                    "quantity": 4,
+                    "unit": "each",
+                }
+            ]
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["items"][0]["component_name"] == "M3 screw"
+    assert data["items"][0]["component_sku"] == "SCREW-M3"
+    assert float(data["items"][0]["unit_cost"]) == pytest.approx(0.05)
+    assert data["buildable_quantity"] == 3
+
+    supply.quantity_on_hand = 3
+    supply.unit_cost = 0.07
+    await db_session.commit()
+
+    summary = await client.get(f"/api/v1/products/{product_id}/bom")
+    assert summary.status_code == 200
+    updated = summary.json()
+    assert updated["buildable_quantity"] == 0
+    assert float(updated["items"][0]["unit_cost"]) == pytest.approx(0.07)
+    assert updated["items"][0]["blocker"] == "Insufficient supply stock."
 
 
 @pytest.mark.asyncio

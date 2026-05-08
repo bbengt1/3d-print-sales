@@ -65,6 +65,7 @@ class ProductBOMItemBase(BaseModel):
     component_type: ProductBOMComponentType
     material_id: uuid.UUID | None = None
     component_product_id: uuid.UUID | None = None
+    supply_id: uuid.UUID | None = None
     component_name: str | None = Field(None, min_length=1, max_length=200, examples=["M3 screw"])
     component_sku: str | None = Field(None, max_length=100, examples=["M3x12-BLK"])
     quantity: Decimal = Field(..., gt=0, examples=[Decimal("12.5")])
@@ -178,11 +179,11 @@ class InventoryReconcileResponse(BaseModel):
 
 
 class InventoryAlert(BaseModel):
-    type: str  # "product" or "material"
+    type: str  # "product", "material", or "supply"
     id: uuid.UUID
     name: str
     sku: str | None = None
-    current_stock: int
-    reorder_point: int
+    current_stock: Decimal | int
+    reorder_point: Decimal | int
 
     model_config = {"from_attributes": True}

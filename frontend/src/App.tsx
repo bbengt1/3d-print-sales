@@ -15,6 +15,7 @@ const JobsPage = lazy(() => import('@/pages/JobsPage'));
 const JobDetailPage = lazy(() => import('@/pages/JobDetailPage'));
 const JobFormPage = lazy(() => import('@/pages/JobFormPage'));
 const MaterialsPage = lazy(() => import('@/pages/MaterialsPage'));
+const SuppliesPage = lazy(() => import('@/pages/SuppliesPage'));
 const RatesPage = lazy(() => import('@/pages/RatesPage'));
 const CustomersPage = lazy(() => import('@/pages/CustomersPage'));
 const ProductsPage = lazy(() => import('@/pages/ProductsPage'));
@@ -109,6 +110,7 @@ export default function App() {
                 <Route path="/stock" element={<InventoryPage />} />
                 <Route path="/stock/inventory" element={<InventoryPage />} />
                 <Route path="/stock/materials" element={<MaterialsPage />} />
+                <Route path="/stock/supplies" element={<SuppliesPage />} />
 
                 <Route path="/product-studio" element={<ProductsPage />} />
                 <Route path="/product-studio/products" element={<ProductsPage />} />
@@ -146,6 +148,7 @@ export default function App() {
                 <Route path="/sales/channels" element={<SalesChannelsPage />} />
                 <Route path="/sales/:id" element={<SaleDetailPage />} />
                 <Route path="/materials" element={<MaterialsPage />} />
+                <Route path="/supplies" element={<SuppliesPage />} />
                 <Route path="/rates" element={<RatesPage />} />
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/calculator" element={<CalculatorPage />} />

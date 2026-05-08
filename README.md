@@ -98,6 +98,7 @@ All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 | **Customers** | Full CRUD at `/customers` | `?search` (name/email), pagination |
 | **Jobs** | Full CRUD at `/jobs`, `POST /jobs/calculate` | `?status`, `?material_id`, `?customer_id`, `?date_from`, `?date_to`, `?search`, `?sort_by`, `?sort_dir`, pagination |
 | **Products** | Full CRUD at `/products`, BOM tracking at `/products/{id}/bom` | `?is_active`, `?material_id`, `?low_stock`, `?search`, pagination |
+| **Supplies** | Full CRUD at `/supplies`, quantity adjustment at `/supplies/{id}/adjust` | `?active`, `?category`, `?search`, pagination |
 | **Cameras** | Full CRUD at `/cameras`, `POST /cameras/{id}/assign`, `GET /cameras/{id}/snapshot` | `?is_active`, `?assigned`, `?search`, pagination |
 | **Inventory** | `GET/POST /inventory/transactions`, `GET /inventory/alerts` | `?product_id`, `?type`, pagination |
 | **Sales Channels** | Full CRUD at `/sales/channels` | `?is_active` |
@@ -107,7 +108,7 @@ All endpoints are under `/api/v1`. Rate limited at 120 requests/minute per IP.
 
 ## Database
 
-Thirteen tables (6 seeded from the original spreadsheet + 2 for inventory + 3 for sales + 1 for cameras + 1 for product BOM tracking):
+Fourteen tables (6 seeded from the original spreadsheet + 2 for inventory + 3 for sales + 1 for cameras + 1 for product BOM tracking + 1 for supplies):
 
 - **settings** — Business configuration (currency, margins, fees, electricity rates)
 - **materials** — Filament inventory (PLA, PETG, TPU, ABS, PLA+) with cost-per-gram, spool stock tracking
@@ -117,6 +118,7 @@ Thirteen tables (6 seeded from the original spreadsheet + 2 for inventory + 3 fo
 - **users** — Admin authentication
 - **products** — Product catalog with auto-generated SKU, optional UPC, stock tracking, reorder points
 - **product_bom_items** — Product Studio bill of materials rows for material, supply, and product components
+- **supplies** — Reusable purchased/shop supply inventory for BOM components such as magnets, screws, LEDs, inserts, wiring, and adhesives
 - **inventory_transactions** — Stock movement ledger (production, sale, adjustment, return, waste)
 - **sales_channels** — Sales platforms (Etsy, Amazon, Direct) with platform fee % and fixed fee per order
 - **sales** — Order tracking with auto-generated sale number (S-YYYY-NNNN), status flow, computed totals and contribution margin
@@ -163,12 +165,13 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - **Control Center** — Role-aware landing workspace with urgent printer, stock, sales, finance, and draft-job priorities plus quick actions into the main operational areas
 - **Live Camera Feeds** — go2rtc-powered live video on printer wall cards and detail pages, MSE/WebSocket primary with MJPEG snapshot fallback, dedicated kiosk monitor page at `/print-floor/monitor/:id`
 - **Print Floor** — Dedicated printer wall with grouped machine states, queue-pressure and utilization signals, reduced-chrome wall mode via `/print-floor?mode=wall`, console-style printer detail pages for live monitoring, and a defined camera-tile integration path for issue `#129`
-- **Stock** — Exceptions-first inventory workspace at `/stock` with product-impacting low-stock triage, quick reconcile/adjust actions, material signals separated from finished-goods alerts, and the full ledger preserved as a secondary surface
+- **Stock** — Exceptions-first inventory workspace at `/stock` with product-impacting low-stock triage, quick reconcile/adjust actions, material and supply signals separated from finished-goods alerts, and the full ledger preserved as a secondary surface
 - **Orders** — Unified queue workspace at `/orders` that stitches production jobs, fulfillment-relevant sales, printer readiness, and customer load into one operational surface while preserving the existing jobs and sales detail flows
 - **Dashboard** — Classic metrics view with summary cards + 3 charts (revenue line, material pie, profit bar) + low-stock alerts + sales metrics (orders, gross sales, item COGS, gross profit, contribution margin) + revenue by channel chart
 - **Insights** — Separate AI analysis workspace with focused questions, provider status, recommendations, risks, follow-up prompts, and source-of-truth evidence metrics
 - **Jobs** — List with search, status filter, pagination; detail with cost breakdown; create/edit with live cost preview, now reachable inside the Orders workspace at `/orders/jobs`
 - **Materials** — Full CRUD with modal, cost-per-gram preview, active/inactive toggle, mobile card layout
+- **Supplies** — Reusable non-filament BOM inventory at `/stock/supplies` for magnets, screws, LED strips, inserts, wiring, adhesives, and similar purchased parts
 - **Rates** — Full CRUD with modal, unit dropdown, active/inactive toggle, mobile card layout
 - **Customers** — Full CRUD with modal, search, delete, job count
 - **Product Studio** — Catalog workspace at `/product-studio` with product search, readiness signals, archive/restore controls, and direct navigation into the full-page product editor
@@ -196,6 +199,7 @@ Net Profit          = not yet exposed for sales reporting until overhead allocat
 - [AI Insights Guide](docs/ai_insights.md) — provider configuration, safety boundaries, endpoints, and UX rationale for issue `#112`
 - [Role-Based Frontend Redesign User Story](docs/frontend_role_based_redesign_user_story.md) — issue-ready redesign brief for print monitoring, live views, POS, inventory, product studio, and role-based workspaces.
 - [Product BOM Tracking](docs/product_bom_tracking.md) — maintained guide for Product Studio material, supply, and product component rows, cost estimates, buildability, and validation rules.
+- [Supply Inventory](docs/supply_inventory.md) — maintained guide for reusable purchased/shop supply stock used by Product Studio BOM rows.
 
 ## Testing
 

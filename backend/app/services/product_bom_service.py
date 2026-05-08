@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.material import Material
 from app.models.product import Product
 from app.models.product_bom_item import ProductBOMItem
+from app.models.supply import Supply
 from app.schemas.product import (
     ProductBOMItemCreate,
     ProductBOMItemResponse,
@@ -63,7 +64,7 @@ async def _validate_item(
     item: ProductBOMItemCreate,
 ) -> None:
     if item.component_type == "material":
-        if not item.material_id or item.component_product_id:
+        if not item.material_id or item.component_product_id or item.supply_id:
             raise ProductBOMValidationError("Material BOM rows must reference exactly one material.")
         material = (await db.execute(select(Material).where(Material.id == item.material_id))).scalar_one_or_none()
         if not material:
@@ -71,7 +72,7 @@ async def _validate_item(
         return
 
     if item.component_type == "product":
-        if not item.component_product_id or item.material_id:
+        if not item.component_product_id or item.material_id or item.supply_id:
             raise ProductBOMValidationError("Product BOM rows must reference exactly one component product.")
         if item.component_product_id == product_id:
             raise ProductBOMValidationError("A product cannot include itself in its BOM.")
@@ -87,18 +88,28 @@ async def _validate_item(
     if item.component_type == "supply":
         if item.material_id or item.component_product_id:
             raise ProductBOMValidationError("Supply BOM rows cannot reference a material or product.")
+        if item.supply_id:
+            supply = (await db.execute(select(Supply).where(Supply.id == item.supply_id))).scalar_one_or_none()
+            if not supply:
+                raise ProductBOMValidationError("BOM supply component not found.")
+            if item.component_name:
+                raise ProductBOMValidationError("Linked supply BOM rows cannot override the component name.")
+            return
         if not item.component_name or not item.component_name.strip():
-            raise ProductBOMValidationError("Supply BOM rows must include a component name.")
+            raise ProductBOMValidationError("Supply BOM rows must include a component name or linked supply.")
         return
 
     raise ProductBOMValidationError("Unsupported BOM component type.")
 
 
-def _row_key(item: ProductBOMItemCreate) -> tuple[str, uuid.UUID | None, uuid.UUID | None, str | None, str | None]:
+def _row_key(
+    item: ProductBOMItemCreate,
+) -> tuple[str, uuid.UUID | None, uuid.UUID | None, uuid.UUID | None, str | None, str | None]:
     return (
         item.component_type,
         item.material_id,
         item.component_product_id,
+        item.supply_id,
         item.component_name.strip().casefold() if item.component_name else None,
         item.component_sku.strip().casefold() if item.component_sku else None,
     )
@@ -112,7 +123,7 @@ async def replace_product_bom(
 ) -> ProductBOMSummary:
     await get_product_or_raise(db, product_id)
 
-    seen: set[tuple[str, uuid.UUID | None, uuid.UUID | None, str | None, str | None]] = set()
+    seen: set[tuple[str, uuid.UUID | None, uuid.UUID | None, uuid.UUID | None, str | None, str | None]] = set()
     for item in items:
         key = _row_key(item)
         if key in seen:
@@ -175,18 +186,32 @@ async def _item_response(db: AsyncSession, item: ProductBOMItem) -> ProductBOMIt
         )
 
     if item.component_type == "supply":
-        available = Decimal(item.available_quantity) if item.available_quantity is not None else None
-        unit_cost = Decimal(item.unit_cost or 0)
+        if item.supply_id:
+            supply = (await db.execute(select(Supply).where(Supply.id == item.supply_id))).scalar_one()
+            available = Decimal(supply.quantity_on_hand)
+            unit_cost = Decimal(supply.unit_cost)
+            component_name = supply.name
+            component_sku = supply.sku
+            if not supply.active:
+                blocker = "Supply is inactive."
+            elif available < required:
+                blocker = "Insufficient supply stock."
+        else:
+            available = Decimal(item.available_quantity) if item.available_quantity is not None else None
+            unit_cost = Decimal(item.unit_cost or 0)
+            component_name = item.component_name or "Supply component"
+            component_sku = item.component_sku
+            if available is not None and available < required:
+                blocker = "Insufficient supply stock."
         estimated_cost = required * unit_cost
-        if available is not None and available < required:
-            blocker = "Insufficient supply stock."
         return ProductBOMItemResponse(
             id=item.id,
             component_type="supply",
             material_id=None,
             component_product_id=None,
-            component_name=item.component_name or "Supply component",
-            component_sku=item.component_sku,
+            supply_id=item.supply_id,
+            component_name=component_name,
+            component_sku=component_sku,
             quantity=item.quantity,
             unit=item.unit,
             waste_factor_pct=item.waste_factor_pct,

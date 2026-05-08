@@ -18,6 +18,7 @@ class ProductBOMItem(Base):
     component_type: Mapped[str] = mapped_column(String(20))
     material_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("materials.id"), nullable=True, index=True)
     component_product_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("products.id"), nullable=True, index=True)
+    supply_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("supplies.id"), nullable=True, index=True)
     component_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     component_sku: Mapped[str | None] = mapped_column(String(100), nullable=True)
     quantity: Mapped[Decimal] = mapped_column(Numeric(12, 4))
@@ -38,3 +39,4 @@ class ProductBOMItem(Base):
     product = relationship("Product", foreign_keys=[product_id], back_populates="bom_items")
     material = relationship("Material")
     component_product = relationship("Product", foreign_keys=[component_product_id])
+    supply = relationship("Supply")

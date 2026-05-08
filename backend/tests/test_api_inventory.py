@@ -10,6 +10,7 @@ from uuid import UUID
 
 from app.models.material import Material
 from app.models.product import Product
+from app.models.supply import Supply
 
 
 @pytest_asyncio.fixture
@@ -202,6 +203,26 @@ async def test_alerts_low_stock_material(
     alerts = resp.json()
     material_alerts = [a for a in alerts if a["type"] == "material"]
     assert len(material_alerts) >= 1
+
+
+@pytest.mark.asyncio
+async def test_alerts_low_stock_supply(client: AsyncClient, db_session: AsyncSession):
+    supply = Supply(
+        name="10x3mm magnet",
+        sku="MAG-10X3",
+        unit="each",
+        unit_cost=Decimal("0.18"),
+        quantity_on_hand=Decimal("4"),
+        reorder_point=Decimal("10"),
+    )
+    db_session.add(supply)
+    await db_session.commit()
+
+    resp = await client.get("/api/v1/inventory/alerts")
+    assert resp.status_code == 200
+    alerts = resp.json()
+    supply_alerts = [a for a in alerts if a["type"] == "supply"]
+    assert any(a["name"] == "10x3mm magnet" and a["sku"] == "MAG-10X3" for a in supply_alerts)
 
 
 @pytest.mark.asyncio

@@ -101,7 +101,8 @@ export default function InventoryPage() {
   const variance = selectedProduct ? reconcileForm.counted_qty - selectedProduct.stock_qty : 0;
 
   const productAlerts = alerts.filter((alert) => alert.type === 'product');
-  const materialAlerts = alerts.filter((alert) => alert.type !== 'product');
+  const materialAlerts = alerts.filter((alert) => alert.type === 'material');
+  const supplyAlerts = alerts.filter((alert) => alert.type === 'supply');
   const criticalProductAlerts = productAlerts.filter((alert) => alert.current_stock <= 0);
   const outOfStockProducts = products.filter((product) => product.stock_qty <= 0);
   const nearReorderProducts = products.filter(
@@ -589,9 +590,10 @@ export default function InventoryPage() {
           </TabsList>
         </Tabs>
         <Button asChild variant="outline" size="sm">
-          <Link to="/stock/materials">
-            <Layers className="h-3.5 w-3.5" /> Materials
-          </Link>
+          <Link to="/stock/materials"><Layers className="h-3.5 w-3.5" /> Materials</Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/stock/supplies"><Layers className="h-3.5 w-3.5" /> Supplies</Link>
         </Button>
       </div>
 
@@ -718,6 +720,35 @@ export default function InventoryPage() {
                       </Link>
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                         {alert.current_stock} / {alert.reorder_point}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Callout>
+            ) : null}
+            {supplyAlerts.length > 0 ? (
+              <Callout
+                tone="warning"
+                title={
+                  <span className="flex items-center justify-between gap-2">
+                    <span>Supply signals</span>
+                    <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                      <Link to="/stock/supplies">Open</Link>
+                    </Button>
+                  </span>
+                }
+              >
+                <ul className="space-y-1 text-sm">
+                  {supplyAlerts.slice(0, 6).map((alert) => (
+                    <li key={`${alert.type}-${alert.id}`} className="flex items-center justify-between gap-3">
+                      <Link
+                        to="/stock/supplies"
+                        className="truncate text-foreground no-underline hover:underline"
+                      >
+                        {alert.name}
+                      </Link>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {Number(alert.current_stock).toLocaleString()} / {Number(alert.reorder_point).toLocaleString()}
                       </span>
                     </li>
                   ))}

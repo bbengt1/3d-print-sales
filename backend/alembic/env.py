@@ -22,6 +22,7 @@ from app.models.printer import Printer  # noqa
 from app.models.printer_history_event import PrinterHistoryEvent  # noqa
 from app.models.product import Product  # noqa
 from app.models.product_bom_item import ProductBOMItem  # noqa
+from app.models.supply import Supply  # noqa
 from app.models.inventory_transaction import InventoryTransaction  # noqa
 from app.models.sales_channel import SalesChannel  # noqa
 from app.models.sale import Sale  # noqa
