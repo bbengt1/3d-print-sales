@@ -219,6 +219,13 @@ async def import_statement(
     imp.line_count = line_count
     imp.duplicate_count = duplicate_count
     await db.flush()
+
+    # Apply auto-match rules (#241) to lines just inserted. Phase 1 only
+    # handles the `ignore` action; other actions are no-ops until Phase 2.
+    from app.services.statement_match_rule_service import apply_rules_to_import
+
+    await apply_rules_to_import(db, import_id=imp.id)
+
     return imp
 
 
