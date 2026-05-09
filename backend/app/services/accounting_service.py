@@ -56,6 +56,9 @@ STARTER_CHART_OF_ACCOUNTS = [
     # Accounting foundations cluster (#260)
     ("1900", "Suspense", "asset", "debit"),
     ("3300", "Opening Balance Equity", "equity", "credit"),
+    # Credit/debit notes (#248)
+    ("4800", "Sales Returns", "revenue", "debit"),
+    ("5400", "Purchase Returns", "cogs", "credit"),
 ]
 
 
