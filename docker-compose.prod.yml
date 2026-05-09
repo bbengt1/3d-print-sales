@@ -30,6 +30,12 @@ services:
     environment:
       ENVIRONMENT: production
       TESTING: false
+      # Where attachments (#250) are written. Must be a persistent host
+      # path so files survive container rebuilds. Backups should include
+      # this directory.
+      ATTACHMENT_STORAGE_ROOT: /var/app-attachments
+    volumes:
+      - attachments_data:/var/app-attachments
     depends_on:
       db:
         condition: service_healthy
@@ -72,3 +78,5 @@ networks:
 volumes:
   postgres_data:
     name: 3d_print_sales_postgres_data
+  attachments_data:
+    name: 3d_print_sales_attachments_data
