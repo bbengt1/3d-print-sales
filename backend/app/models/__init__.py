@@ -17,7 +17,9 @@ from app.models.inventory_location import (  # noqa: F401
     InventoryTransferLine,
 )
 from app.models.product_bom_item import ProductBOMItem  # noqa: F401
+from app.models.purchase_order import PurchaseOrder, PurchaseOrderLine  # noqa: F401
 from app.models.recurring_invoice import RecurringInvoice, RecurringInvoiceRun  # noqa: F401
+from app.models.sales_order import SalesOrder, SalesOrderLine  # noqa: F401
 from app.models.recurring_journal_entry import (  # noqa: F401
     RecurringJournalEntry,
     RecurringJournalEntryRun,

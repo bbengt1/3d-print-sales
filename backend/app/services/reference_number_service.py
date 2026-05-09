@@ -23,6 +23,8 @@ FORMATS: Final[dict[str, str]] = {
     "expense_claim": "EC-{year}-{value:04d}",
     "credit_note": "CN-{year}-{value:04d}",
     "debit_note": "DN-{year}-{value:04d}",
+    "sales_order": "SO-{year}-{value:04d}",
+    "purchase_order": "PO-{year}-{value:04d}",
 }
 
 
