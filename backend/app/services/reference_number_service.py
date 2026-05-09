@@ -18,6 +18,7 @@ FORMATS: Final[dict[str, str]] = {
     "sale": "S-{year}-{value:04d}",
     "invoice": "INV-{year}-{value:04d}",
     "quote": "Q-{year}-{value:04d}",
+    "inventory_transfer": "IT-{year}-{value:04d}",
 }
 
 
