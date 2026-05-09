@@ -146,5 +146,6 @@
 - Server env file: `/srv/3d-print-sales/env/web01.env`
 - Systemd unit: `3d-print-sales.service`
 - Compose wrapper: `/srv/3d-print-sales/repo/scripts/web01-compose.sh`
-- Helper deploy script: `/srv/3d-print-sales/deploy.sh`
+- Canonical deploy script (in repo): `scripts/deploy.sh` — pulls main, rebuilds containers, **runs `alembic upgrade head`**, restarts backend. The host's `/srv/3d-print-sales/deploy.sh` is a thin wrapper that delegates to this.
+- **Migrations must run on every schema-changing deploy.** Backend startup queries newly-added tables/columns; skipping migrations crashes the container. (Real incident on 2026-05-09 with PR #271 / #239.) Use `SKIP_MIGRATIONS=1` only for code-only emergency redeploys when you know there's no schema delta.
 - Running containers: `3d-print-sales-db`, `3d-print-sales-backend`, `3d-print-sales-frontend`
