@@ -4,7 +4,9 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text
+from datetime import date as date_type
+
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -24,6 +26,10 @@ class JournalLine(Base):
     # has is_bank_account=True; ignored otherwise. Values: uncleared,
     # cleared, reconciled. See #239.
     cleared_status: Mapped[str] = mapped_column(String(15), default="uncleared", index=True)
+    # Optional per-line posted_on date. When NULL, the parent JE's
+    # entry_date is the effective date. Used by inter-account transfers
+    # (#246) where paid_on and received_on differ.
+    posted_on: Mapped[date_type | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
