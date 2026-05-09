@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-09 (Tier 1 complete; Tier 2 #245, #246, #250 Phase 1 landed)
+> **Last reviewed:** 2026-05-09 (Tier 1 complete; Tier 2 #245/#246/#250 done; Tier 3 #247/#251/#252 done)
 >
 > **How to use this doc:**
 > - Tiers are ordered top-to-bottom — start with Tier 1 unless there's a specific business reason to jump.
@@ -44,7 +44,7 @@ These either unblock many other issues, fix a known production risk, or establis
 | 10 | [#248 — credit notes + debit notes](https://github.com/bbengt1/3d-print-sales/issues/248) | Formal customer/vendor return documents. Closes the AR/AP refund-document gap. | Soft deps on #243, #244, #245, #242. |
 | ~~11~~ | ~~#246~~ — **landed 2026-05-09** (PR #275, squash `ac94091`). Phase 2: edit endpoint, multi-currency, auto-create from bank import (paired with #241), frontend. | Per-line `posted_on` added to journal_lines. | |
 | 12 | [#241 — statement-line auto-match rules](https://github.com/bbengt1/3d-print-sales/issues/241) | Power-user layer on top of #240 — collapses the per-line review burden. | Hard dep on #240. |
-| 13 | [#247 — recurring sales invoices](https://github.com/bbengt1/3d-print-sales/issues/247) | Useful for retainers, subscriptions, consignment statements. n8n cron-driven. | Soft dep on #244 for auto-email. |
+| ~~13~~ | ~~#247~~ — **landed 2026-05-09** (PR #277, squash `82db7d1`). Phase 2: auto-email integration with #244, frontend, n8n cron workflow JSON. | Cron entry point `/run-due` ready for n8n. | |
 | 14 | [#261 — sales orders + purchase orders](https://github.com/bbengt1/3d-print-sales/issues/261) | Fills out the sales and purchase cycles with formal intermediate documents. Symmetric, big-but-tractable. | Soft deps on #243, #244. |
 | 15 | [#260 — accounting foundations cluster](https://github.com/bbengt1/3d-print-sales/issues/260) | Recurring JEs + suspense clearing + starting balances + verify-and-document tasks for the §7 🔁 rows. | Best after Tier 1+2 so the verify pass has the new context. |
 | 16 | [#263 — sales auxiliary (late fees, delivery notes, billable expenses, withholding)](https://github.com/bbengt1/3d-print-sales/issues/263) | Four small AR-side gaps as one polish pass. | Soft deps on #244 for delivery-note email. |
@@ -57,8 +57,8 @@ These either unblock many other issues, fix a known production risk, or establis
 |---|---|---|---|
 | 17 | [#258 — compound + reverse-charge tax codes](https://github.com/bbengt1/3d-print-sales/issues/258) | Only matters when the operator hits a multi-jurisdiction or B2B-intl. scenario. Defer until that's real. | Forward-compatible with the existing single-rate code paths. |
 | 18 | [#255 — divisions + projects](https://github.com/bbengt1/3d-print-sales/issues/255) | Useful for segmentation reporting; not blocking anyone. | Adds optional FKs across many models. |
-| 19 | [#251 — expense claims (owner reimbursable)](https://github.com/bbengt1/3d-print-sales/issues/251) | Real for solo operator but workaround (manual JE) exists. | Soft dep on #250 for receipt photos. |
-| 20 | [#252 — intangible assets + amortization](https://github.com/bbengt1/3d-print-sales/issues/252) | Symmetric mirror of #238; lower business value than fixed assets. | Mirrors #238's design — easy after that lands. |
+| ~~19~~ | ~~#251~~ — **landed 2026-05-09** (PR #278, squash `5e45ac2`). Phase 2: receipt attachments via #250, approval_request integration, reimburse-as-Bill, frontend. | New COA account 2300. | |
+| ~~20~~ | ~~#252~~ — **landed 2026-05-09** (PR #279, squash `15cf9f1`). Symmetric mirror of #238. Phase 2: auto-monthly cron, frontend. | 5 new COA accounts. | |
 | 21 | [#259 — budgets + budget vs. actual P&L](https://github.com/bbengt1/3d-print-sales/issues/259) | Strategic/planning tool; less urgent than transactional gaps. | Custom report builder explicitly deferred from this issue. |
 | 22 | [#262 — inventory polish (kits, merge dupes, starting balances)](https://github.com/bbengt1/3d-print-sales/issues/262) | Three small items bundled. Useful as catalog grows. | Independent of most other tiers. |
 | 23 | [#264 — cross-cutting consistency pass](https://github.com/bbengt1/3d-print-sales/issues/264) | Form templates + archive flag audit + search/sort UX + PDF parity. **Touches many files** — land near the end of the queue so it consolidates a stable surface. | Best after most other issues to avoid re-doing migrations. |
@@ -102,6 +102,9 @@ These issues pre-date the Manager.io gap analysis and don't fit the tier structu
 | [#245](https://github.com/bbengt1/3d-print-sales/issues/245) — inventory locations Phase 1 (PR #274) | 2026-05-09 | Squash `8d157f7`. Locations CRUD + transfer lifecycle (pending → in_transit → completed). No GL impact. Per-location qty decrement and sale fulfillment-from deferred. |
 | [#246](https://github.com/bbengt1/3d-print-sales/issues/246) — inter-account transfers (PR #275) | 2026-05-09 | Squash `ac94091`. Always-posted JE with per-line `posted_on` (new column on `journal_lines`). Edit-lock via #239 guard. |
 | [#250](https://github.com/bbengt1/3d-print-sales/issues/250) — attachments Phase 1 (PR #276) | 2026-05-09 | Squash `88b7af9`. Polymorphic `(scope, record_id)` upload with magic-byte sniffing, Pillow webp thumbnails, soft delete, 100 MB/record cap. New `attachments_data` compose volume. Frontend + email-attach hook + S3 deferred. |
+| [#247](https://github.com/bbengt1/3d-print-sales/issues/247) — recurring sales invoices (PR #277) | 2026-05-09 | Squash `82db7d1`. Cron-driven `/run-due`, snapshot pricing, future-only template propagation, failure-no-advance, auto-deactivate on `end_on`. |
+| [#251](https://github.com/bbengt1/3d-print-sales/issues/251) — expense claims (PR #278) | 2026-05-09 | Squash `5e45ac2`. draft → submitted → approved → reimbursed lifecycle with JE postings + auto-reversal on cancel. New COA `2300` Owner Reimbursable Liability. |
+| [#252](https://github.com/bbengt1/3d-print-sales/issues/252) — intangible assets + amortization (PR #279) | 2026-05-09 | Squash `15cf9f1`. Symmetric mirror of #238. SL+DDB math, dispose flow, 5 new COA accounts (1800/1850/6750/4920/6760). |
 | [#266 / #267 / #268](https://github.com/bbengt1/3d-print-sales/issues/265) — Dependabot remediation | 2026-05-09 | Closed #265. axios 1.15.2, vite 8.0.5, python-multipart 0.0.27, Pillow 12.2.0, pytest 9.0.3. Deployed to web01 (`33b4e3e`). |
 
 ---
