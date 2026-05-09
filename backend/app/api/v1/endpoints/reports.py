@@ -36,8 +36,10 @@ from app.services.report_service import (
     generate_inventory_report,
     generate_inventory_valuation_report,
     generate_pl_report,
+    generate_receipts_payments_summary_report,
     generate_sales_report,
     generate_tax_liability_summary_report,
+    generate_trial_balance_report,
 )
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -214,3 +216,46 @@ async def pl_accrual_report(db: DB, date_from: datetime.date | None = Query(None
 @router.get("/pl-cash", response_model=ProfitAndLossResponse, summary="Cash-basis P&L")
 async def pl_cash_report(db: DB, date_from: datetime.date | None = Query(None), date_to: datetime.date | None = Query(None)):
     return await generate_cash_pl_report(db, date_from, date_to)
+
+
+@router.get("/trial-balance", summary="Trial balance — debit + credit columns at a point in time")
+async def trial_balance_report(db: DB, as_of_date: datetime.date = Query(...)):
+    return await generate_trial_balance_report(db, as_of_date)
+
+
+@router.get(
+    "/receipts-payments-summary",
+    summary="Receipts & Payments Summary — categorized cash movements grouped by GL account",
+)
+async def receipts_payments_summary_report(
+    db: DB,
+    date_from: datetime.date | None = Query(None),
+    date_to: datetime.date | None = Query(None),
+):
+    return await generate_receipts_payments_summary_report(db, date_from, date_to)
+
+
+@router.get("/trial-balance.csv", summary="Trial balance as CSV")
+async def trial_balance_csv(db: DB, as_of_date: datetime.date = Query(...)):
+    from fastapi.responses import Response
+    report = await generate_trial_balance_report(db, as_of_date)
+    csv = export_to_csv(
+        report["rows"],
+        columns=["account_code", "account_name", "account_type", "debit", "credit"],
+    )
+    return Response(content=csv, media_type="text/csv")
+
+
+@router.get("/receipts-payments-summary.csv", summary="Receipts & Payments Summary as CSV")
+async def receipts_payments_csv(
+    db: DB,
+    date_from: datetime.date | None = Query(None),
+    date_to: datetime.date | None = Query(None),
+):
+    from fastapi.responses import Response
+    report = await generate_receipts_payments_summary_report(db, date_from, date_to)
+    csv = export_to_csv(
+        report["rows"],
+        columns=["account_code", "account_name", "account_type", "is_bank_account", "inflows", "outflows", "net", "transaction_count"],
+    )
+    return Response(content=csv, media_type="text/csv")

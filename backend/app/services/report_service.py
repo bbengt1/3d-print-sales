@@ -699,6 +699,118 @@ async def generate_cash_flow_summary_report(db: AsyncSession, date_from: date | 
     }
 
 
+async def generate_trial_balance_report(db: AsyncSession, as_of_date: date):
+    """Account-by-account debit + credit balances at a point in time (#249).
+
+    Per accounting convention: each account's balance shows on its
+    natural side. A debit-normal account with a positive balance shows
+    in the Debit column; same balance going negative would show in
+    Credit (and vice versa for credit-normal accounts).
+    """
+    balances = await _posted_journal_balances(db, date_to=as_of_date)
+    rows = []
+    total_debit = Decimal("0")
+    total_credit = Decimal("0")
+    for (code, name, account_type, normal_balance), amount in sorted(balances.items()):
+        debit = Decimal("0")
+        credit = Decimal("0")
+        if normal_balance == "debit":
+            if amount >= 0:
+                debit = amount
+            else:
+                credit = -amount
+        else:
+            if amount >= 0:
+                credit = amount
+            else:
+                debit = -amount
+        if debit == 0 and credit == 0:
+            continue
+        rows.append({
+            "account_code": code,
+            "account_name": name,
+            "account_type": account_type,
+            "debit": debit,
+            "credit": credit,
+        })
+        total_debit += debit
+        total_credit += credit
+    return {
+        "as_of_date": as_of_date.isoformat(),
+        "rows": rows,
+        "total_debit": total_debit,
+        "total_credit": total_credit,
+        "is_balanced": total_debit == total_credit,
+    }
+
+
+async def generate_receipts_payments_summary_report(
+    db: AsyncSession, date_from: date | None, date_to: date | None
+):
+    """Categorized cash-movement view grouped by GL account over the
+    selected date range (#249). One row per account with `inflows`,
+    `outflows`, `net`, `transaction_count`.
+    """
+    stmt = (
+        select(
+            Account.id,
+            Account.code,
+            Account.name,
+            Account.account_type,
+            Account.is_bank_account,
+            JournalLine.entry_type,
+            JournalLine.amount,
+        )
+        .join(JournalLine, JournalLine.account_id == Account.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+        .where(JournalEntry.status == "posted")
+    )
+    if date_from:
+        stmt = stmt.where(JournalEntry.entry_date >= date_from)
+    if date_to:
+        stmt = stmt.where(JournalEntry.entry_date <= date_to)
+    rows = (await db.execute(stmt)).all()
+
+    by_account: dict = {}
+    for account_id, code, name, account_type, is_bank, entry_type, amount in rows:
+        rec = by_account.setdefault(
+            account_id,
+            {
+                "account_id": str(account_id),
+                "account_code": code,
+                "account_name": name,
+                "account_type": account_type,
+                "is_bank_account": bool(is_bank),
+                "inflows": Decimal("0"),
+                "outflows": Decimal("0"),
+                "transaction_count": 0,
+            },
+        )
+        rec["transaction_count"] += 1
+        if entry_type == "debit":
+            rec["inflows"] += amount
+        else:
+            rec["outflows"] += amount
+
+    out = []
+    total_inflows = Decimal("0")
+    total_outflows = Decimal("0")
+    for rec in by_account.values():
+        rec["net"] = rec["inflows"] - rec["outflows"]
+        total_inflows += rec["inflows"]
+        total_outflows += rec["outflows"]
+        out.append(rec)
+    out.sort(key=lambda r: -abs(r["net"]))
+    return {
+        "date_from": date_from.isoformat() if date_from else None,
+        "date_to": date_to.isoformat() if date_to else None,
+        "rows": out,
+        "total_inflows": total_inflows,
+        "total_outflows": total_outflows,
+        "net_change": total_inflows - total_outflows,
+    }
+
+
 def export_to_csv(rows: list[dict], columns: list[str] | None = None) -> str:
     """Convert a list of dicts to CSV string."""
     if not rows:
