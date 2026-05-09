@@ -27,4 +27,15 @@ LABEL_SETTINGS_DATA = [
     ("barcode_include_price", "false", "Include unit price on printed labels."),
 ]
 
-SETTINGS_DATA = BUSINESS_SETTINGS_DATA + AI_SETTINGS_DATA + LABEL_SETTINGS_DATA
+EMAIL_SETTINGS_DATA = [
+    ("email_transport", "smtp", "Outbound email transport: smtp (Phase 1). Resend planned in a follow-up."),
+    ("email_smtp_host", "", "SMTP server host (e.g. smtp.gmail.com, smtp.sendgrid.net)."),
+    ("email_smtp_port", "587", "SMTP port. 587 for STARTTLS, 465 for SMTPS, 25 unencrypted."),
+    ("email_smtp_username", "", "SMTP login username."),
+    ("email_smtp_password", "", "SMTP login password / API token. Stored plaintext in v1; encryption is a follow-up."),
+    ("email_smtp_use_tls", "true", "Whether to STARTTLS upgrade after EHLO. true/false."),
+    ("email_from_address", "", "Outbound from-address shown to recipients."),
+    ("email_from_name", "", "Outbound from-name shown to recipients."),
+]
+
+SETTINGS_DATA = BUSINESS_SETTINGS_DATA + AI_SETTINGS_DATA + LABEL_SETTINGS_DATA + EMAIL_SETTINGS_DATA
