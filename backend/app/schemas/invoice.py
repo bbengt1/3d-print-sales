@@ -38,7 +38,7 @@ class InvoiceLineResponse(BaseModel):
 
 
 class InvoiceCreate(BaseModel):
-    invoice_number: str = Field(..., min_length=1, max_length=50)
+    invoice_number: str | None = Field(None, max_length=50)
     quote_id: uuid.UUID | None = None
     customer_id: uuid.UUID | None = None
     customer_name: str | None = Field(None, max_length=200)
@@ -71,7 +71,7 @@ class InvoiceCreditApply(BaseModel):
 
 
 class InvoiceFromQuoteCreate(BaseModel):
-    invoice_number: str = Field(..., min_length=1, max_length=50)
+    invoice_number: str | None = Field(None, max_length=50)
     issue_date: datetime.date
     due_date: datetime.date | None = None
     tax_amount: Decimal = Field(0, ge=0)

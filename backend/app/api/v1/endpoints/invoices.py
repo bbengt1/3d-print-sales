@@ -100,12 +100,18 @@ async def get_invoice(invoice_id: uuid.UUID, db: DB):
 
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED, summary="Create invoice")
 async def create_invoice(body: InvoiceCreate, user: CurrentUser, db: DB):
-    existing = await db.execute(select(Invoice.id).where(Invoice.invoice_number == body.invoice_number))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail=f"Invoice number '{body.invoice_number}' already exists")
+    from app.services.reference_number_service import next_number
+
+    invoice_number = body.invoice_number.strip() if body.invoice_number else ""
+    if not invoice_number:
+        invoice_number = await next_number(db, "invoice")
+    else:
+        existing = await db.execute(select(Invoice.id).where(Invoice.invoice_number == invoice_number))
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail=f"Invoice number '{invoice_number}' already exists")
 
     invoice = Invoice(
-        invoice_number=body.invoice_number,
+        invoice_number=invoice_number,
         quote_id=body.quote_id,
         customer_id=body.customer_id,
         customer_name=body.customer_name,
@@ -146,12 +152,18 @@ async def create_invoice_from_quote(quote_id: uuid.UUID, body: InvoiceFromQuoteC
     if quote.status != "accepted":
         raise HTTPException(status_code=400, detail="Only accepted quotes can be invoiced")
 
-    existing = await db.execute(select(Invoice.id).where(Invoice.invoice_number == body.invoice_number))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail=f"Invoice number '{body.invoice_number}' already exists")
+    from app.services.reference_number_service import next_number
+
+    invoice_number = body.invoice_number.strip() if body.invoice_number else ""
+    if not invoice_number:
+        invoice_number = await next_number(db, "invoice")
+    else:
+        existing = await db.execute(select(Invoice.id).where(Invoice.invoice_number == invoice_number))
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail=f"Invoice number '{invoice_number}' already exists")
 
     invoice = Invoice(
-        invoice_number=body.invoice_number,
+        invoice_number=invoice_number,
         quote_id=quote.id,
         customer_id=quote.customer_id,
         customer_name=quote.customer_name,

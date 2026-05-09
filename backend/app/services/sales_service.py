@@ -21,15 +21,16 @@ class InsufficientStockError(Exception):
 
 
 async def generate_sale_number(db: AsyncSession) -> str:
-    """Generate a unique sale number in format S-YYYY-NNNN."""
-    from datetime import date
-    year = date.today().year
-    prefix = f"S-{year}-"
-    result = await db.execute(
-        select(func.count()).select_from(Sale).where(Sale.sale_number.like(f"{prefix}%"))
-    )
-    count = result.scalar() or 0
-    return f"{prefix}{count + 1:04d}"
+    """Generate a unique sale number in format S-YYYY-NNNN.
+
+    Backed by the race-safe `reference_number_service` allocator (#243).
+    Caller invokes inside the same transaction as the Sale insert; on rollback
+    the allocation also rolls back, preserving contiguous numbering on success
+    and burning a number on failure (intended behavior).
+    """
+    from app.services.reference_number_service import next_number
+
+    return await next_number(db, "sale")
 
 
 async def get_or_create_sales_channel(

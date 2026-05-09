@@ -55,7 +55,7 @@
 
 ## Known Risks
 
-- `backend/app/services/sales_service.py` generates `sale_number` from a yearly row count. That is race-prone under concurrent sale creation because the column is unique.
+- ~~`backend/app/services/sales_service.py` generates `sale_number` from a yearly row count.~~ Closed by [#243](https://github.com/bbengt1/3d-print-sales/issues/243): all reference numbers (sales, invoices, quotes) now flow through the race-safe `reference_number_service` allocator. See `docs/reference_numbering.md`.
 - `backend/app/services/printer_monitoring.py` is imported during app startup and depends on `websockets`; backend environments need that dependency installed or the app and tests will fail before collection.
 - README coverage is broader than the minimum validated local setup. Verify routes and tests rather than relying on documentation alone.
 
