@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import accounting, accounting_foundations, approvals, attachments, audit, auth, banking, cameras, customers, dashboard, email, expense_claims, fixed_assets, insights, intangible_assets, inter_account_transfers, inventory, invoices, jobs, locations, materials, pos, printers, products, quotes, rates, recurring_invoices, reports, sales, sales_channels, settlements, settings, statement_imports, statement_match_rules, supplies, tax
+from app.api.v1.endpoints import accounting, accounting_foundations, approvals, attachments, audit, auth, banking, cameras, customers, dashboard, divisions, email, expense_claims, fixed_assets, insights, intangible_assets, inter_account_transfers, inventory, invoices, jobs, locations, materials, pos, printers, products, quotes, rates, recurring_invoices, reports, sales, sales_channels, settlements, settings, statement_imports, statement_match_rules, supplies, tax
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -39,3 +39,4 @@ api_router.include_router(intangible_assets.router)
 api_router.include_router(statement_imports.router)
 api_router.include_router(statement_match_rules.router)
 api_router.include_router(accounting_foundations.router)
+api_router.include_router(divisions.router)
