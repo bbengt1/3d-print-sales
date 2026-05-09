@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-09 (Tier 1 #243, #244 Phase 1, #239 backend, deploy hardening landed)
+> **Last reviewed:** 2026-05-09 (Tier 1 complete; Tier 2 #245, #246, #250 Phase 1 landed)
 >
 > **How to use this doc:**
 > - Tiers are ordered top-to-bottom — start with Tier 1 unless there's a specific business reason to jump.
@@ -20,8 +20,8 @@ These either unblock many other issues, fix a known production risk, or establis
 |---|---|---|---|
 | ~~1~~ | ~~#243~~ — **landed 2026-05-09** (PR #269, squash `16fee04`). | Allocator + race fix shipped. | (was Soft dep for #242, #245, #246, #248, #251, #252, #261, #263) |
 | 2 | [#244 — email send](https://github.com/bbengt1/3d-print-sales/issues/244) — **Phase 1 landed 2026-05-09** (PR #270, squash `ab48cac`). Phase 2 (WeasyPrint PDF, Resend transport+webhook, editable templates, at-rest password encryption, frontend send modal) deferred and tracked in `docs/email_send.md` + the issue comment thread. Treat #244 as the Phase 2 umbrella. | SMTP send works today. PDF/Resend/webhook still deferred soft prereqs for #247, #248, #250, #257, #261, #263 — those issues' templates already note the soft dep is fine to ship around. | Soft dep for #247, #248, #250, #257, #261, #263 |
-| ~~3~~ | ~~#239~~ — **backend landed 2026-05-09** (PR #271, squash `c3d3a1d`). Phase 2 follow-ups (wire edit-lock guard into every journal-line mutation path, frontend `/banking` route, period-close lock-date enforcement on finalize) listed in `docs/bank_reconciliation.md`. | Backend ready for #240/#246 to plug into. | (was Hard dep for #240, #241, #246) |
-| 4 | [#238 — fixed asset register + depreciation](https://github.com/bbengt1/3d-print-sales/issues/238) | Printers are the largest line on the balance sheet for this business and currently invisible to the books. Establishes the depreciation/disposal pattern #252 mirrors for intangibles. | Sets pattern reused by #252 |
+| ~~3~~ | ~~#239~~ — **backend landed 2026-05-09** (PR #271, squash `c3d3a1d`). Phase 2 follow-ups in `docs/bank_reconciliation.md`. | Backend ready for #240/#246 to plug into. | (was Hard dep for #240, #241, #246) |
+| ~~4~~ | ~~#238~~ — **backend landed 2026-05-09** (PR #273, squash `e62298b`). Phase 2 (frontend, auto-monthly cron, MACRS) in `docs/fixed_assets.md`. | Pattern set for #252 (intangibles). | |
 
 ---
 
@@ -29,11 +29,11 @@ These either unblock many other issues, fix a known production risk, or establis
 
 | Order | Issue | Why | Notes |
 |---|---|---|---|
-| 5 | [#245 — inventory locations + transfers](https://github.com/bbengt1/3d-print-sales/issues/245) | Single-location inventory becomes multi-location with a Default migration. Powers correct stock decrement on marketplace fulfillment. Soft prerequisite for #242 (production-order fulfillment) and #248 (credit-note restock). | Backfill is the riskiest migration step; well documented in the issue. |
-| 6 | [#240 — bank statement import (OFX → CSV)](https://github.com/bbengt1/3d-print-sales/issues/240) | Major bookkeeping time-saver once #239 lands. Hard depends on #239. | OFX-first per scoping. |
-| 7 | [#249 — reporting parity (AP aging, BS, CF, TB, R&P, AR refactor)](https://github.com/bbengt1/3d-print-sales/issues/249) | Closes the visible reporting gap (financial statements not surfaced as frontend pages today). Step 0 of the issue is a verify-first audit of what already exists. | Touches a lot of report wiring; CSV export only in v1. |
-| 8 | [#242 — production orders + finished-good costing](https://github.com/bbengt1/3d-print-sales/issues/242) | High value: ties `Job` operational data to GL inventory layers and corrects sales-side COGS. Riskier behavior shift on the COGS path — tests are mandatory. | Soft deps on #243, #245. Coordinates with #248 on layer restoration. |
-| 9 | [#250 — attachments on transactions](https://github.com/bbengt1/3d-print-sales/issues/250) | Receipt PDFs on bills, reference photos on jobs. Quality-of-life win plus AP audit trail. Soft prereq for #251's claim receipts. | Adds a persistent host volume on web01. |
+| ~~5~~ | ~~#245~~ — **Phase 1 landed 2026-05-09** (PR #274, squash `8d157f7`). Phase 2 (per-location decrement, sale fulfillment-from, soft-warn, frontend) in `docs/inventory_locations.md`. | Models ready; integration deferred. | |
+| 6 | [#240 — bank statement import (OFX → CSV)](https://github.com/bbengt1/3d-print-sales/issues/240) | Major bookkeeping time-saver. Hard-depends on #239 (now done). | OFX-first per scoping. **Recommended next pickup.** |
+| 7 | [#249 — reporting parity (AP aging, BS, CF, TB, R&P, AR refactor)](https://github.com/bbengt1/3d-print-sales/issues/249) | Closes the visible reporting gap. Step 0: verify-first audit. | Large but tractable. |
+| 8 | [#242 — production orders + finished-good costing](https://github.com/bbengt1/3d-print-sales/issues/242) | Ties `Job` operational data to GL inventory layers and corrects sales-side COGS. | Soft deps on #243 (done), #245 (Phase 1 done). Risky COGS shift — tests mandatory. |
+| ~~9~~ | ~~#250~~ — **Phase 1 landed 2026-05-09** (PR #276, squash `88b7af9`). Phase 2 (S3, email-attach hook, virus scan, frontend) in `docs/attachments.md`. | Storage volume on prod ready. | |
 
 ---
 
@@ -42,7 +42,7 @@ These either unblock many other issues, fix a known production risk, or establis
 | Order | Issue | Why | Notes |
 |---|---|---|---|
 | 10 | [#248 — credit notes + debit notes](https://github.com/bbengt1/3d-print-sales/issues/248) | Formal customer/vendor return documents. Closes the AR/AP refund-document gap. | Soft deps on #243, #244, #245, #242. |
-| 11 | [#246 — inter-account transfers](https://github.com/bbengt1/3d-print-sales/issues/246) | Small once #239 lands; meaningful improvement over manual JEs. | Hard dep on #239. |
+| ~~11~~ | ~~#246~~ — **landed 2026-05-09** (PR #275, squash `ac94091`). Phase 2: edit endpoint, multi-currency, auto-create from bank import (paired with #241), frontend. | Per-line `posted_on` added to journal_lines. | |
 | 12 | [#241 — statement-line auto-match rules](https://github.com/bbengt1/3d-print-sales/issues/241) | Power-user layer on top of #240 — collapses the per-line review burden. | Hard dep on #240. |
 | 13 | [#247 — recurring sales invoices](https://github.com/bbengt1/3d-print-sales/issues/247) | Useful for retainers, subscriptions, consignment statements. n8n cron-driven. | Soft dep on #244 for auto-email. |
 | 14 | [#261 — sales orders + purchase orders](https://github.com/bbengt1/3d-print-sales/issues/261) | Fills out the sales and purchase cycles with formal intermediate documents. Symmetric, big-but-tractable. | Soft deps on #243, #244. |
@@ -98,6 +98,10 @@ These issues pre-date the Manager.io gap analysis and don't fit the tier structu
 | [#244](https://github.com/bbengt1/3d-print-sales/issues/244) — email send Phase 1 (PR #270) | 2026-05-09 | Squash `ab48cac`. SMTP transport via stdlib `smtplib`, EmailDelivery audit table, send + history endpoints on invoice/quote, hard-coded HTML+text templates. Phase 2 (WeasyPrint PDF, Resend, webhook, editable templates, password encryption, frontend modal) deferred — issue left open as Phase 2 umbrella. |
 | [#239](https://github.com/bbengt1/3d-print-sales/issues/239) — bank account typing + recon worksheet (PR #271) | 2026-05-09 | Squash `c3d3a1d`. Backend complete: Account.is_bank_account, JournalLine.cleared_status, BankReconciliation/Line models, full lifecycle service, /api/v1/banking endpoints, edit-lock guard. Frontend deferred (no banking UI exists yet). Phase 2 in `docs/bank_reconciliation.md`. |
 | Deploy hardening (PR #272) | 2026-05-09 | Squash `f1b5095`. Canonical `scripts/deploy.sh` in repo runs `alembic upgrade head` automatically. Fixes a real incident from #271's deploy where pending migrations did not run. Host `deploy.sh` updated to delegate. |
+| [#238](https://github.com/bbengt1/3d-print-sales/issues/238) — fixed asset register backend (PR #273) | 2026-05-09 | Squash `e62298b`. FixedAsset/DepreciationEntry models, SL+DDB schedule math, manual-post + dispose flow, 5 new system COA accounts, idempotent `seed_chart_of_accounts`, optional `printer.fixed_asset_id`. Frontend deferred. |
+| [#245](https://github.com/bbengt1/3d-print-sales/issues/245) — inventory locations Phase 1 (PR #274) | 2026-05-09 | Squash `8d157f7`. Locations CRUD + transfer lifecycle (pending → in_transit → completed). No GL impact. Per-location qty decrement and sale fulfillment-from deferred. |
+| [#246](https://github.com/bbengt1/3d-print-sales/issues/246) — inter-account transfers (PR #275) | 2026-05-09 | Squash `ac94091`. Always-posted JE with per-line `posted_on` (new column on `journal_lines`). Edit-lock via #239 guard. |
+| [#250](https://github.com/bbengt1/3d-print-sales/issues/250) — attachments Phase 1 (PR #276) | 2026-05-09 | Squash `88b7af9`. Polymorphic `(scope, record_id)` upload with magic-byte sniffing, Pillow webp thumbnails, soft delete, 100 MB/record cap. New `attachments_data` compose volume. Frontend + email-attach hook + S3 deferred. |
 | [#266 / #267 / #268](https://github.com/bbengt1/3d-print-sales/issues/265) — Dependabot remediation | 2026-05-09 | Closed #265. axios 1.15.2, vite 8.0.5, python-multipart 0.0.27, Pillow 12.2.0, pytest 9.0.3. Deployed to web01 (`33b4e3e`). |
 
 ---
