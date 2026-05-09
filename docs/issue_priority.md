@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-09 (Tier 1 done; Tier 2 #245/#246/#250/#240 done; Tier 3 #247/#251/#252/#241 done)
+> **Last reviewed:** 2026-05-10 (Tier 1 done; Tier 2 #240/#245/#246/#250 done; Tier 3 #241/#247/#251/#252/#260 done; Tier 4 #253/#255/#258/#259 done)
 >
 > **How to use this doc:**
 > - Tiers are ordered top-to-bottom — start with Tier 1 unless there's a specific business reason to jump.
@@ -107,6 +107,11 @@ These issues pre-date the Manager.io gap analysis and don't fit the tier structu
 | [#252](https://github.com/bbengt1/3d-print-sales/issues/252) — intangible assets + amortization (PR #279) | 2026-05-09 | Squash `15cf9f1`. Symmetric mirror of #238. SL+DDB math, dispose flow, 5 new COA accounts (1800/1850/6750/4920/6760). |
 | [#240](https://github.com/bbengt1/3d-print-sales/issues/240) — statement import Phase 1 (PR #280) | 2026-05-09 | Squash `2c2bd68`. OFX (regex parser, no new dep) + CSV import; fitid dedup; manual match promotes JL to cleared via #239. |
 | [#241](https://github.com/bbengt1/3d-print-sales/issues/241) — auto-match rules Phase 1 (PR #281) | 2026-05-09 | Squash `926e949`. Rules CRUD + auto-apply during import for the `ignore` action. create_receipt/create_payment deferred. |
+| [#260](https://github.com/bbengt1/3d-print-sales/issues/260) — accounting foundations cluster (PR #282) | 2026-05-10 | Squash `83ba1d0`. Recurring JEs (mirror of #247), suspense report, starting-balances workflow. 2 new system COA accounts (1900, 3300). |
+| [#258](https://github.com/bbengt1/3d-print-sales/issues/258) — compound + reverse-charge tax (PR #283) | 2026-05-10 | Squash `3dbac39`. is_compound + is_reverse_charge flags; TaxProfileComponent table; compute_for_line service. |
+| [#255](https://github.com/bbengt1/3d-print-sales/issues/255) — divisions + projects Phase 1 (PR #284) | 2026-05-10 | Squash `1684219`. Master-data CRUD only; cross-table FKs deferred to Phase 2. |
+| [#259](https://github.com/bbengt1/3d-print-sales/issues/259) — budgets Phase 1 (PR #285) | 2026-05-10 | Squash `6c47afe`. AccountBudget table + upsert/copy/delete. P&L integration deferred. |
+| [#253](https://github.com/bbengt1/3d-print-sales/issues/253) — custom fields Phase 1 (PR #286) | 2026-05-10 | Squash `86418bd`. Side-table storage avoids touching every record schema. 6 field types, validation, soft-deactivate. |
 | [#266 / #267 / #268](https://github.com/bbengt1/3d-print-sales/issues/265) — Dependabot remediation | 2026-05-09 | Closed #265. axios 1.15.2, vite 8.0.5, python-multipart 0.0.27, Pillow 12.2.0, pytest 9.0.3. Deployed to web01 (`33b4e3e`). |
 
 ---
