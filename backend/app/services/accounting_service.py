@@ -53,6 +53,9 @@ STARTER_CHART_OF_ACCOUNTS = [
     ("6750", "Amortization Expense", "expense", "debit"),
     ("4920", "Gain on Disposal of Intangibles", "revenue", "credit"),
     ("6760", "Loss on Disposal of Intangibles", "expense", "debit"),
+    # Accounting foundations cluster (#260)
+    ("1900", "Suspense", "asset", "debit"),
+    ("3300", "Opening Balance Equity", "equity", "credit"),
 ]
 
 
