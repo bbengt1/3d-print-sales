@@ -39,6 +39,12 @@ STARTER_CHART_OF_ACCOUNTS = [
     ("6300", "Repairs & Maintenance", "expense", "debit"),
     ("6400", "Utilities", "expense", "debit"),
     ("6500", "Office & Supplies", "expense", "debit"),
+    # Fixed assets (#238)
+    ("1700", "Equipment", "asset", "debit"),
+    ("1750", "Accumulated Depreciation — Equipment", "asset", "credit"),
+    ("6700", "Depreciation Expense", "expense", "debit"),
+    ("4910", "Gain on Disposal of Equipment", "revenue", "credit"),
+    ("6710", "Loss on Disposal of Equipment", "expense", "debit"),
 ]
 
 
@@ -57,11 +63,20 @@ def _validate_period_editable(period: AccountingPeriod) -> None:
 
 
 async def seed_chart_of_accounts(db: AsyncSession) -> None:
-    result = await db.execute(select(Account).limit(1))
-    if result.scalar_one_or_none():
-        return
+    """Idempotent seeder. Inserts any of `STARTER_CHART_OF_ACCOUNTS` whose
+    `code` is not already present, leaving existing accounts untouched.
 
+    Originally this was a no-op when any account existed at all. That made
+    it impossible to add new system accounts to the starter list (e.g. for
+    fixed assets in #238) without manual SQL on existing installations.
+    Now every code is checked individually and missing ones are inserted.
+    """
+    existing = (await db.execute(select(Account.code))).scalars().all()
+    have = set(existing)
+    added = False
     for code, name, account_type, normal_balance in STARTER_CHART_OF_ACCOUNTS:
+        if code in have:
+            continue
         db.add(
             Account(
                 code=code,
@@ -71,7 +86,9 @@ async def seed_chart_of_accounts(db: AsyncSession) -> None:
                 is_system=True,
             )
         )
-    await db.commit()
+        added = True
+    if added:
+        await db.commit()
 
 
 async def ensure_accounting_period(
