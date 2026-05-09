@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-09 (Tier 1 #243 landed; #244 Phase 1 landed)
+> **Last reviewed:** 2026-05-09 (Tier 1 #243, #244 Phase 1, #239 backend, deploy hardening landed)
 >
 > **How to use this doc:**
 > - Tiers are ordered top-to-bottom — start with Tier 1 unless there's a specific business reason to jump.
@@ -20,7 +20,7 @@ These either unblock many other issues, fix a known production risk, or establis
 |---|---|---|---|
 | ~~1~~ | ~~#243~~ — **landed 2026-05-09** (PR #269, squash `16fee04`). | Allocator + race fix shipped. | (was Soft dep for #242, #245, #246, #248, #251, #252, #261, #263) |
 | 2 | [#244 — email send](https://github.com/bbengt1/3d-print-sales/issues/244) — **Phase 1 landed 2026-05-09** (PR #270, squash `ab48cac`). Phase 2 (WeasyPrint PDF, Resend transport+webhook, editable templates, at-rest password encryption, frontend send modal) deferred and tracked in `docs/email_send.md` + the issue comment thread. Treat #244 as the Phase 2 umbrella. | SMTP send works today. PDF/Resend/webhook still deferred soft prereqs for #247, #248, #250, #257, #261, #263 — those issues' templates already note the soft dep is fine to ship around. | Soft dep for #247, #248, #250, #257, #261, #263 |
-| 3 | [#239 — bank account typing + reconciliation worksheet](https://github.com/bbengt1/3d-print-sales/issues/239) | Establishes `is_bank_account` on accounts, the `cleared_status` vocabulary on journal lines, and the per-line date pattern reconciliation depends on. Direct payoff: accountant-grade bank reconciliation we don't have today. **Recommended next pickup.** | **Hard** dep for #240, #241, #246 |
+| ~~3~~ | ~~#239~~ — **backend landed 2026-05-09** (PR #271, squash `c3d3a1d`). Phase 2 follow-ups (wire edit-lock guard into every journal-line mutation path, frontend `/banking` route, period-close lock-date enforcement on finalize) listed in `docs/bank_reconciliation.md`. | Backend ready for #240/#246 to plug into. | (was Hard dep for #240, #241, #246) |
 | 4 | [#238 — fixed asset register + depreciation](https://github.com/bbengt1/3d-print-sales/issues/238) | Printers are the largest line on the balance sheet for this business and currently invisible to the books. Establishes the depreciation/disposal pattern #252 mirrors for intangibles. | Sets pattern reused by #252 |
 
 ---
@@ -96,6 +96,8 @@ These issues pre-date the Manager.io gap analysis and don't fit the tier structu
 |---|---|---|
 | [#243](https://github.com/bbengt1/3d-print-sales/issues/243) — race-safe reference number allocator (PR #269) | 2026-05-09 | Squash `16fee04`. Closed #243. New `reference_sequences` table + service. Sales fully switched to allocator (closes the historical row-count race). Invoices and quotes gain optional auto-numbering. `agents.md` Known Risks updated. |
 | [#244](https://github.com/bbengt1/3d-print-sales/issues/244) — email send Phase 1 (PR #270) | 2026-05-09 | Squash `ab48cac`. SMTP transport via stdlib `smtplib`, EmailDelivery audit table, send + history endpoints on invoice/quote, hard-coded HTML+text templates. Phase 2 (WeasyPrint PDF, Resend, webhook, editable templates, password encryption, frontend modal) deferred — issue left open as Phase 2 umbrella. |
+| [#239](https://github.com/bbengt1/3d-print-sales/issues/239) — bank account typing + recon worksheet (PR #271) | 2026-05-09 | Squash `c3d3a1d`. Backend complete: Account.is_bank_account, JournalLine.cleared_status, BankReconciliation/Line models, full lifecycle service, /api/v1/banking endpoints, edit-lock guard. Frontend deferred (no banking UI exists yet). Phase 2 in `docs/bank_reconciliation.md`. |
+| Deploy hardening (PR #272) | 2026-05-09 | Squash `f1b5095`. Canonical `scripts/deploy.sh` in repo runs `alembic upgrade head` automatically. Fixes a real incident from #271's deploy where pending migrations did not run. Host `deploy.sh` updated to delegate. |
 | [#266 / #267 / #268](https://github.com/bbengt1/3d-print-sales/issues/265) — Dependabot remediation | 2026-05-09 | Closed #265. axios 1.15.2, vite 8.0.5, python-multipart 0.0.27, Pillow 12.2.0, pytest 9.0.3. Deployed to web01 (`33b4e3e`). |
 
 ---
