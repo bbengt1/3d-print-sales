@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -48,6 +48,12 @@ class Printer(Base):
     monitor_ws_last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     monitor_last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     monitor_last_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Optional link to the capital record on the balance sheet (#238).
+    # Nullable; operators link existing printers manually from the printer
+    # detail page rather than auto-seeding.
+    fixed_asset_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("fixed_assets.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
