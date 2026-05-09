@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import accounting, accounting_foundations, approvals, attachments, audit, auth, banking, batch_ops, budgets, cameras, custom_fields, customers, dashboard, divisions, email, expense_claims, fixed_assets, insights, intangible_assets, inter_account_transfers, inventory, invoices, jobs, locations, materials, pos, printers, products, quotes, rates, recurring_invoices, reports, sales, sales_channels, settlements, settings, statement_imports, statement_match_rules, supplies, tax
+from app.api.v1.endpoints import accounting, accounting_foundations, approvals, attachments, audit, auth, banking, batch_ops, budgets, cameras, custom_fields, customers, dashboard, divisions, email, expense_claims, fixed_assets, insights, intangible_assets, inter_account_transfers, inventory, invoices, jobs, kits, locations, materials, pos, printers, products, quotes, rates, recurring_invoices, reports, sales, sales_channels, settlements, settings, statement_imports, statement_match_rules, supplies, tax
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -43,3 +43,4 @@ api_router.include_router(divisions.router)
 api_router.include_router(budgets.router)
 api_router.include_router(custom_fields.router)
 api_router.include_router(batch_ops.router)
+api_router.include_router(kits.router)
