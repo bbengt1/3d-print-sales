@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-10 (Tier 1 done; Tier 2 #240/#245/#246/#250 done; Tier 3 #241/#247/#251/#252/#260 done; Tier 4 #253/#254/#255/#258/#259/#262-kits done)
+> **Last reviewed:** 2026-05-10 (Tier 1 done; Tier 2 #240/#245/#246/#250 done; Tier 3 #241/#247/#248/#251/#252/#260/#261 done; Tier 4 #253/#254/#255/#258/#259/#262-kits/#263-delivery done)
 >
 > **How to use this doc:**
 > - Tiers are ordered top-to-bottom — start with Tier 1 unless there's a specific business reason to jump.
@@ -114,6 +114,9 @@ These issues pre-date the Manager.io gap analysis and don't fit the tier structu
 | [#253](https://github.com/bbengt1/3d-print-sales/issues/253) — custom fields Phase 1 (PR #286) | 2026-05-10 | Squash `86418bd`. Side-table storage avoids touching every record schema. 6 field types, validation, soft-deactivate. |
 | [#254](https://github.com/bbengt1/3d-print-sales/issues/254) — batch ops Phase 1 (PR #287) | 2026-05-10 | Squash `93d41ab`. Batch deactivate/activate/delete on master scopes (vendor/product/supply/customer/material). CSV import deferred. |
 | [#262](https://github.com/bbengt1/3d-print-sales/issues/262) — inventory kits Phase 1 (PR #288) | 2026-05-10 | Squash `a79e6c9`. KitComponent model + define/replace/list. Sale-time explosion + find-and-merge + starting-balances import deferred. |
+| [#248](https://github.com/bbengt1/3d-print-sales/issues/248) — credit + debit notes Phase 1 (PR #289) | 2026-05-10 | Squash `6cb0cb7`. Numbered notes with line items, JE on issue, apply-to-invoice/bill, void. 2 new COA accounts (4800 Sales Returns, 5400 Purchase Returns). Restock + email + frontend deferred. |
+| [#261](https://github.com/bbengt1/3d-print-sales/issues/261) — sales + purchase orders Phase 1 (PR #290) | 2026-05-10 | Squash `335c234`. Symmetric SO/PO with confirm + cancel. No conversion/fulfillment tracking yet. |
+| [#263](https://github.com/bbengt1/3d-print-sales/issues/263) — delivery notes Phase 1 (PR #291) | 2026-05-10 | Squash `d7c8abf`. Delivery-note piece only. Late fees, billable expenses, withholding tax remain ❌ as deferred sub-features. |
 | [#266 / #267 / #268](https://github.com/bbengt1/3d-print-sales/issues/265) — Dependabot remediation | 2026-05-09 | Closed #265. axios 1.15.2, vite 8.0.5, python-multipart 0.0.27, Pillow 12.2.0, pytest 9.0.3. Deployed to web01 (`33b4e3e`). |
 
 ---
