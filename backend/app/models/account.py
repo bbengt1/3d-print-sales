@@ -26,6 +26,9 @@ class Account(Base):
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_bank_account: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    # nullable; one of: checking, savings, credit_card, payment_processor
+    bank_account_kind: Mapped[str | None] = mapped_column(String(30), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
