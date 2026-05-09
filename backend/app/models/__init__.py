@@ -2,6 +2,7 @@ from app.models.attachment import Attachment  # noqa: F401
 from app.models.bank_reconciliation import BankReconciliation, BankReconciliationLine  # noqa: F401
 from app.models.camera import Camera  # noqa: F401
 from app.models.email_delivery import EmailDelivery  # noqa: F401
+from app.models.expense_claim import ExpenseClaim, ExpenseClaimLine  # noqa: F401
 from app.models.fixed_asset import DepreciationEntry, FixedAsset  # noqa: F401
 from app.models.inter_account_transfer import InterAccountTransfer  # noqa: F401
 from app.models.inventory_location import (  # noqa: F401
