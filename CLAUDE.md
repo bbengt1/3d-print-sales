@@ -30,5 +30,5 @@
 ### Deployment
 - Live host: `root@web01.bengtson.local`
 - App root: `/srv/3d-print-sales`
-- Deploy: `scripts/web01-compose.sh up -d --build` or `/srv/3d-print-sales/deploy.sh`
+- Deploy: `/srv/3d-print-sales/deploy.sh` — wraps repo `scripts/deploy.sh` which pulls, rebuilds, **runs `alembic upgrade head`**, restarts backend. Skipping migrations breaks startup if schema changed.
 - Post-deploy checks: container health, `curl /health`, `curl /`, review logs if relevant.
