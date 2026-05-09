@@ -47,6 +47,12 @@ STARTER_CHART_OF_ACCOUNTS = [
     ("6710", "Loss on Disposal of Equipment", "expense", "debit"),
     # Expense claims (#251)
     ("2300", "Owner Reimbursable Liability", "liability", "credit"),
+    # Intangible assets (#252)
+    ("1800", "Intangible Assets", "asset", "debit"),
+    ("1850", "Accumulated Amortization", "asset", "credit"),
+    ("6750", "Amortization Expense", "expense", "debit"),
+    ("4920", "Gain on Disposal of Intangibles", "revenue", "credit"),
+    ("6760", "Loss on Disposal of Intangibles", "expense", "debit"),
 ]
 
 
