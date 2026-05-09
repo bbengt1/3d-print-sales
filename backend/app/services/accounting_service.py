@@ -45,6 +45,8 @@ STARTER_CHART_OF_ACCOUNTS = [
     ("6700", "Depreciation Expense", "expense", "debit"),
     ("4910", "Gain on Disposal of Equipment", "revenue", "credit"),
     ("6710", "Loss on Disposal of Equipment", "expense", "debit"),
+    # Expense claims (#251)
+    ("2300", "Owner Reimbursable Liability", "liability", "credit"),
 ]
 
 

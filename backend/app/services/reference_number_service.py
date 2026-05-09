@@ -20,6 +20,7 @@ FORMATS: Final[dict[str, str]] = {
     "quote": "Q-{year}-{value:04d}",
     "inventory_transfer": "IT-{year}-{value:04d}",
     "inter_account_transfer": "T-{year}-{value:04d}",
+    "expense_claim": "EC-{year}-{value:04d}",
 }
 
 
