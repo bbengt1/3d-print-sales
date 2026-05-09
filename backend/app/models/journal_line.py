@@ -20,6 +20,10 @@ class JournalLine(Base):
     entry_type: Mapped[str] = mapped_column(String(10))
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 4), default=0)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Bank reconciliation status. Only meaningful on lines whose account
+    # has is_bank_account=True; ignored otherwise. Values: uncleared,
+    # cleared, reconciled. See #239.
+    cleared_status: Mapped[str] = mapped_column(String(15), default="uncleared", index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
