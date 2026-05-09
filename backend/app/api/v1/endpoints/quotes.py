@@ -72,13 +72,21 @@ async def get_quote(quote_id: uuid.UUID, db: DB):
 
 @router.post("", response_model=QuoteResponse, status_code=201, summary="Create quote")
 async def create_quote(body: QuoteCreate, user: CurrentUser, db: DB):
-    existing = await db.execute(select(Quote.id).where(Quote.quote_number == body.quote_number))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail=f"Quote number '{body.quote_number}' already exists")
+    from app.services.reference_number_service import next_number
+
+    quote_number = body.quote_number.strip() if body.quote_number else ""
+    if not quote_number:
+        quote_number = await next_number(db, "quote")
+    else:
+        existing = await db.execute(select(Quote.id).where(Quote.quote_number == quote_number))
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail=f"Quote number '{quote_number}' already exists")
 
     costs = await _calculate_quote_costs(db, body)
+    payload = body.model_dump(exclude={"shipping_cost", "quote_number"})
     quote = Quote(
-        **body.model_dump(exclude={"shipping_cost"}),
+        quote_number=quote_number,
+        **payload,
         total_pieces=body.qty_per_plate * body.num_plates,
         **costs,
     )

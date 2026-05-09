@@ -35,7 +35,7 @@ class QuoteBase(BaseModel):
 
 
 class QuoteCreate(QuoteBase):
-    quote_number: str = Field(..., min_length=1, max_length=50)
+    quote_number: str | None = Field(None, max_length=50)
     status: QuoteStatus = QuoteStatus.draft
 
 
