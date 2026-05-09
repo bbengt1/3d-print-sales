@@ -25,6 +25,7 @@ FORMATS: Final[dict[str, str]] = {
     "debit_note": "DN-{year}-{value:04d}",
     "sales_order": "SO-{year}-{value:04d}",
     "purchase_order": "PO-{year}-{value:04d}",
+    "delivery_note": "DLV-{year}-{value:04d}",
 }
 
 
