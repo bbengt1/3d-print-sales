@@ -14,5 +14,6 @@ from app.models.inventory_location import (  # noqa: F401
 from app.models.product_bom_item import ProductBOMItem  # noqa: F401
 from app.models.recurring_invoice import RecurringInvoice, RecurringInvoiceRun  # noqa: F401
 from app.models.statement_import import StatementImport, StatementLine  # noqa: F401
+from app.models.statement_match_rule import StatementMatchRule  # noqa: F401
 from app.models.reference_sequence import ReferenceSequence  # noqa: F401
 from app.models.supply import Supply  # noqa: F401
