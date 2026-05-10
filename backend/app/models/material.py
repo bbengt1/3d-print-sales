@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, JSON, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -24,6 +24,12 @@ class Material(Base):
     spools_in_stock: Mapped[int] = mapped_column(Integer, default=0)
     reorder_point: Mapped[int] = mapped_column(Integer, default=2)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # #230: where this Material was first cataloged from. NULL → manually
+    # entered by an operator. Otherwise one of: print_job, slicer_metadata,
+    # printer_telemetry, csv_import, opening_balance.
+    discovered_via: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    discovery_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    needs_review: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
