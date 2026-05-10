@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Blocks,
+  BookOpenCheck,
   ClipboardList,
   Gauge,
   type LucideIcon,
@@ -117,6 +118,22 @@ export const workspaces: WorkspaceDefinition[] = [
       { to: '/orders', label: 'Queue', matchPrefixes: ['/orders'] },
       { to: '/orders/jobs', label: 'Jobs', matchPrefixes: ['/orders/jobs', '/jobs'] },
       { to: '/orders/customers', label: 'Customers', matchPrefixes: ['/orders/customers', '/customers'] },
+    ],
+  },
+  {
+    key: 'accounting',
+    label: 'Accounting',
+    description: 'Invoices, banking, reports, and the rest of the finance suite.',
+    to: '/accounting',
+    icon: BookOpenCheck,
+    roles: ['admin', 'analyst', 'general'],
+    matchPrefixes: ['/accounting'],
+    localLinks: [
+      { to: '/accounting', label: 'Overview', matchPrefixes: ['/accounting'] },
+      { to: '/accounting/invoices', label: 'Invoices', matchPrefixes: ['/accounting/invoices'] },
+      { to: '/accounting/quotes', label: 'Quotes', matchPrefixes: ['/accounting/quotes'] },
+      { to: '/accounting/banking', label: 'Banking', matchPrefixes: ['/accounting/banking'] },
+      { to: '/accounting/reports', label: 'Reports', matchPrefixes: ['/accounting/reports'] },
     ],
   },
   {
