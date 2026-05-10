@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
+from app.models.account import Account
 from app.models.expense_claim import ExpenseClaim, ExpenseClaimLine
 from app.services.expense_claim_service import (
     ExpenseClaimError,
@@ -121,6 +122,26 @@ async def list_claims(user: CurrentUser, db: DB, status_filter: str | None = Non
 
 @router.post("", response_model=ClaimResponse, status_code=status.HTTP_201_CREATED, summary="Create an expense claim")
 async def create(body: ClaimCreate, user: CurrentUser, db: DB):
+    # #278 P1 (Codex): pre-validate expense_account_id FKs so a missing account
+    # surfaces as a 404 instead of a Postgres IntegrityError -> 500 (which would
+    # also leave the session in a failed state for the rest of the request).
+    requested_account_ids = {l.expense_account_id for l in body.lines}
+    found_account_ids = set(
+        (
+            await db.execute(
+                select(Account.id).where(Account.id.in_(requested_account_ids))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    missing = requested_account_ids - found_account_ids
+    if missing:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Expense account(s) not found: {', '.join(str(i) for i in sorted(missing, key=str))}",
+        )
+
     try:
         claim = await create_claim(
             db,
