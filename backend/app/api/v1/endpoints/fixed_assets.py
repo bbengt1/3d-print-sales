@@ -5,7 +5,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, status
+import csv
+import io
+
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -219,6 +222,114 @@ async def update_asset(asset_id: uuid.UUID, body: FixedAssetUpdate, user: Curren
         setattr(asset, k, v)
     await db.commit()
     return await _hydrate(db, asset)
+
+
+@router.post(
+    "/post-monthly-due",
+    summary="#325 P2: cron-friendly — post depreciation through the most recent completed month",
+)
+async def post_monthly_due(user: CurrentUser, db: DB):
+    """No-arg cron entry point. Posts depreciation through the last day of
+    the previous calendar month for every active asset that has any
+    catch-up entries due. Idempotent: re-running on the same day is a
+    no-op since `post_depreciation` skips already-posted periods.
+    """
+    from datetime import date as _d
+
+    today = _d.today()
+    # Last day of previous month
+    first_of_this = _d(today.year, today.month, 1)
+    last_of_prev = first_of_this - __import__("datetime").timedelta(days=1)
+    assets = (
+        await db.execute(select(FixedAsset).where(FixedAsset.status == "active"))
+    ).scalars().all()
+    posted = 0
+    for a in assets:
+        try:
+            new_entries = await post_depreciation(db, asset_id=a.id, through=last_of_prev)
+            posted += len(new_entries)
+        except FixedAssetError:
+            # Skip assets whose acquired_on is later than the period; they're not due yet.
+            pass
+    await db.commit()
+    return {
+        "through": last_of_prev.isoformat(),
+        "asset_count": len(assets),
+        "posted_count": posted,
+    }
+
+
+@router.post(
+    "/bulk-import.csv",
+    summary="#325 P2: bulk-register fixed assets from a CSV upload",
+)
+async def bulk_import_csv(
+    user: CurrentUser,
+    db: DB,
+    file: UploadFile = File(...),
+):
+    """CSV columns: name, acquired_on, acquisition_cost, useful_life_months
+    [, salvage_value, depreciation_method, declining_balance_rate,
+       asset_tag, description, notes, asset_account_code,
+       accumulated_depreciation_account_code, depreciation_expense_account_code]
+
+    Account codes resolve to IDs server-side. Defaults: 1700 / 1750 / 6700.
+    Returns one entry per row with `asset_id` or `error`.
+    """
+    raw = (await file.read()).decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(raw))
+    required = {"name", "acquired_on", "acquisition_cost", "useful_life_months"}
+    if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
+        raise HTTPException(
+            status_code=400,
+            detail=f"CSV must include columns: {', '.join(sorted(required))}",
+        )
+
+    default_asset = await _resolve_default_account(db, "1700")
+    default_accum = await _resolve_default_account(db, "1750")
+    default_expense = await _resolve_default_account(db, "6700")
+
+    async def _resolve_code(code: str | None, default: uuid.UUID) -> uuid.UUID:
+        if not code:
+            return default
+        a = (await db.execute(select(Account).where(Account.code == code.strip()))).scalar_one_or_none()
+        if a is None:
+            raise ValueError(f"Unknown account code: {code}")
+        return a.id
+
+    out = []
+    rows = list(reader)
+    for idx, r in enumerate(rows, start=2):  # row 1 = header
+        try:
+            asset_acct = await _resolve_code(r.get("asset_account_code"), default_asset)
+            accum_acct = await _resolve_code(r.get("accumulated_depreciation_account_code"), default_accum)
+            exp_acct = await _resolve_code(r.get("depreciation_expense_account_code"), default_expense)
+            asset = FixedAsset(
+                name=(r["name"] or "").strip(),
+                asset_tag=(r.get("asset_tag") or "").strip() or None,
+                description=(r.get("description") or "").strip() or None,
+                acquired_on=date.fromisoformat(r["acquired_on"].strip()),
+                acquisition_cost=Decimal(r["acquisition_cost"].strip()),
+                salvage_value=Decimal(r.get("salvage_value", "0").strip() or "0"),
+                useful_life_months=int(r["useful_life_months"].strip()),
+                depreciation_method=(r.get("depreciation_method") or "straight_line").strip() or "straight_line",
+                declining_balance_rate=(
+                    Decimal(r["declining_balance_rate"].strip())
+                    if r.get("declining_balance_rate") and r["declining_balance_rate"].strip()
+                    else None
+                ),
+                asset_account_id=asset_acct,
+                accumulated_depreciation_account_id=accum_acct,
+                depreciation_expense_account_id=exp_acct,
+                notes=(r.get("notes") or "").strip() or None,
+            )
+            db.add(asset)
+            await db.flush()
+            out.append({"row": idx, "asset_id": str(asset.id)})
+        except Exception as e:
+            out.append({"row": idx, "error": str(e)})
+    await db.commit()
+    return {"rows": out, "total": len(rows), "imported": sum(1 for r in out if r.get("asset_id"))}
 
 
 @router.post("/post-depreciation", summary="Post depreciation through a period for selected (or all active) assets")
