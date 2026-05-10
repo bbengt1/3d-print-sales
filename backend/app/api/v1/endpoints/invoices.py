@@ -357,3 +357,15 @@ async def delete_invoice(invoice_id: uuid.UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     invoice.is_deleted = True
     await db.commit()
+
+
+@router.post(
+    "/late-fees/run-due",
+    summary="#263 P2: Cron entry — generate late-fee invoices for overdue receivables",
+)
+async def run_late_fees_due_ep(user: CurrentUser, db: DB):
+    from app.services.late_fee_service import run_late_fees_due
+
+    summary = await run_late_fees_due(db)
+    await db.commit()
+    return summary
