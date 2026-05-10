@@ -132,7 +132,12 @@ async def post_amortization(
         ).scalars().all()
     )
 
-    new_entries: list[AmortizationEntry] = []
+    # #279 Codex P1: `create_journal_entry` commits each call immediately, so
+    # any per-month validation failure mid-loop would persist earlier months
+    # and leave the asset partially amortized. Pre-validate every month's
+    # closed-period guard up front so the whole post is all-or-nothing
+    # (mirrors the PR #273 fix in `fixed_asset_service.post_depreciation`).
+    months_to_post: list[tuple[date, Decimal, AccountingPeriod | None]] = []
     for period_end, amount in schedule:
         if period_end > through:
             break
@@ -153,7 +158,10 @@ async def post_amortization(
             raise IntangibleAssetError(
                 f"Accounting period containing {period_end.isoformat()} is closed"
             )
+        months_to_post.append((period_end, amount, period_row))
 
+    new_entries: list[AmortizationEntry] = []
+    for period_end, amount, period_row in months_to_post:
         entry = await create_journal_entry(
             db,
             JournalEntryCreate(
@@ -210,6 +218,16 @@ async def dispose_asset(
         raise IntangibleAssetError("Intangible asset not found")
     if asset.status == "disposed":
         raise IntangibleAssetError("Asset is already disposed")
+
+    # #279 Codex P1: a disposal date earlier than the acquisition date would
+    # produce an impossible asset lifecycle (and a JE that predates the
+    # asset's existence). Guard up front so we never reach `post_amortization`
+    # or the disposal JE write with an inverted date pair.
+    if disposed_on < asset.acquired_on:
+        raise IntangibleAssetError(
+            f"Disposal date {disposed_on.isoformat()} cannot be before "
+            f"acquisition date {asset.acquired_on.isoformat()}"
+        )
 
     proceeds = Decimal(proceeds or 0)
     if proceeds < 0:
