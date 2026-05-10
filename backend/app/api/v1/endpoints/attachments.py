@@ -12,6 +12,7 @@ from app.api.deps import DB, CurrentUser
 from app.models.attachment import Attachment
 from app.services.attachment_service import (
     AttachmentError,
+    MAX_FILE_BYTES,
     VALID_SCOPES,
     list_attachments,
     read_storage_bytes,
@@ -21,6 +22,10 @@ from app.services.attachment_service import (
 
 
 router = APIRouter(prefix="/attachments", tags=["Attachments"])
+
+# Stream uploads in 1 MiB chunks so we can short-circuit oversized
+# bodies before allocating the whole payload in memory.
+_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
 
 
 class AttachmentResponse(BaseModel):
@@ -67,7 +72,40 @@ async def upload(
 ):
     if scope not in VALID_SCOPES:
         raise HTTPException(status_code=404, detail="Unsupported attachment scope")
-    data = await file.read()
+
+    # Quick pre-check on Content-Length when present. Clients can lie, so
+    # the streaming guard below is the source of truth — but rejecting an
+    # honest oversized request before we read any body bytes saves both
+    # parties bandwidth and worker memory.
+    declared_len = file.headers.get("content-length") if file.headers else None
+    if declared_len is not None:
+        try:
+            if int(declared_len) > MAX_FILE_BYTES:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"File exceeds {MAX_FILE_BYTES // 1024 // 1024} MB limit",
+                )
+        except ValueError:
+            pass  # malformed header — fall through to chunked guard
+
+    # Stream the upload in chunks so we can abort before buffering an
+    # oversized body. We allow exactly MAX_FILE_BYTES; the (n+1)th byte
+    # trips the guard.
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(_UPLOAD_CHUNK_SIZE)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_FILE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File exceeds {MAX_FILE_BYTES // 1024 // 1024} MB limit",
+            )
+        chunks.append(chunk)
+    data = b"".join(chunks)
+
     try:
         att = await upload_attachment(
             db,
