@@ -13,6 +13,7 @@ from app.api.deps import DB, CurrentUser
 from app.models.statement_import import StatementImport, StatementLine
 from app.services.statement_import_service import (
     StatementImportError,
+    create_transaction_from_line,
     ignore_line,
     import_statement,
     match_line,
@@ -97,7 +98,7 @@ async def upload_import(
     user: CurrentUser,
     db: DB,
     account_id: uuid.UUID = Form(...),
-    source_format: Literal["ofx", "csv"] = Form("ofx"),
+    source_format: Literal["ofx", "qfx", "csv"] = Form("ofx"),
     file: UploadFile = File(...),
 ):
     content = await file.read()
@@ -172,3 +173,106 @@ async def ignore_ep(statement_line_id: uuid.UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=400, detail=str(e)) from e
     await db.commit()
     return _to_line(sl)
+
+
+# ---------- #315 P2: create transaction from line ----------
+
+
+class CreateTxRequest(BaseModel):
+    target_account_id: uuid.UUID
+    description: str | None = None
+
+
+@router.post(
+    "/lines/{statement_line_id}/create-transaction",
+    summary="#315 P2: Post a JE to clear an unmatched statement line",
+)
+async def create_tx_ep(statement_line_id: uuid.UUID, body: CreateTxRequest, user: CurrentUser, db: DB):
+    try:
+        result = await create_transaction_from_line(
+            db,
+            statement_line_id=statement_line_id,
+            target_account_id=body.target_account_id,
+            description=body.description,
+        )
+    except StatementImportError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
+    return result
+
+
+# ---------- #315 P2 / #327: per-account CSV column mapping ----------
+
+
+class MappingResponse(BaseModel):
+    account_id: uuid.UUID
+    mapping: dict[str, str]
+
+
+class MappingUpsertRequest(BaseModel):
+    mapping: dict[str, str] = Field(
+        ...,
+        description="Keys: date, amount, description, fitid → column names",
+    )
+
+
+@router.get(
+    "/accounts/{account_id}/csv-mapping",
+    response_model=MappingResponse,
+    summary="#315 P2: Get persisted CSV column mapping for a bank account",
+)
+async def get_mapping(account_id: uuid.UUID, user: CurrentUser, db: DB):
+    from app.models.bank_import_mapping import BankImportMapping
+
+    row = (
+        await db.execute(
+            select(BankImportMapping).where(BankImportMapping.account_id == account_id)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return MappingResponse(account_id=account_id, mapping={})
+    return MappingResponse(account_id=account_id, mapping=dict(row.mapping or {}))
+
+
+@router.put(
+    "/accounts/{account_id}/csv-mapping",
+    response_model=MappingResponse,
+    summary="#315 P2: Set the CSV column mapping for a bank account",
+)
+async def set_mapping(account_id: uuid.UUID, body: MappingUpsertRequest, user: CurrentUser, db: DB):
+    from app.models.account import Account
+    from app.models.bank_import_mapping import BankImportMapping
+
+    acct = (await db.execute(select(Account).where(Account.id == account_id))).scalar_one_or_none()
+    if acct is None:
+        raise HTTPException(status_code=404, detail="Account not found")
+    row = (
+        await db.execute(
+            select(BankImportMapping).where(BankImportMapping.account_id == account_id)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        row = BankImportMapping(account_id=account_id, mapping=body.mapping)
+        db.add(row)
+    else:
+        row.mapping = body.mapping
+    await db.commit()
+    return MappingResponse(account_id=account_id, mapping=body.mapping)
+
+
+@router.delete(
+    "/accounts/{account_id}/csv-mapping",
+    status_code=204,
+    summary="#315 P2: Clear the CSV column mapping for a bank account",
+)
+async def delete_mapping(account_id: uuid.UUID, user: CurrentUser, db: DB):
+    from app.models.bank_import_mapping import BankImportMapping
+
+    row = (
+        await db.execute(
+            select(BankImportMapping).where(BankImportMapping.account_id == account_id)
+        )
+    ).scalar_one_or_none()
+    if row is not None:
+        await db.delete(row)
+        await db.commit()
