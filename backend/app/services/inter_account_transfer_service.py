@@ -126,6 +126,96 @@ async def create_inter_account_transfer(
     return transfer
 
 
+async def edit_inter_account_transfer(
+    db: AsyncSession,
+    transfer_id: uuid.UUID,
+    *,
+    amount: Decimal | None = None,
+    paid_on: date | None = None,
+    received_on: date | None = None,
+    notes: str | None = None,
+) -> InterAccountTransfer:
+    """Edit an inter-account transfer (#246 Phase 2). Refused if either
+    leg is reconciled. Replaces the underlying JE atomically: deletes the
+    old JE+lines, posts new ones at the same JE id is not preserved (a
+    new JE number is allocated). Audit trail kept via the original
+    transfer's `journal_entry_id` swap.
+    """
+    t = (await db.execute(select(InterAccountTransfer).where(InterAccountTransfer.id == transfer_id))).scalar_one_or_none()
+    if t is None:
+        raise InterAccountTransferError("Transfer not found")
+
+    # Edit-lock guard: refuse if either leg is reconciled
+    old_lines = (
+        await db.execute(
+            select(JournalLine).where(JournalLine.journal_entry_id == t.journal_entry_id)
+        )
+    ).scalars().all()
+    for line in old_lines:
+        try:
+            await assert_journal_line_editable(db, line.id)
+        except JournalLineLockedError as e:
+            raise InterAccountTransferError(str(e)) from e
+
+    new_amount = Decimal(amount) if amount is not None else Decimal(t.amount)
+    if new_amount <= 0:
+        raise InterAccountTransferError("amount must be > 0")
+    new_paid_on = paid_on or t.paid_on
+    new_received_on = received_on or t.received_on
+    earlier = min(new_paid_on, new_received_on)
+
+    # Delete the old JE + lines
+    for line in old_lines:
+        await db.delete(line)
+    old_je = (await db.execute(select(JournalEntry).where(JournalEntry.id == t.journal_entry_id))).scalar_one_or_none()
+    if old_je is not None:
+        await db.delete(old_je)
+    await db.flush()
+
+    # Post fresh JE
+    je_number = await next_number(db, "journal_entry", year=earlier.year)
+    je = JournalEntry(
+        entry_number=je_number,
+        entry_date=earlier,
+        status="posted",
+        source_type="inter_account_transfer",
+        memo=f"Transfer {t.transfer_number} (edited): {new_amount}",
+        posted_at=datetime.now(timezone.utc),
+    )
+    db.add(je)
+    await db.flush()
+    db.add(
+        JournalLine(
+            journal_entry_id=je.id,
+            account_id=t.from_account_id,
+            line_number=1,
+            entry_type="credit",
+            amount=new_amount,
+            description=f"Transfer {t.transfer_number} (out)",
+            posted_on=new_paid_on,
+        )
+    )
+    db.add(
+        JournalLine(
+            journal_entry_id=je.id,
+            account_id=t.to_account_id,
+            line_number=2,
+            entry_type="debit",
+            amount=new_amount,
+            description=f"Transfer {t.transfer_number} (in)",
+            posted_on=new_received_on,
+        )
+    )
+    t.amount = new_amount
+    t.paid_on = new_paid_on
+    t.received_on = new_received_on
+    t.journal_entry_id = je.id
+    if notes is not None:
+        t.notes = notes
+    await db.flush()
+    return t
+
+
 async def delete_inter_account_transfer(db: AsyncSession, transfer_id: uuid.UUID) -> None:
     t = (await db.execute(select(InterAccountTransfer).where(InterAccountTransfer.id == transfer_id))).scalar_one_or_none()
     if t is None:

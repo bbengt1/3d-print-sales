@@ -106,7 +106,62 @@ async def run_one(
     )
     db.add(run)
     await db.flush()
+
+    # Auto-email integration with #244 (Phase 2 of #247).
+    # An email failure is logged on the invoice's last_error but does
+    # NOT roll back the invoice creation — the operator can resend
+    # manually from the invoice detail page if the SMTP transport was
+    # down at generation time.
+    if ri.auto_email:
+        try:
+            await _send_recurring_invoice_email(db, ri, invoice)
+        except Exception as e:  # noqa: BLE001
+            ri.last_error = f"email send failed: {type(e).__name__}: {e}"
+            await db.flush()
     return run
+
+
+async def _send_recurring_invoice_email(db, ri, invoice) -> None:
+    """Compose + send via the email_service for an auto-email recurring run."""
+    from app.models.customer import Customer
+    from app.models.setting import Setting
+    from sqlalchemy import select as _select
+    from app.services.email_service import (
+        EmailConfigError,
+        EmailSendError,
+        render_invoice_template,
+        send_email,
+    )
+
+    customer = (
+        await db.execute(_select(Customer).where(Customer.id == ri.customer_id))
+    ).scalar_one_or_none()
+    if customer is None or not customer.email:
+        # Without a customer email there's nothing to do; record on the rule.
+        ri.last_error = "auto_email enabled but customer has no email on file"
+        return
+
+    biz_row = (
+        await db.execute(_select(Setting).where(Setting.key == "business_name"))
+    ).scalar_one_or_none()
+    business_name = (biz_row.value if biz_row else "").strip() or "Your Business"
+
+    subject, body_text, body_html = render_invoice_template(
+        invoice, business_name, customer.name
+    )
+    try:
+        await send_email(
+            db,
+            scope="invoice",
+            record_id=invoice.id,
+            to_email=customer.email,
+            subject=subject,
+            body_text=body_text,
+            body_html=body_html,
+        )
+    except (EmailConfigError, EmailSendError):
+        # Re-raise so the caller records the error on the recurring rule.
+        raise
 
 
 async def skip_next(db: AsyncSession, recurring_id: uuid.UUID) -> RecurringInvoiceRun:

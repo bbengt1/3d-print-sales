@@ -146,6 +146,58 @@ async def cancel_so(order_id: uuid.UUID, user: CurrentUser, db: DB):
     return _so_to_dict(so)
 
 
+@router.post("/sales-orders/{order_id}/create-invoice", summary="Create an invoice from a confirmed sales order (#261 Phase 2)")
+async def create_invoice_from_so(
+    order_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    issue_date: date | None = None,
+    due_date: date | None = None,
+):
+    so = (await db.execute(select(SalesOrder).where(SalesOrder.id == order_id))).scalar_one_or_none()
+    if not so:
+        raise HTTPException(status_code=404, detail="Sales order not found")
+    if so.status != "confirmed":
+        raise HTTPException(status_code=400, detail=f"Sales order must be confirmed (currently {so.status})")
+    from app.models.invoice import Invoice
+    from app.models.invoice_line import InvoiceLine
+    from app.services.reference_number_service import next_number
+
+    so_lines = (
+        await db.execute(select(SalesOrderLine).where(SalesOrderLine.sales_order_id == so.id))
+    ).scalars().all()
+    if not so_lines:
+        raise HTTPException(status_code=400, detail="Sales order has no lines")
+    invoice_number = await next_number(db, "invoice")
+    today = date.today()
+    inv = Invoice(
+        invoice_number=invoice_number,
+        customer_id=so.customer_id,
+        customer_name=so.customer_name,
+        issue_date=issue_date or today,
+        due_date=due_date,
+        subtotal=Decimal(so.subtotal_amount),
+        total_due=Decimal(so.total_amount),
+        balance_due=Decimal(so.total_amount),
+        status="draft",
+        notes=f"From sales order {so.sales_order_number}",
+    )
+    db.add(inv)
+    await db.flush()
+    for line in so_lines:
+        db.add(
+            InvoiceLine(
+                invoice_id=inv.id,
+                description=line.description,
+                quantity=int(line.quantity),
+                unit_price=Decimal(line.unit_price),
+                line_total=Decimal(line.line_total),
+            )
+        )
+    await db.commit()
+    return {"invoice_id": str(inv.id), "invoice_number": inv.invoice_number, "sales_order_id": str(so.id)}
+
+
 # ---------- purchase orders ----------
 
 
@@ -255,3 +307,40 @@ async def cancel_po(order_id: uuid.UUID, user: CurrentUser, db: DB):
     po.status = "cancelled"
     await db.commit()
     return _po_to_dict(po)
+
+
+@router.post("/purchase-orders/{order_id}/create-bill", summary="Create a bill from a confirmed purchase order (#261 Phase 2)")
+async def create_bill_from_po(
+    order_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    expense_account_code: str = "6500",  # Office & Supplies as a sane default
+    issue_date: date | None = None,
+):
+    po = (await db.execute(select(PurchaseOrder).where(PurchaseOrder.id == order_id))).scalar_one_or_none()
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+    if po.status != "confirmed":
+        raise HTTPException(status_code=400, detail=f"Purchase order must be confirmed (currently {po.status})")
+    from app.models.account import Account
+    from app.models.bill import Bill
+
+    expense_acct = (
+        await db.execute(select(Account).where(Account.code == expense_account_code))
+    ).scalar_one_or_none()
+    if expense_acct is None:
+        raise HTTPException(status_code=400, detail=f"Account code {expense_account_code} not found")
+    today = date.today()
+    bill = Bill(
+        vendor_id=po.vendor_id,
+        account_id=expense_acct.id,
+        bill_number=None,
+        description=f"Bill from purchase order {po.purchase_order_number}",
+        issue_date=issue_date or today,
+        amount=Decimal(po.total_amount),
+        status="open",
+        notes=f"From purchase order {po.purchase_order_number}",
+    )
+    db.add(bill)
+    await db.commit()
+    return {"bill_id": str(bill.id), "purchase_order_id": str(po.id)}
