@@ -108,7 +108,20 @@ async def create_order(
 
 
 async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProductionOrder:
-    order = (await db.execute(select(ProductionOrder).where(ProductionOrder.id == order_id))).scalar_one_or_none()
+    # #293 Codex P1: serialize concurrent /close requests so two callers
+    # cannot both pass the `status == "planned"` guard and each consume
+    # receipts + post their own JE/finished-goods layer. `with_for_update`
+    # takes a row-level lock for the duration of the surrounding
+    # transaction; on databases without row locks (SQLite in tests) it is
+    # silently a no-op, which is acceptable since SQLite serializes writes
+    # at the file level anyway.
+    order = (
+        await db.execute(
+            select(ProductionOrder)
+            .where(ProductionOrder.id == order_id)
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
     if order is None:
         raise ProductionOrderError("Production order not found")
     if order.status != "planned":
@@ -144,7 +157,14 @@ async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProductionOrder:
         else Decimal("0")
     )
 
-    # Post JE: Cr Material Inventory / Dr Finished Goods Inventory
+    # Post JE: Cr Material Inventory / Dr Finished Goods Inventory.
+    #
+    # #293 Codex P1: pass `commit=False` so the JE write does NOT commit
+    # mid-close. The surrounding endpoint commits once at the end, so the
+    # JE, the order's status/completed_at update, and the finished-goods
+    # layer insert all live in a single transaction — if any step below
+    # raises, the JE rolls back with the rest instead of leaving books
+    # mutated while the order remains 'planned'.
     if total_value > 0:
         material_inv = await _account_by_code(db, "1200")  # Raw Materials Inventory
         finished_goods = await _account_by_code(db, "1400")  # Finished Goods Inventory
@@ -171,6 +191,7 @@ async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProductionOrder:
                         ),
                     ],
                 ),
+                commit=False,
             )
         except AccountingValidationError as e:
             raise ProductionOrderError(str(e)) from e
