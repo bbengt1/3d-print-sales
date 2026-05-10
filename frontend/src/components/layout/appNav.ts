@@ -10,6 +10,7 @@ import {
   ShoppingCart,
   Users,
   ClipboardList,
+  BookOpenCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export const appNavLinks: AppNavLink[] = [
   { to: '/pos', label: 'POS', icon: Receipt },
   { to: '/sales', label: 'Sales', icon: ShoppingCart },
   { to: '/customers', label: 'Customers', icon: Users },
+  { to: '/accounting', label: 'Accounting', icon: BookOpenCheck },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/calculator', label: 'Calculator', icon: Calculator },
 ];

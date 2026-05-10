@@ -44,6 +44,26 @@ const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
 const DataPage = lazy(() => import('@/pages/admin/DataPage'));
 const CamerasPage = lazy(() => import('@/pages/admin/CamerasPage'));
 const PrinterMonitorPage = lazy(() => import('@/pages/PrinterMonitorPage'));
+const AccountingLayout = lazy(() => import('@/components/layout/AccountingLayout'));
+const AccountingIndexPage = lazy(() => import('@/pages/accounting/AccountingIndexPage'));
+const InvoicesPage = lazy(() => import('@/pages/accounting/InvoicesPage'));
+const QuotesPage = lazy(() => import('@/pages/accounting/QuotesPage'));
+const SalesOrdersPage = lazy(() => import('@/pages/accounting/SalesOrdersPage'));
+const PurchaseOrdersPage = lazy(() => import('@/pages/accounting/PurchaseOrdersPage'));
+const DeliveryNotesPage = lazy(() => import('@/pages/accounting/DeliveryNotesPage'));
+const CreditNotesPage = lazy(() => import('@/pages/accounting/CreditNotesPage'));
+const DebitNotesPage = lazy(() => import('@/pages/accounting/DebitNotesPage'));
+const RecurringInvoicesPage = lazy(() => import('@/pages/accounting/RecurringInvoicesPage'));
+const BankingPage = lazy(() => import('@/pages/accounting/BankingPage'));
+const ExpenseClaimsPage = lazy(() => import('@/pages/accounting/ExpenseClaimsPage'));
+const FixedAssetsPage = lazy(() => import('@/pages/accounting/FixedAssetsPage'));
+const IntangiblesPage = lazy(() => import('@/pages/accounting/IntangiblesPage'));
+const ProductionOrdersPage = lazy(() => import('@/pages/accounting/ProductionOrdersPage'));
+const LocationsPage = lazy(() => import('@/pages/accounting/LocationsPage'));
+const AccountingReportsPage = lazy(() => import('@/pages/accounting/AccountingReportsPage'));
+const MasterDataPage = lazy(() => import('@/pages/accounting/MasterDataPage'));
+const TaxProfilesPage = lazy(() => import('@/pages/accounting/TaxProfilesPage'));
+const FoundationsPage = lazy(() => import('@/pages/accounting/FoundationsPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -159,6 +179,29 @@ export default function App() {
                   <Route path="inventory" element={<InventoryReportPage />} />
                   <Route path="sales" element={<SalesReportPage />} />
                   <Route path="pl" element={<PLReportPage />} />
+                </Route>
+
+                {/* Accounting workspace */}
+                <Route path="/accounting" element={<AccountingLayout />}>
+                  <Route index element={<AccountingIndexPage />} />
+                  <Route path="invoices" element={<InvoicesPage />} />
+                  <Route path="quotes" element={<QuotesPage />} />
+                  <Route path="sales-orders" element={<SalesOrdersPage />} />
+                  <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
+                  <Route path="delivery-notes" element={<DeliveryNotesPage />} />
+                  <Route path="credit-notes" element={<CreditNotesPage />} />
+                  <Route path="debit-notes" element={<DebitNotesPage />} />
+                  <Route path="recurring-invoices" element={<RecurringInvoicesPage />} />
+                  <Route path="banking" element={<BankingPage />} />
+                  <Route path="expense-claims" element={<ExpenseClaimsPage />} />
+                  <Route path="fixed-assets" element={<FixedAssetsPage />} />
+                  <Route path="intangibles" element={<IntangiblesPage />} />
+                  <Route path="production-orders" element={<ProductionOrdersPage />} />
+                  <Route path="locations" element={<LocationsPage />} />
+                  <Route path="reports" element={<AccountingReportsPage />} />
+                  <Route path="master-data" element={<MasterDataPage />} />
+                  <Route path="tax-profiles" element={<TaxProfilesPage />} />
+                  <Route path="foundations" element={<FoundationsPage />} />
                 </Route>
 
                 {/* Admin section with sidebar */}
