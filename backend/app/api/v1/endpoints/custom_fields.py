@@ -129,14 +129,84 @@ async def update_def(def_id: uuid.UUID, body: DefinitionUpdate, user: CurrentUse
 
 @router.delete("/{def_id}", status_code=204, summary="Soft-deactivate a definition (values preserved)")
 async def deactivate_def(def_id: uuid.UUID, user: CurrentUser, db: DB):
-    """Phase 1: deactivate rather than hard-delete so existing values aren't
-    silently dropped. Hard delete is a follow-up gated on no-values check.
+    """Phase 1 default: deactivate rather than hard-delete so existing
+    values aren't silently dropped. Use the dedicated hard-delete endpoint
+    when you really mean it.
     """
     d = (await db.execute(select(CustomFieldDefinition).where(CustomFieldDefinition.id == def_id))).scalar_one_or_none()
     if not d:
         raise HTTPException(status_code=404, detail="Definition not found")
     d.is_active = False
     await db.commit()
+
+
+@router.delete(
+    "/{def_id}/hard",
+    status_code=204,
+    summary="#326 P2: Hard-delete a definition (refuses if any values exist; pass ?force=true)",
+)
+async def hard_delete_def(def_id: uuid.UUID, user: CurrentUser, db: DB, force: bool = False):
+    from app.models.custom_field import CustomFieldValue
+    d = (
+        await db.execute(select(CustomFieldDefinition).where(CustomFieldDefinition.id == def_id))
+    ).scalar_one_or_none()
+    if not d:
+        raise HTTPException(status_code=404, detail="Definition not found")
+    if not force:
+        existing = (
+            await db.execute(
+                select(CustomFieldValue.id).where(CustomFieldValue.definition_id == def_id).limit(1)
+            )
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail="Definition has stored values; pass ?force=true to delete anyway",
+            )
+    # Delete values then definition
+    from sqlalchemy import delete as _delete
+
+    await db.execute(_delete(CustomFieldValue).where(CustomFieldValue.definition_id == def_id))
+    await db.delete(d)
+    await db.commit()
+
+
+@router.get(
+    "/values/{scope}/search",
+    summary="#326 P2: Find record IDs whose custom-field {key} value matches",
+)
+async def search_by_custom_field(
+    scope: str,
+    key: str,
+    value: str,
+    user: CurrentUser,
+    db: DB,
+):
+    from app.models.custom_field import CustomFieldValue
+
+    d = (
+        await db.execute(
+            select(CustomFieldDefinition).where(
+                CustomFieldDefinition.scope == scope, CustomFieldDefinition.key == key
+            )
+        )
+    ).scalar_one_or_none()
+    if d is None:
+        raise HTTPException(status_code=404, detail=f"No custom field {scope}.{key}")
+    rows = (
+        await db.execute(
+            select(CustomFieldValue.record_id).where(
+                CustomFieldValue.definition_id == d.id, CustomFieldValue.value == value
+            )
+        )
+    ).scalars().all()
+    return {
+        "scope": scope,
+        "key": key,
+        "value": value,
+        "record_ids": [str(r) for r in rows],
+        "match_count": len(rows),
+    }
 
 
 # ---------- values ----------
