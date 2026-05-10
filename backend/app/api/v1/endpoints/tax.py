@@ -83,6 +83,7 @@ async def tax_liability_report(admin: CurrentAdmin, db: DB, date_from: datetime.
     profiles = (await db.execute(select(TaxProfile).where(TaxProfile.is_active == True))).scalars().all()
     rows: list[TaxLiabilityRow] = []
     total_seller = total_marketplace = total_remitted = total_outstanding = Decimal("0")
+    total_rc_in = total_rc_out = Decimal("0")
 
     for profile in profiles:
         sale_stmt = select(Sale).where(Sale.tax_profile_id == profile.id, Sale.is_deleted == False)
@@ -91,8 +92,18 @@ async def tax_liability_report(admin: CurrentAdmin, db: DB, date_from: datetime.
         if date_to:
             sale_stmt = sale_stmt.where(Sale.date <= date_to)
         sales = (await db.execute(sale_stmt)).scalars().all()
-        seller_collected = sum((sale.tax_collected for sale in sales if sale.tax_treatment == "seller_collected"), Decimal("0"))
-        marketplace_facilitated = sum((sale.tax_collected for sale in sales if sale.tax_treatment == "marketplace_facilitated"), Decimal("0"))
+        # #329 P2: reverse-charge sales are notional — the operator should
+        # not actually collect tax. Bucket them separately so the books and
+        # reporting stay reconcilable. Both sides should be equal in magnitude.
+        if profile.is_reverse_charge:
+            seller_collected = Decimal("0")
+            marketplace_facilitated = Decimal("0")
+            rc_in = sum((sale.tax_collected for sale in sales), Decimal("0"))
+            rc_out = rc_in  # net-zero by definition
+        else:
+            seller_collected = sum((sale.tax_collected for sale in sales if sale.tax_treatment == "seller_collected"), Decimal("0"))
+            marketplace_facilitated = sum((sale.tax_collected for sale in sales if sale.tax_treatment == "marketplace_facilitated"), Decimal("0"))
+            rc_in = rc_out = Decimal("0")
 
         remit_stmt = select(TaxRemittance).where(TaxRemittance.tax_profile_id == profile.id)
         if date_from:
@@ -111,11 +122,16 @@ async def tax_liability_report(admin: CurrentAdmin, db: DB, date_from: datetime.
             marketplace_facilitated=marketplace_facilitated,
             remitted=remitted,
             outstanding_liability=outstanding,
+            is_reverse_charge=profile.is_reverse_charge,
+            reverse_charged_in=rc_in,
+            reverse_charged_out=rc_out,
         ))
         total_seller += seller_collected
         total_marketplace += marketplace_facilitated
         total_remitted += remitted
         total_outstanding += outstanding
+        total_rc_in += rc_in
+        total_rc_out += rc_out
 
     return TaxLiabilitySummary(
         date_from=date_from,
@@ -125,7 +141,68 @@ async def tax_liability_report(admin: CurrentAdmin, db: DB, date_from: datetime.
         total_marketplace_facilitated=total_marketplace,
         total_remitted=total_remitted,
         total_outstanding_liability=total_outstanding,
+        total_reverse_charged_in=total_rc_in,
+        total_reverse_charged_out=total_rc_out,
     )
+
+
+@router.get(
+    "/reports/component-breakdown",
+    summary="Per-component tax breakdown for compound profiles (#329 P2)",
+)
+async def component_breakdown_report(
+    admin: CurrentAdmin,
+    db: DB,
+    profile_id: uuid.UUID | None = Query(None, description="Filter to one profile; otherwise all active"),
+    date_from: datetime.date | None = Query(None),
+    date_to: datetime.date | None = Query(None),
+):
+    """For each tax profile, sum the period's sale subtotals (taxable base)
+    and decompose across components. Useful for compound profiles like
+    QC's GST+QST where remittance forms ask for each component separately.
+    """
+    from app.services.tax_service import compute_component_breakdown
+
+    profile_stmt = select(TaxProfile).where(TaxProfile.is_active == True)  # noqa: E712
+    if profile_id is not None:
+        profile_stmt = profile_stmt.where(TaxProfile.id == profile_id)
+    profiles = (await db.execute(profile_stmt)).scalars().all()
+
+    out_rows: list[dict] = []
+    grand_total = Decimal("0")
+    for p in profiles:
+        sale_stmt = select(Sale).where(Sale.tax_profile_id == p.id, Sale.is_deleted == False)  # noqa: E712
+        if date_from:
+            sale_stmt = sale_stmt.where(Sale.date >= date_from)
+        if date_to:
+            sale_stmt = sale_stmt.where(Sale.date <= date_to)
+        sales = (await db.execute(sale_stmt)).scalars().all()
+        # Sale.subtotal is the pre-tax base for this profile in the period.
+        period_subtotal = sum((Decimal(s.subtotal) for s in sales), Decimal("0"))
+        if period_subtotal == 0:
+            continue
+        breakdown = await compute_component_breakdown(
+            db, profile_id=p.id, sales_subtotal=period_subtotal
+        )
+        for r in breakdown:
+            out_rows.append(
+                {
+                    "profile_id": str(r.profile_id),
+                    "profile_name": r.profile_name,
+                    "component_name": r.component_name,
+                    "rate": str(r.rate),
+                    "sales_subtotal": str(r.sales_subtotal),
+                    "estimated_tax": str(r.estimated_tax),
+                }
+            )
+            grand_total += r.estimated_tax
+
+    return {
+        "date_from": date_from.isoformat() if date_from else None,
+        "date_to": date_to.isoformat() if date_to else None,
+        "rows": out_rows,
+        "total_estimated_tax": str(grand_total),
+    }
 
 
 @router.post("/compute", summary="Compute tax breakdown for a subtotal against a profile (#258 Phase 2)")
