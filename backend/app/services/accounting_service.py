@@ -11,7 +11,10 @@ from app.models.account import Account
 from app.models.accounting_period import AccountingPeriod
 from app.models.journal_entry import JournalEntry
 from app.models.journal_line import JournalLine
+from app.models.setting import Setting
 from app.schemas.accounting import JournalEntryCreate, JournalEntryReverse
+
+PERIOD_CLOSE_SETTING_KEY = "accounting.period_close_date"
 
 STARTER_CHART_OF_ACCOUNTS = [
     ("1000", "Cash", "asset", "debit"),
@@ -217,6 +220,57 @@ async def assert_financial_date_editable(
         raise AccountingValidationError(
             f"{detail_prefix} falls in locked accounting period '{period.period_key}' and cannot be edited destructively."
         )
+    # #314 P2: also enforce a simple global period-close date setting.
+    # Operators set `accounting.period_close_date` (YYYY-MM-DD) once books are
+    # closed through that date. Any mutation on/before that date is refused.
+    close_row = (
+        await db.execute(select(Setting).where(Setting.key == PERIOD_CLOSE_SETTING_KEY))
+    ).scalar_one_or_none()
+    if close_row and close_row.value:
+        from datetime import date as _date
+
+        try:
+            close_date = _date.fromisoformat(close_row.value)
+        except ValueError:
+            return
+        if target_date <= close_date:
+            raise AccountingValidationError(
+                f"{detail_prefix} falls on or before the closed period date "
+                f"({close_date.isoformat()}); reopen books to edit."
+            )
+
+
+async def get_period_close_date(db: AsyncSession):
+    from datetime import date as _date
+
+    row = (
+        await db.execute(select(Setting).where(Setting.key == PERIOD_CLOSE_SETTING_KEY))
+    ).scalar_one_or_none()
+    if row is None or not row.value:
+        return None
+    try:
+        return _date.fromisoformat(row.value)
+    except ValueError:
+        return None
+
+
+async def set_period_close_date(db: AsyncSession, *, close_date) -> None:
+    """Set or clear the global period-close date. Pass `None` to clear."""
+    row = (
+        await db.execute(select(Setting).where(Setting.key == PERIOD_CLOSE_SETTING_KEY))
+    ).scalar_one_or_none()
+    value = close_date.isoformat() if close_date else ""
+    if row is None:
+        db.add(
+            Setting(
+                key=PERIOD_CLOSE_SETTING_KEY,
+                value=value,
+                notes="Books are closed through this date; mutations refused on or before.",
+            )
+        )
+    else:
+        row.value = value
+    await db.flush()
 
 
 async def set_accounting_period_status(
@@ -259,6 +313,26 @@ async def reverse_journal_entry(
         raise AccountingValidationError("Only posted journal entries can be reversed.")
     if entry.is_reversal:
         raise AccountingValidationError("Reversal entries cannot be reversed again.")
+
+    # #314 P2: refuse reversals that would post into a closed period, AND
+    # refuse reversing an entry whose lines have been finalized in a bank
+    # reconciliation (operator must reopen the recon first).
+    await assert_financial_date_editable(
+        db,
+        target_date=payload.reversal_date,
+        detail_prefix=f"Reversal of {entry.entry_number}",
+    )
+    from app.services.bank_reconciliation_service import (
+        CLEARED_STATUS_RECONCILED,
+        JournalLineLockedError,
+    )
+
+    for line in entry.lines:
+        if line.cleared_status == CLEARED_STATUS_RECONCILED:
+            raise JournalLineLockedError(
+                f"Cannot reverse journal entry {entry.entry_number}: line on account "
+                f"{line.account_id} is reconciled. Reopen the relevant bank reconciliation first."
+            )
 
     existing_reversal = await db.execute(
         select(JournalEntry).where(JournalEntry.reversal_of_id == entry.id)

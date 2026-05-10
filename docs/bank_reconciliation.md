@@ -28,15 +28,27 @@ Operators reconcile a bank-typed GL account against a statement-end balance usin
 
 `bank_reconciliation_service.assert_journal_line_editable(db, journal_line_id)` is the single guard call sites should use before mutating a journal line. It raises `JournalLineLockedError` (subclass of `BankReconciliationError`) when the line is reconciled — convert to a 409 at the API edge.
 
-This guard is currently called only by the recon service itself. Phase 2 follow-up: wire it in to every endpoint that can edit or delete a journal line transitively (sale refunds, invoice voids, manual JE edits, etc.). Until then, downstream callers can corrupt a finalized reconciliation; the right pattern is to call `assert_journal_line_editable` for each affected line before saving.
+**#314 Phase 2 expanded coverage**: `reverse_journal_entry` now refuses to reverse any entry whose lines are in `reconciled` state (operator must reopen the recon first), and `finalize_reconciliation` refuses if `statement_end_date` falls on or before the configured period-close date.
 
-## Phase 1 limitations / Phase 2 follow-ups
+## Period close (#314 Phase 2)
 
-Each can be its own issue when prioritized:
+A simple global setting `accounting.period_close_date` (managed via `GET/PUT /api/v1/accounting/period-close-date`, admin-only) blocks JE-mutation paths from operating on or before that date. This complements the existing per-period `AccountingPeriod.status='locked'` mechanism — use the close-date for "books are sealed through Y-M-D"; use locked periods for finer-grained control.
 
-1. **Wire the edit-lock guard into every journal-line mutation path** — sales refunds, invoice voids, manual JE edits, etc. (most important hardening step).
-2. **Frontend `/banking` route** — accounts overview + reconciliation worksheet UI. None of these endpoints have a UI surface today.
-3. **Period-close lock dates** — currently `accounting_period.py` doesn't gate `finalize_reconciliation`; if a recon is for a closed period the finalize succeeds. Worth tightening.
-4. **Multi-currency** — Phase 1 assumes USD-only.
-5. **Statement import** — picked up in #240 (depends on this issue's data model).
-6. **Auto-match rules** — picked up in #241 (depends on #240).
+Helpers in `accounting_service.py`:
+- `get_period_close_date(db) -> date | None`
+- `set_period_close_date(db, *, close_date)`
+- `assert_financial_date_editable(db, *, target_date, ...)` — combined guard for both locked-periods and close-date.
+
+Call sites that enforce the guard today:
+- `accounting_service.create_journal_entry` (via `_validate_open_period` + `assert_financial_date_editable`)
+- `accounting_service.reverse_journal_entry` (entry+reversal date) + reconciled-line check
+- `bank_reconciliation_service.finalize_reconciliation` (statement_end_date)
+
+## Phase 1 limitations / Phase 2 follow-ups (remaining)
+
+Tracked in [#314](https://github.com/bbengt1/3d-print-sales/issues/314):
+
+1. Audit and wire `assert_journal_line_editable` into invoice/bill/payment/credit-note void paths so each line touched by those mutations is checked individually (current coverage is the entry-level reconciled-line refusal in `reverse_journal_entry`).
+2. Frontend admin surface for the period-close date setting (the accounting workspace has the slot but not the form yet).
+3. Multi-currency (deferred to #319).
+4. Statement import (#240 — landed) and auto-match rules (#241 — landed).
