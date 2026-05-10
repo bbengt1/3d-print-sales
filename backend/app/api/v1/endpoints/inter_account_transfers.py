@@ -14,6 +14,7 @@ from app.services.inter_account_transfer_service import (
     InterAccountTransferError,
     create_inter_account_transfer,
     delete_inter_account_transfer,
+    edit_inter_account_transfer,
 )
 
 
@@ -88,6 +89,30 @@ async def get_iat(transfer_id: uuid.UUID, user: CurrentUser, db: DB):
     t = (await db.execute(select(InterAccountTransfer).where(InterAccountTransfer.id == transfer_id))).scalar_one_or_none()
     if not t:
         raise HTTPException(status_code=404, detail="Transfer not found")
+    return _to_response(t)
+
+
+class TransferEdit(BaseModel):
+    amount: Decimal | None = Field(None, gt=0)
+    paid_on: date | None = None
+    received_on: date | None = None
+    notes: str | None = None
+
+
+@router.patch("/{transfer_id}", response_model=TransferResponse, summary="Edit inter-account transfer (refused if either leg is reconciled)")
+async def edit_iat(transfer_id: uuid.UUID, body: TransferEdit, user: CurrentUser, db: DB):
+    try:
+        t = await edit_inter_account_transfer(
+            db,
+            transfer_id,
+            amount=body.amount,
+            paid_on=body.paid_on,
+            received_on=body.received_on,
+            notes=body.notes,
+        )
+    except InterAccountTransferError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
     return _to_response(t)
 
 
