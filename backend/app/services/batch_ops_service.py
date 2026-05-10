@@ -102,12 +102,16 @@ async def batch_delete(db: AsyncSession, *, scope: str, ids: list[uuid.UUID]) ->
         if row is None:
             errors.append({"id": str(rid), "error": "not found"})
             continue
+        # #287 P1: wrap each delete in a SAVEPOINT so a per-row FK
+        # IntegrityError only rolls back that row, not the entire
+        # transaction (which would discard earlier successful deletes
+        # in this batch and break documented partial-success behavior).
         try:
-            await db.delete(row)
-            await db.flush()
+            async with db.begin_nested():
+                await db.delete(row)
+                await db.flush()
             deleted += 1
         except IntegrityError as e:
-            await db.rollback()
             errors.append({"id": str(rid), "error": f"foreign-key dependency: {e.orig}"})
     return {"deleted": deleted, "errors": errors}
 
