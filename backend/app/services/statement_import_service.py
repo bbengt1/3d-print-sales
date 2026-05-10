@@ -147,8 +147,11 @@ async def import_statement(
     source_filename: str,
     content: bytes,
     imported_by_user_id: uuid.UUID | None = None,
+    csv_mapping_override: dict[str, str] | None = None,
 ) -> StatementImport:
-    if source_format not in ("ofx", "csv"):
+    # #315 P2: QFX is OFX with a Quicken-specific header; the same
+    # _TAG_RE-based STMTTRN extractor parses both. Treat 'qfx' as 'ofx'.
+    if source_format not in ("ofx", "qfx", "csv"):
         raise StatementImportError(f"Unsupported format: {source_format}")
     account = (await db.execute(select(Account).where(Account.id == account_id))).scalar_one_or_none()
     if account is None:
@@ -157,7 +160,23 @@ async def import_statement(
         raise StatementImportError(f"Account {account.code} is not a bank account")
 
     text = content.decode("utf-8", errors="replace")
-    rows = parse_ofx(text) if source_format == "ofx" else parse_csv(text)
+    if source_format in ("ofx", "qfx"):
+        rows = parse_ofx(text)
+    else:
+        # #315 P2: prefer caller-supplied override, then per-account
+        # persisted mapping, then default.
+        mapping = csv_mapping_override
+        if mapping is None:
+            from app.models.bank_import_mapping import BankImportMapping
+
+            persisted = (
+                await db.execute(
+                    select(BankImportMapping).where(BankImportMapping.account_id == account_id)
+                )
+            ).scalar_one_or_none()
+            if persisted and persisted.mapping:
+                mapping = dict(persisted.mapping)
+        rows = parse_csv(text, mapping=mapping)
 
     imp = StatementImport(
         account_id=account.id,
@@ -307,3 +326,80 @@ async def ignore_line(db: AsyncSession, statement_line_id: uuid.UUID) -> Stateme
     sl.match_status = "ignored"
     await db.flush()
     return sl
+
+
+# ---------- #315 P2: create-tx-from-line ----------
+
+
+async def create_transaction_from_line(
+    db: AsyncSession,
+    *,
+    statement_line_id: uuid.UUID,
+    target_account_id: uuid.UUID,
+    description: str | None = None,
+) -> dict:
+    """Post a balanced JE that clears a single statement line.
+
+    Inflow (line.amount > 0): Dr bank, Cr target.
+    Outflow (line.amount < 0): Cr bank, Dr target.
+
+    Marks the statement line `matched` and links the bank-side journal
+    line so the reconciliation worksheet picks it up. Refuses if the
+    line is already matched or ignored.
+    """
+    sl = (
+        await db.execute(select(StatementLine).where(StatementLine.id == statement_line_id))
+    ).scalar_one_or_none()
+    if sl is None:
+        raise StatementImportError("Statement line not found")
+    if sl.match_status != "unmatched":
+        raise StatementImportError(f"Cannot create transaction for line in status {sl.match_status}")
+
+    bank = (await db.execute(select(Account).where(Account.id == sl.account_id))).scalar_one()
+    target = (
+        await db.execute(select(Account).where(Account.id == target_account_id))
+    ).scalar_one_or_none()
+    if target is None:
+        raise StatementImportError("Target account not found")
+
+    from app.schemas.accounting import JournalEntryCreate, JournalLineCreate
+    from app.services.accounting_service import create_journal_entry
+
+    amt = abs(Decimal(sl.amount))
+    if Decimal(sl.amount) >= 0:
+        bank_side, target_side = "debit", "credit"
+    else:
+        bank_side, target_side = "credit", "debit"
+    memo = description or f"Statement line {sl.posted_date} {sl.description[:160]}"
+
+    je = await create_journal_entry(
+        db,
+        JournalEntryCreate(
+            entry_date=sl.posted_date,
+            source_type="statement_import_create_tx",
+            source_id=str(sl.id),
+            memo=memo,
+            lines=[
+                JournalLineCreate(account_id=bank.id, entry_type=bank_side, amount=amt),
+                JournalLineCreate(account_id=target.id, entry_type=target_side, amount=amt),
+            ],
+        ),
+    )
+    bank_line = (
+        await db.execute(
+            select(JournalLine).where(
+                JournalLine.journal_entry_id == je.id,
+                JournalLine.account_id == bank.id,
+            )
+        )
+    ).scalar_one()
+    sl.matched_journal_line_id = bank_line.id
+    sl.match_status = "matched"
+    await db.flush()
+    return {
+        "statement_line_id": str(sl.id),
+        "journal_entry_id": str(je.id),
+        "bank_journal_line_id": str(bank_line.id),
+        "amount": str(amt),
+        "direction": "inflow" if bank_side == "debit" else "outflow",
+    }
