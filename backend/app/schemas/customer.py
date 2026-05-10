@@ -15,6 +15,7 @@ class CustomerCreate(BaseModel):
     # #263 P2: per-customer late-fee terms (NULL → fall back to global setting)
     late_payment_fee_rate_pct: Decimal | None = Field(None, ge=0)
     late_payment_fee_grace_days: int | None = Field(None, ge=0)
+    withholding_profile_id: uuid.UUID | None = None
 
 
 class CustomerUpdate(BaseModel):
@@ -24,6 +25,7 @@ class CustomerUpdate(BaseModel):
     notes: str | None = Field(None, max_length=1000)
     late_payment_fee_rate_pct: Decimal | None = Field(None, ge=0)
     late_payment_fee_grace_days: int | None = Field(None, ge=0)
+    withholding_profile_id: uuid.UUID | None = None
 
 
 class CustomerResponse(BaseModel):
@@ -34,6 +36,7 @@ class CustomerResponse(BaseModel):
     notes: str | None = None
     late_payment_fee_rate_pct: Decimal | None = None
     late_payment_fee_grace_days: int | None = None
+    withholding_profile_id: uuid.UUID | None = None
     job_count: int = 0
     created_at: datetime | None = None
     updated_at: datetime | None = None
