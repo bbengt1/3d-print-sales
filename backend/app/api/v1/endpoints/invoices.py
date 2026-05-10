@@ -340,58 +340,10 @@ async def apply_invoice_credit(invoice_id: uuid.UUID, body: CustomerCreditApply,
 
 @router.get("/reports/ar-aging", response_model=ARAgingSummary, summary="A/R aging report")
 async def ar_aging_report(db: DB, as_of_date: datetime.date | None = Query(None)):
+    # #322 P2: consolidated implementation lives in report_service.compute_ar_aging.
     as_of = as_of_date or datetime.date.today()
-    result = await db.execute(select(Invoice).options(selectinload(Invoice.lines)).where(Invoice.is_deleted == False))
-    invoices = result.scalars().all()
-    rows: list[ARAgingRow] = []
-    totals = {"current": Decimal("0"), "bucket_1_30": Decimal("0"), "bucket_31_60": Decimal("0"), "bucket_61_90": Decimal("0"), "bucket_90_plus": Decimal("0")}
-
-    for invoice in invoices:
-        invoice.status = _derive_invoice_status(invoice, as_of)
-        if invoice.balance_due <= 0 or invoice.status == "void":
-            continue
-        due_date = invoice.due_date or invoice.issue_date
-        age_days = max((as_of - due_date).days, 0)
-        current = bucket_1_30 = bucket_31_60 = bucket_61_90 = bucket_90_plus = Decimal("0")
-        if invoice.due_date and as_of <= invoice.due_date:
-            current = invoice.balance_due
-            totals["current"] += invoice.balance_due
-        elif age_days <= 30:
-            bucket_1_30 = invoice.balance_due
-            totals["bucket_1_30"] += invoice.balance_due
-        elif age_days <= 60:
-            bucket_31_60 = invoice.balance_due
-            totals["bucket_31_60"] += invoice.balance_due
-        elif age_days <= 90:
-            bucket_61_90 = invoice.balance_due
-            totals["bucket_61_90"] += invoice.balance_due
-        else:
-            bucket_90_plus = invoice.balance_due
-            totals["bucket_90_plus"] += invoice.balance_due
-        rows.append(ARAgingRow(
-            invoice_id=invoice.id,
-            invoice_number=invoice.invoice_number,
-            customer_id=invoice.customer_id,
-            customer_name=invoice.customer_name,
-            due_date=invoice.due_date,
-            balance_due=invoice.balance_due,
-            current=current,
-            bucket_1_30=bucket_1_30,
-            bucket_31_60=bucket_31_60,
-            bucket_61_90=bucket_61_90,
-            bucket_90_plus=bucket_90_plus,
-        ))
-
-    return ARAgingSummary(
-        as_of_date=as_of,
-        rows=rows,
-        current_total=totals["current"],
-        bucket_1_30_total=totals["bucket_1_30"],
-        bucket_31_60_total=totals["bucket_31_60"],
-        bucket_61_90_total=totals["bucket_61_90"],
-        bucket_90_plus_total=totals["bucket_90_plus"],
-        total_outstanding=sum(totals.values(), Decimal("0")),
-    )
+    from app.services.report_service import compute_ar_aging
+    return await compute_ar_aging(db, as_of)
 
 
 @router.delete("/{invoice_id}", status_code=204, summary="Delete invoice")

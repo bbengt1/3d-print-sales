@@ -822,3 +822,188 @@ def export_to_csv(rows: list[dict], columns: list[str] | None = None) -> str:
     for row in rows:
         writer.writerow({c: row.get(c, "") for c in cols})
     return output.getvalue()
+
+
+# ---------- #322 P2: AR aging consolidation ----------
+
+
+async def compute_ar_aging(db: AsyncSession, as_of_date: date):
+    """Single source of truth for A/R aging — both `/invoices/reports/ar-aging`
+    and `/reports/ar-aging` call this. Mirrors the prior in-endpoint logic
+    so behavior is identical (avoiding silent bucket-arithmetic drift).
+    """
+    # Local import to avoid a top-level circular: invoices endpoint imports
+    # selectinload-bound Invoice indirectly via report_service today.
+    from app.schemas.ar import ARAgingRow, ARAgingSummary
+    from app.api.v1.endpoints.invoices import _derive_invoice_status
+
+    rows_data = (
+        await db.execute(
+            select(Invoice)
+            .options(selectinload(Invoice.lines))
+            .where(Invoice.is_deleted == False)  # noqa: E712
+        )
+    ).scalars().all()
+
+    rows: list = []
+    totals = {
+        "current": Decimal("0"),
+        "bucket_1_30": Decimal("0"),
+        "bucket_31_60": Decimal("0"),
+        "bucket_61_90": Decimal("0"),
+        "bucket_90_plus": Decimal("0"),
+    }
+    for invoice in rows_data:
+        invoice.status = _derive_invoice_status(invoice, as_of_date)
+        if invoice.balance_due <= 0 or invoice.status == "void":
+            continue
+        due = invoice.due_date or invoice.issue_date
+        age = max((as_of_date - due).days, 0)
+        c = b1 = b2 = b3 = b4 = Decimal("0")
+        if invoice.due_date and as_of_date <= invoice.due_date:
+            c = invoice.balance_due
+            totals["current"] += c
+        elif age <= 30:
+            b1 = invoice.balance_due
+            totals["bucket_1_30"] += b1
+        elif age <= 60:
+            b2 = invoice.balance_due
+            totals["bucket_31_60"] += b2
+        elif age <= 90:
+            b3 = invoice.balance_due
+            totals["bucket_61_90"] += b3
+        else:
+            b4 = invoice.balance_due
+            totals["bucket_90_plus"] += b4
+        rows.append(
+            ARAgingRow(
+                invoice_id=invoice.id,
+                invoice_number=invoice.invoice_number,
+                customer_id=invoice.customer_id,
+                customer_name=invoice.customer_name,
+                due_date=invoice.due_date,
+                balance_due=invoice.balance_due,
+                current=c,
+                bucket_1_30=b1,
+                bucket_31_60=b2,
+                bucket_61_90=b3,
+                bucket_90_plus=b4,
+            )
+        )
+
+    return ARAgingSummary(
+        as_of_date=as_of_date,
+        rows=rows,
+        current_total=totals["current"],
+        bucket_1_30_total=totals["bucket_1_30"],
+        bucket_31_60_total=totals["bucket_31_60"],
+        bucket_61_90_total=totals["bucket_61_90"],
+        bucket_90_plus_total=totals["bucket_90_plus"],
+        total_outstanding=sum(totals.values(), Decimal("0")),
+    )
+
+
+# ---------- #322 P2: P&L period comparison ----------
+
+
+async def compute_pl_comparison(
+    db: AsyncSession,
+    *,
+    date_from: date,
+    date_to: date,
+    compare_to_start: date,
+    compare_to_end: date,
+    basis: str = "accrual",
+):
+    """Run the P&L for two date ranges and return both plus delta totals."""
+    if basis == "cash":
+        current = await generate_cash_pl_report(db, date_from, date_to)
+        prior = await generate_cash_pl_report(db, compare_to_start, compare_to_end)
+    else:
+        current = await generate_accrual_pl_report(db, date_from, date_to)
+        prior = await generate_accrual_pl_report(db, compare_to_start, compare_to_end)
+
+    def _t(p, *path):
+        v = p
+        for k in path:
+            v = v[k] if isinstance(v, dict) else getattr(v, k)
+        return Decimal(v)
+
+    deltas = {
+        "revenue_total": _t(current, "revenue", "total") - _t(prior, "revenue", "total"),
+        "cogs_total": _t(current, "cogs", "total") - _t(prior, "cogs", "total"),
+        "expenses_total": _t(current, "expenses", "total") - _t(prior, "expenses", "total"),
+        "gross_profit": _t(current, "gross_profit") - _t(prior, "gross_profit"),
+        "net_income": _t(current, "net_income") - _t(prior, "net_income"),
+    }
+    return current, prior, deltas
+
+
+# ---------- #322 P2: account drill-down ----------
+
+
+async def drill_down_account(
+    db: AsyncSession,
+    *,
+    account_id: uuid.UUID,
+    date_from: date | None,
+    date_to: date | None,
+):
+    account = (
+        await db.execute(select(Account).where(Account.id == account_id))
+    ).scalar_one_or_none()
+    if account is None:
+        raise ValueError(f"Account {account_id} not found")
+
+    stmt = (
+        select(JournalLine, JournalEntry)
+        .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+        .where(JournalLine.account_id == account_id)
+        .where(JournalEntry.status == "posted")
+        .order_by(JournalEntry.entry_date.asc(), JournalEntry.created_at.asc())
+    )
+    if date_from is not None:
+        stmt = stmt.where(JournalEntry.entry_date >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(JournalEntry.entry_date <= date_to)
+
+    rows_raw = (await db.execute(stmt)).all()
+
+    total_debit = Decimal("0")
+    total_credit = Decimal("0")
+    rows = []
+    for line, entry in rows_raw:
+        amt = Decimal(line.amount)
+        if line.entry_type == "debit":
+            total_debit += amt
+        else:
+            total_credit += amt
+        rows.append(
+            {
+                "journal_entry_id": str(entry.id),
+                "entry_number": entry.entry_number,
+                "entry_date": entry.entry_date.isoformat(),
+                "line_id": str(line.id),
+                "account_id": str(line.account_id),
+                "account_code": account.code,
+                "account_name": account.name,
+                "entry_type": line.entry_type,
+                "amount": amt,
+                "description": line.description,
+                "source_type": entry.source_type,
+                "source_id": str(entry.source_id) if entry.source_id else None,
+            }
+        )
+    sign = 1 if account.normal_balance == "debit" else -1
+    net_change = (total_debit - total_credit) * sign
+    return {
+        "account_id": str(account.id),
+        "account_code": account.code,
+        "account_name": account.name,
+        "date_from": date_from.isoformat() if date_from else None,
+        "date_to": date_to.isoformat() if date_to else None,
+        "rows": rows,
+        "total_debit": total_debit,
+        "total_credit": total_credit,
+        "net_change": net_change,
+    }
