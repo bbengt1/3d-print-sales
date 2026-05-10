@@ -33,7 +33,13 @@ class StatementMatchRule(Base):
     match_type: Mapped[str] = mapped_column(String(20))  # contains | regex
     match_pattern: Mapped[str] = mapped_column(String(500))
     match_amount_sign: Mapped[str] = mapped_column(String(10), default="any")  # debit | credit | any
-    action: Mapped[str] = mapped_column(String(30))  # ignore (Phase 1) | create_receipt / create_payment (Phase 2)
+    action: Mapped[str] = mapped_column(String(30))  # ignore | create_journal_entry (#316 P2)
+    # #316 P2: when action == "create_journal_entry", post Dr/Cr against the
+    # bank account vs the chosen category account at the line's amount sign.
+    category_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("accounts.id"), nullable=True
+    )
+    counterparty_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     created_at: Mapped[datetime] = mapped_column(

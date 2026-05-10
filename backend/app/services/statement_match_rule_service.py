@@ -27,7 +27,7 @@ class StatementMatchRuleError(RuntimeError):
     pass
 
 
-SUPPORTED_ACTIONS = {"ignore"}  # Phase 1
+SUPPORTED_ACTIONS = {"ignore", "create_journal_entry"}  # #316 P2
 
 
 def _matches_pattern(rule: StatementMatchRule, description: str) -> bool:
@@ -77,9 +77,18 @@ async def apply_rules_to_import(
     db: AsyncSession, *, import_id: uuid.UUID
 ) -> dict:
     """Walk every unmatched line for the given import and apply the first
-    matching rule's action. Phase 1: only `ignore` is acted upon.
+    matching rule's action.
+
+    Phase 1 supported `ignore`. #316 P2 adds `create_journal_entry`: posts a
+    balanced JE against the configured `category_account_id` and the bank
+    account, in the direction implied by the statement line's amount sign,
+    then sets the line's `match_status` to `matched` and links the new JE.
     Returns a summary dict of counts.
     """
+    from app.models.account import Account
+    from app.schemas.accounting import JournalEntryCreate, JournalLineCreate
+    from app.services.accounting_service import create_journal_entry as _create_je
+
     lines = (
         await db.execute(
             select(StatementLine).where(
@@ -90,6 +99,7 @@ async def apply_rules_to_import(
     ).scalars().all()
 
     auto_ignored = 0
+    auto_je = 0
     skipped_unsupported = 0
     for line in lines:
         rule = await evaluate_rules_for_line(db, line)
@@ -98,16 +108,161 @@ async def apply_rules_to_import(
         if rule.action == "ignore":
             line.match_status = "ignored"
             auto_ignored += 1
+        elif rule.action == "create_journal_entry":
+            if rule.category_account_id is None:
+                skipped_unsupported += 1
+                continue
+            cat = (
+                await db.execute(select(Account).where(Account.id == rule.category_account_id))
+            ).scalar_one_or_none()
+            bank = (
+                await db.execute(select(Account).where(Account.id == line.account_id))
+            ).scalar_one_or_none()
+            if cat is None or bank is None:
+                skipped_unsupported += 1
+                continue
+            amt = abs(Decimal(line.amount))
+            # Inflow (line.amount > 0): Dr bank, Cr category (income/credit-normal).
+            # Outflow (line.amount < 0): Cr bank, Dr category (expense/debit-normal).
+            if Decimal(line.amount) >= 0:
+                bank_side, cat_side = "debit", "credit"
+            else:
+                bank_side, cat_side = "credit", "debit"
+            je = await _create_je(
+                db,
+                JournalEntryCreate(
+                    entry_date=line.posted_date,
+                    memo=f"[rule:{rule.name}] {line.description[:160]}",
+                    lines=[
+                        JournalLineCreate(account_id=bank.id, entry_type=bank_side, amount=amt),
+                        JournalLineCreate(account_id=cat.id, entry_type=cat_side, amount=amt),
+                    ],
+                ),
+            )
+            line.match_status = "matched"
+            # Link the bank-side JE line so reconciliation pulls it
+            from app.models.journal_line import JournalLine
+
+            bank_line = (
+                await db.execute(
+                    select(JournalLine).where(
+                        JournalLine.journal_entry_id == je.id,
+                        JournalLine.account_id == bank.id,
+                    )
+                )
+            ).scalar_one()
+            line.matched_journal_line_id = bank_line.id
+            auto_je += 1
         else:
-            # Phase 2 actions surfaced but not yet executed
             skipped_unsupported += 1
 
     await db.flush()
     return {
         "considered": len(lines),
         "auto_ignored": auto_ignored,
+        "auto_journal_entries": auto_je,
         "skipped_unsupported_actions": skipped_unsupported,
     }
+
+
+async def preview_rules_for_import(
+    db: AsyncSession, *, import_id: uuid.UUID
+) -> dict:
+    """#316 P2: dry-run preview — for every unmatched line return the rule
+    that would fire and the action it would take, without actually mutating
+    any state.
+    """
+    from app.models.account import Account
+
+    lines = (
+        await db.execute(
+            select(StatementLine).where(
+                StatementLine.import_id == import_id,
+                StatementLine.match_status == "unmatched",
+            )
+        )
+    ).scalars().all()
+
+    out = []
+    for line in lines:
+        rule = await evaluate_rules_for_line(db, line)
+        if rule is None:
+            out.append(
+                {
+                    "statement_line_id": str(line.id),
+                    "amount": str(line.amount),
+                    "description": line.description,
+                    "matched_rule": None,
+                }
+            )
+            continue
+        cat_label = None
+        if rule.category_account_id is not None:
+            cat = (
+                await db.execute(select(Account).where(Account.id == rule.category_account_id))
+            ).scalar_one_or_none()
+            if cat is not None:
+                cat_label = f"{cat.code} {cat.name}"
+        out.append(
+            {
+                "statement_line_id": str(line.id),
+                "amount": str(line.amount),
+                "description": line.description,
+                "matched_rule": {
+                    "id": str(rule.id),
+                    "name": rule.name,
+                    "action": rule.action,
+                    "category_account": cat_label,
+                },
+            }
+        )
+    return {
+        "import_id": str(import_id),
+        "lines": out,
+        "considered": len(lines),
+        "would_match": sum(1 for l in out if l["matched_rule"]),
+    }
+
+
+async def create_rule_from_line(
+    db: AsyncSession,
+    *,
+    statement_line_id: uuid.UUID,
+    name: str,
+    action: str,
+    category_account_id: uuid.UUID | None = None,
+    match_type: str = "contains",
+) -> StatementMatchRule:
+    """#316 P2: derive a starter rule from a staged statement line.
+
+    Defaults to a "contains" pattern using a sanitized prefix of the line's
+    description. Operator can edit later.
+    """
+    line = (
+        await db.execute(select(StatementLine).where(StatementLine.id == statement_line_id))
+    ).scalar_one_or_none()
+    if line is None:
+        raise StatementMatchRuleError("Statement line not found")
+    pattern = (line.description or "").strip()[:120] or name
+    sign = "credit" if Decimal(line.amount) >= 0 else "debit"
+    validate_rule(
+        match_type=match_type,
+        match_pattern=pattern,
+        match_amount_sign=sign,
+        action=action,
+    )
+    rule = StatementMatchRule(
+        name=name,
+        account_id=line.account_id,
+        match_type=match_type,
+        match_pattern=pattern,
+        match_amount_sign=sign,
+        action=action,
+        category_account_id=category_account_id,
+    )
+    db.add(rule)
+    await db.flush()
+    return rule
 
 
 def validate_rule(
