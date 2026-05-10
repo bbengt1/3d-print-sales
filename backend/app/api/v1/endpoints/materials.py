@@ -133,3 +133,41 @@ async def delete_material(material_id: uuid.UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=404, detail="Material not found")
     mat.active = False
     await db.commit()
+
+
+# ---------- #230: catalog loaded filament from prints ----------
+
+
+from decimal import Decimal as _Decimal
+
+from pydantic import BaseModel as _BaseModel, Field as _Field
+
+
+class FilamentResolveRequest(_BaseModel):
+    name: str = _Field(..., min_length=1, max_length=120)
+    brand: str | None = _Field(None, max_length=120)
+    color: str | None = None
+    spool_id: str | None = None
+    source: str = _Field("print_job", description="print_job | slicer_metadata | printer_telemetry | csv_import | opening_balance")
+    source_printer_id: str | None = None
+    source_job_id: str | None = None
+    spool_weight_g: _Decimal | None = None
+    spool_price: _Decimal | None = None
+    net_usable_g: _Decimal | None = None
+    cost_per_g: _Decimal | None = None
+
+
+@router.post(
+    "/resolve-from-print",
+    summary="#230: Resolve loaded filament against catalog; create review-needed entry on miss",
+)
+async def resolve_filament(body: FilamentResolveRequest, user: CurrentUser, db: DB):
+    from app.services.filament_resolver import resolve_or_catalog
+
+    try:
+        result = await resolve_or_catalog(db, **body.model_dump())
+    except ValueError as e:
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
+    return result
