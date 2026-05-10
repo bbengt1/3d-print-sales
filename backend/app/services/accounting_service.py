@@ -160,10 +160,14 @@ async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) ->
             raise AccountingValidationError("Accounting period not found.")
         _validate_open_period(period)
 
-    count_result = await db.execute(select(JournalEntry))
-    next_number = len(count_result.scalars().all()) + 1
+    # Race-safe JE numbering via #243 allocator (closes the # TODO note in
+    # inter_account_transfer_service that previously fell back to the
+    # ad-hoc count-based scheme).
+    from app.services.reference_number_service import next_number as alloc_next_number
+
+    je_number = await alloc_next_number(db, "journal_entry", year=payload.entry_date.year)
     entry = JournalEntry(
-        entry_number=f"JE-{payload.entry_date.year}-{next_number:04d}",
+        entry_number=je_number,
         entry_date=payload.entry_date,
         accounting_period_id=payload.accounting_period_id,
         status="posted",

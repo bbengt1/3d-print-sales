@@ -71,11 +71,8 @@ async def create_inter_account_transfer(
     number = await next_number(db, "inter_account_transfer")
     earlier = min(paid_on, received_on)
 
-    # Allocate a unique JE number using the existing ad-hoc scheme.
-    # (Long term, JE numbering should also flow through #243's allocator;
-    # that's tracked in #260's accounting foundations cluster.)
-    count = (await db.execute(select(JournalEntry))).scalars().all()
-    je_number = f"JE-{earlier.year}-{len(count) + 1:04d}"
+    # Race-safe JE numbering via the central allocator (#260 Phase 2).
+    je_number = await next_number(db, "journal_entry", year=earlier.year)
 
     je = JournalEntry(
         entry_number=je_number,
