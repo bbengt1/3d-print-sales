@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import datetime
 import uuid
 from datetime import date
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -632,3 +634,40 @@ async def get_entry(entry_id: uuid.UUID, admin: CurrentAdmin, db: DB):
     if not entry:
         raise HTTPException(status_code=404, detail="Journal entry not found")
     return entry
+
+
+# ---------- #314 P2: period-close date admin ----------
+
+
+class PeriodCloseDateResponse(BaseModel):
+    close_date: datetime.date | None
+
+
+class PeriodCloseDateUpdate(BaseModel):
+    close_date: datetime.date | None = None
+
+
+@router.get(
+    "/period-close-date",
+    response_model=PeriodCloseDateResponse,
+    summary="Get the configured period-close date (admin only)",
+)
+async def get_period_close_date_endpoint(admin: CurrentAdmin, db: DB):
+    from app.services.accounting_service import get_period_close_date
+
+    return PeriodCloseDateResponse(close_date=await get_period_close_date(db))
+
+
+@router.put(
+    "/period-close-date",
+    response_model=PeriodCloseDateResponse,
+    summary="Set or clear the period-close date (admin only)",
+)
+async def set_period_close_date_endpoint(
+    payload: PeriodCloseDateUpdate, admin: CurrentAdmin, db: DB
+):
+    from app.services.accounting_service import set_period_close_date
+
+    await set_period_close_date(db, close_date=payload.close_date)
+    await db.commit()
+    return PeriodCloseDateResponse(close_date=payload.close_date)

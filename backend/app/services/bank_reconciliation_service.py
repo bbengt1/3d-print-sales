@@ -263,6 +263,18 @@ async def finalize_reconciliation(
 ) -> BankReconciliation:
     recon = await _get_in_progress_recon(db, reconciliation_id)
 
+    # #314 P2: refuse finalize if statement_end_date is on/before the closed
+    # period — finalizing flips lines to `reconciled` which then become
+    # uneditable, and that would silently extend a closed-period lock.
+    from app.services.accounting_service import get_period_close_date
+
+    close_date = await get_period_close_date(db)
+    if close_date and recon.statement_end_date <= close_date:
+        raise BankReconciliationError(
+            f"Cannot finalize: statement end date {recon.statement_end_date} is on or "
+            f"before the closed-period date {close_date}. Reopen books to finalize."
+        )
+
     book = await compute_book_balance(db, reconciliation_id)
     if book != Decimal(recon.statement_ending_balance):
         raise BankReconciliationError(
