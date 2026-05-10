@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import accounting, accounting_foundations, approvals, attachments, audit, auth, banking, batch_ops, billable_expenses, budgets, cameras, custom_fields, customers, dashboard, delivery_notes, divisions, email, expense_claims, fixed_assets, form_templates, insights, intangible_assets, inter_account_transfers, inventory, inventory_starting_balances, invoices, jobs, kits, locations, materials, merge, notes, orders, pos, printers, production_orders, products, quotes, rates, recurring_invoices, reports, sales, sales_channels, settlements, settings, statement_imports, statement_match_rules, supplies, tax, withholding
+from app.api.v1.endpoints import accounting, accounting_foundations, approvals, attachments, audit, auth, banking, batch_ops, billable_expenses, budgets, cameras, custom_fields, customers, dashboard, delivery_notes, divisions, email, expense_claims, fixed_assets, form_templates, insights, intangible_assets, inter_account_transfers, inventory, inventory_starting_balances, invoices, job_discovery, jobs, kits, locations, materials, merge, notes, orders, pos, printers, production_orders, products, quotes, rates, recurring_invoices, reports, sales, sales_channels, settlements, settings, statement_imports, statement_match_rules, supplies, tax, withholding
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -53,3 +53,4 @@ api_router.include_router(inventory_starting_balances.router)
 api_router.include_router(merge.router)
 api_router.include_router(withholding.router)
 api_router.include_router(billable_expenses.router)
+api_router.include_router(job_discovery.router)
