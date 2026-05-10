@@ -560,7 +560,14 @@ async def generate_cogs_breakdown_report(db: AsyncSession, date_from: date | Non
     return {"rows": list(bucket.values()), "total_units_sold": total_units, "total_cogs": total_cogs, "total_revenue": total_revenue}
 
 
-async def _posted_journal_balances(db: AsyncSession, date_from: date | None = None, date_to: date | None = None):
+async def _posted_journal_balances(
+    db: AsyncSession,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    *,
+    division_id=None,
+    project_id=None,
+):
     stmt = (
         select(Account.code, Account.name, Account.account_type, Account.normal_balance, JournalLine.entry_type, JournalLine.amount)
         .join(JournalLine, JournalLine.account_id == Account.id)
@@ -571,6 +578,10 @@ async def _posted_journal_balances(db: AsyncSession, date_from: date | None = No
         stmt = stmt.where(JournalEntry.entry_date >= date_from)
     if date_to:
         stmt = stmt.where(JournalEntry.entry_date <= date_to)
+    if division_id is not None:
+        stmt = stmt.where(JournalEntry.division_id == division_id)
+    if project_id is not None:
+        stmt = stmt.where(JournalEntry.project_id == project_id)
     rows = (await db.execute(stmt)).all()
     balances = {}
     for code, name, account_type, normal_balance, entry_type, amount in rows:
@@ -610,8 +621,18 @@ async def generate_balance_sheet_report(db: AsyncSession, as_of_date: date):
     }
 
 
-async def generate_accrual_pl_report(db: AsyncSession, date_from: date | None, date_to: date | None):
-    balances = await _posted_journal_balances(db, date_from=date_from, date_to=date_to)
+async def generate_accrual_pl_report(
+    db: AsyncSession,
+    date_from: date | None,
+    date_to: date | None,
+    *,
+    division_id=None,
+    project_id=None,
+):
+    balances = await _posted_journal_balances(
+        db, date_from=date_from, date_to=date_to,
+        division_id=division_id, project_id=project_id,
+    )
     revenue = []
     cogs = []
     expenses = []

@@ -254,8 +254,16 @@ async def cash_flow_report(db: DB, date_from: datetime.date | None = Query(None)
 
 
 @router.get("/pl-accrual", response_model=ProfitAndLossResponse, summary="Accrual-basis P&L")
-async def pl_accrual_report(db: DB, date_from: datetime.date | None = Query(None), date_to: datetime.date | None = Query(None)):
-    return await generate_accrual_pl_report(db, date_from, date_to)
+async def pl_accrual_report(
+    db: DB,
+    date_from: datetime.date | None = Query(None),
+    date_to: datetime.date | None = Query(None),
+    division_id: uuid.UUID | None = Query(None, description="#328 P2: filter to one division"),
+    project_id: uuid.UUID | None = Query(None, description="#328 P2: filter to one project"),
+):
+    return await generate_accrual_pl_report(
+        db, date_from, date_to, division_id=division_id, project_id=project_id,
+    )
 
 
 @router.get("/pl-cash", response_model=ProfitAndLossResponse, summary="Cash-basis P&L")

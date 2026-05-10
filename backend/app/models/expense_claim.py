@@ -38,6 +38,9 @@ class ExpenseClaim(Base):
     reimbursement_journal_entry_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("journal_entries.id"), nullable=True
     )
+    # #328 P2
+    division_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("divisions.id"), nullable=True, index=True)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"), nullable=True, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

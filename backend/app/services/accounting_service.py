@@ -177,6 +177,8 @@ async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) ->
         source_type=payload.source_type,
         source_id=payload.source_id,
         memo=payload.memo,
+        division_id=payload.division_id,
+        project_id=payload.project_id,
         posted_at=datetime.now(timezone.utc),
     )
     db.add(entry)
