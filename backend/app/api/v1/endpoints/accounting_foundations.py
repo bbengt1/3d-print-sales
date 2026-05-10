@@ -301,7 +301,17 @@ async def post_starting_balances_csv(
                 status_code=400, detail=f"Invalid amount for {code}: {r.get('amount')!r}"
             )
         if target_as_of is None and r.get("as_of"):
-            target_as_of = date.fromisoformat(r["as_of"].strip())
+            as_of_value = r["as_of"].strip()
+            try:
+                target_as_of = date.fromisoformat(as_of_value)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Invalid as_of for {code}: {as_of_value!r}; "
+                        "expected ISO 8601 date (YYYY-MM-DD)"
+                    ),
+                )
         balances.append({"account_id": by_code[code].id, "amount": amt})
 
     if target_as_of is None:
