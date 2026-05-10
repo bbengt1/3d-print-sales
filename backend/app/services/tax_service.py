@@ -57,6 +57,15 @@ async def compute_for_line(
                 .order_by(TaxProfileComponent.apply_order)
             )
         ).scalars().all()
+        if not components:
+            # #283 P1: a compound profile with no components must fail fast
+            # rather than silently returning [] — otherwise downstream tax
+            # posting skips tax entirely during partial setup, producing an
+            # under-collection bug.
+            raise ValueError(
+                f"Compound tax profile {profile.id} ({profile.name!r}) "
+                "has no components configured"
+            )
         running = base
         for c in components:
             amt = _q(running * Decimal(c.rate) / Decimal(100))
