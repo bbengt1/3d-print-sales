@@ -27,7 +27,10 @@ router = APIRouter(prefix="/expense-claims", tags=["ExpenseClaims"])
 class LineIn(BaseModel):
     description: str = Field(..., min_length=1, max_length=255)
     expense_account_id: uuid.UUID
-    amount: Decimal = Field(..., gt=0)
+    # `amount` ignored when `line_kind=mileage` (computed from miles × rate).
+    amount: Decimal = Field(0, ge=0)
+    line_kind: Literal["expense", "mileage"] = "expense"
+    miles: Decimal | None = Field(None, gt=0)
     notes: str | None = None
 
 
@@ -43,6 +46,9 @@ class LineOut(BaseModel):
     description: str
     expense_account_id: uuid.UUID
     amount: Decimal
+    line_kind: str = "expense"
+    miles: Decimal | None = None
+    mileage_rate_used: Decimal | None = None
     notes: str | None
 
 
@@ -94,6 +100,9 @@ async def _hydrate(db, claim: ExpenseClaim) -> ClaimResponse:
                 description=l.description,
                 expense_account_id=l.expense_account_id,
                 amount=Decimal(l.amount),
+                line_kind=l.line_kind,
+                miles=Decimal(l.miles) if l.miles is not None else None,
+                mileage_rate_used=Decimal(l.mileage_rate_used) if l.mileage_rate_used is not None else None,
                 notes=l.notes,
             )
             for l in lines

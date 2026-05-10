@@ -61,6 +61,12 @@ class ExpenseClaimLine(Base):
     description: Mapped[str] = mapped_column(String(255))
     expense_account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("accounts.id"))
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    # #324 P2: optional mileage tracking. When `miles` is non-null, the
+    # service computes amount = miles * rate (rate captured at submit time
+    # from `expense_claims.mileage_rate_per_mile` setting).
+    line_kind: Mapped[str] = mapped_column(String(20), default="expense")  # expense | mileage
+    miles: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    mileage_rate_used: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
