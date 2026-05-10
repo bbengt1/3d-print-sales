@@ -44,6 +44,23 @@ async def _liability_account(db: AsyncSession) -> Account:
     return a
 
 
+async def _mileage_rate(db: AsyncSession) -> Decimal | None:
+    """#324 P2: read configured mileage rate (e.g. 0.67 for $/mile)."""
+    from app.models.setting import Setting
+
+    row = (
+        await db.execute(
+            select(Setting).where(Setting.key == "expense_claims.mileage_rate_per_mile")
+        )
+    ).scalar_one_or_none()
+    if row is None or not row.value:
+        return None
+    try:
+        return Decimal(row.value.strip())
+    except Exception:
+        return None
+
+
 async def create_claim(
     db: AsyncSession,
     *,
@@ -65,8 +82,25 @@ async def create_claim(
     )
     db.add(claim)
     await db.flush()
+    # #324 P2: lookup the configured mileage rate once for any mileage lines.
+    rate = await _mileage_rate(db)
     for line in lines:
-        amt = Decimal(str(line["amount"]))
+        kind = line.get("line_kind", "expense")
+        miles_raw = line.get("miles")
+        if kind == "mileage":
+            if miles_raw is None or Decimal(str(miles_raw)) <= 0:
+                raise ExpenseClaimError("Mileage line requires miles > 0")
+            if rate is None:
+                raise ExpenseClaimError(
+                    "Configure setting `expense_claims.mileage_rate_per_mile` before adding mileage lines"
+                )
+            miles_dec = Decimal(str(miles_raw))
+            amt = (miles_dec * rate).quantize(Decimal("0.01"))
+            mileage_rate_used = rate
+        else:
+            amt = Decimal(str(line["amount"]))
+            miles_dec = None
+            mileage_rate_used = None
         if amt <= 0:
             raise ExpenseClaimError("Line amount must be > 0")
         total += amt
@@ -76,6 +110,9 @@ async def create_claim(
                 description=line["description"],
                 expense_account_id=line["expense_account_id"],
                 amount=amt,
+                line_kind=kind,
+                miles=miles_dec,
+                mileage_rate_used=mileage_rate_used,
                 notes=line.get("notes"),
             )
         )
