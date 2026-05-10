@@ -21,8 +21,10 @@ from app.schemas.report import (
     SalesReportResponse,
 )
 from app.schemas.statements import (
+    AccountDrillDownResponse,
     BalanceSheetResponse,
     CashFlowSummaryResponse,
+    ProfitAndLossComparisonResponse,
     ProfitAndLossResponse,
 )
 from app.services.report_service import (
@@ -174,8 +176,51 @@ async def pl_csv(
 
 @router.get("/ar-aging", response_model=ARAgingReportResponse, summary="A/R aging report")
 async def ar_aging_report(db: DB, as_of_date: datetime.date = Query(...)):
-    from app.api.v1.endpoints.invoices import ar_aging_report as invoice_ar_aging_report
-    return await invoice_ar_aging_report(db=db, as_of_date=as_of_date)
+    # #322 P2: consolidated logic lives in report_service.compute_ar_aging.
+    from app.services.report_service import compute_ar_aging
+    return await compute_ar_aging(db, as_of_date)
+
+
+@router.get(
+    "/pl-comparison",
+    response_model=ProfitAndLossComparisonResponse,
+    summary="P&L for current period side-by-side with a prior period (#322 P2)",
+)
+async def pl_comparison_report(
+    db: DB,
+    date_from: datetime.date = Query(...),
+    date_to: datetime.date = Query(...),
+    compare_to_start: datetime.date = Query(...),
+    compare_to_end: datetime.date = Query(...),
+    basis: str = Query("accrual", pattern="^(accrual|cash)$"),
+):
+    from app.services.report_service import compute_pl_comparison
+
+    current, prior, deltas = await compute_pl_comparison(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        compare_to_start=compare_to_start,
+        compare_to_end=compare_to_end,
+        basis=basis,
+    )
+    return ProfitAndLossComparisonResponse(current=current, prior=prior, deltas=deltas)
+
+
+@router.get(
+    "/account-drill-down",
+    response_model=AccountDrillDownResponse,
+    summary="List source journal lines behind a report cell (#322 P2)",
+)
+async def account_drill_down(
+    db: DB,
+    account_id: uuid.UUID = Query(...),
+    date_from: datetime.date | None = Query(None),
+    date_to: datetime.date | None = Query(None),
+):
+    from app.services.report_service import drill_down_account
+    payload = await drill_down_account(db, account_id=account_id, date_from=date_from, date_to=date_to)
+    return AccountDrillDownResponse(**payload)
 
 
 @router.get("/ap-aging", response_model=APAgingSummary, summary="A/P aging report")

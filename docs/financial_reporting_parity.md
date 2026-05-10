@@ -42,11 +42,14 @@ For each account that had any journal-line activity in the date range:
 
 Sort: by `abs(net)` desc — biggest movers first. The `is_bank_account` flag is exposed so a future drill-down view can default to bank accounts only.
 
-## Phase 2 follow-ups
+## Phase 2 — landed (#322)
 
-- **Period comparison** on P&L / Balance Sheet / Cash Flow (side-by-side current vs. prior-period). Endpoints accept the inputs already; we just need a comparison rendering on the response side.
-- **AR-aging service consolidation**: AR aging today lives in two places (`/api/v1/reports/ar-aging` and the legacy invoice-side `/api/v1/invoices/.../aging-report`). Both work; consolidating onto one shared `aging_service.py` is a refactor rather than a feature.
-- **Cash Flow ↔ Balance Sheet ending-cash invariant test** — confirm `ending_cash(period_end) - ending_cash(period_start) == cash_flow_net_change`.
-- **Drill-down**: clicking an account row in Receipts & Payments Summary returns the underlying journal lines.
-- **Frontend** pages for the new endpoints + period-comparison UI.
+- **AR-aging consolidation** — `report_service.compute_ar_aging` is the single source of truth. Both `GET /api/v1/reports/ar-aging` and the legacy `GET /api/v1/invoices/reports/ar-aging` delegate to it.
+- **P&L period comparison** — `GET /api/v1/reports/pl-comparison?date_from=…&date_to=…&compare_to_start=…&compare_to_end=…&basis=accrual|cash` returns `current`, `prior`, and `deltas` (revenue/cogs/expenses/gross/net).
+- **Account drill-down** — `GET /api/v1/reports/account-drill-down?account_id=…&date_from=…&date_to=…` returns the underlying journal lines for any account in a date range. Use this to drill into Receipts & Payments Summary rows or any cell on the trial balance.
+
+## Phase 2 — still deferred
+
+- Period comparison rendering on **Balance Sheet** and **Cash Flow** (P&L only landed). Same shape; just plumb through.
+- **Frontend** pages for period-comparison and drill-down (the `/accounting/reports` page is currently TB / RP / aging only).
 - **PDF export** via #244's WeasyPrint renderer.
