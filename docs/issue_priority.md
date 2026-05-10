@@ -124,6 +124,40 @@ Each backend Phase 1 in production today has been deferred frontend until these 
 
 ---
 
+## Backend Phase 2 backlog (carved out of closed Phase 1 issues)
+
+Phase 1 of each issue below shipped to prod. The Phase 2 follow-ups were explicitly deferred to keep PRs focused. Each tracking issue has the carved-out scope; design notes live in the matching `docs/*.md`.
+
+| Tracking | Original | Scope summary |
+|---|---|---|
+| [#314](https://github.com/bbengt1/3d-print-sales/issues/314) | #239 | JE edit-lock coverage on every mutation path + period-close lock-date enforcement |
+| [#315](https://github.com/bbengt1/3d-print-sales/issues/315) | #240 | CSV column-mapping persistence, QFX/QIF parsers, create-tx-from-line |
+| [#316](https://github.com/bbengt1/3d-print-sales/issues/316) | #241 | receipt/payment/IAT rule actions, dry-run preview, create-rule-from-line |
+| [#317](https://github.com/bbengt1/3d-print-sales/issues/317) | #242 | sales-side COGS FIFO rewrite, supply FIFO, hourly overhead, Job link, variance accounting |
+| [#318](https://github.com/bbengt1/3d-print-sales/issues/318) | #245 | per-location qty decrement, fulfillment_location_id, soft-warn negative, in-transit |
+| [#319](https://github.com/bbengt1/3d-print-sales/issues/319) | #246 | multi-currency: FX rates, revaluation, multi-currency JEs |
+| [#320](https://github.com/bbengt1/3d-print-sales/issues/320) | #247 | editable templates (Setting.value Text bump), n8n cron workflow JSON, pause/skip |
+| [#321](https://github.com/bbengt1/3d-print-sales/issues/321) | #248 | restock × #242 layers, refund-in-cash, email scope, marketplace settlement |
+| [#322](https://github.com/bbengt1/3d-print-sales/issues/322) | #249 | period comparison, AR-aging consolidation, drill-down endpoints, PDF export |
+| [#323](https://github.com/bbengt1/3d-print-sales/issues/323) | #250 | S3 backend, virus scan, HEIC, hard-delete GC, email-attach hook |
+| [#324](https://github.com/bbengt1/3d-print-sales/issues/324) | #251 | attachments via #250, approval workflow, reimburse-as-Bill, mileage |
+| [#325](https://github.com/bbengt1/3d-print-sales/issues/325) | #252 | auto monthly cron, MACRS, bulk CSV import |
+| [#326](https://github.com/bbengt1/3d-print-sales/issues/326) | #253 | filter-by-CF, computed fields, hard delete, multi-value, per-line CFs |
+| [#327](https://github.com/bbengt1/3d-print-sales/issues/327) | #254 | CSV import w/ mapping, undo, per-record audit-log batch_id |
+| [#328](https://github.com/bbengt1/3d-print-sales/issues/328) | #255 | division_id + project_id FKs across docs, Job→project, reporting filters |
+| [#329](https://github.com/bbengt1/3d-print-sales/issues/329) | #258 | tax-remittance breakdown, reverse-charge in/out, reverse-charge JE legs |
+| [#330](https://github.com/bbengt1/3d-print-sales/issues/330) | #260 | §7 🔁 audit, recurring-JE n8n cron, suspense reclassify, starting-balances CSV |
+| [#331](https://github.com/bbengt1/3d-print-sales/issues/331) | #264 | form templates, uniform `archived_at` audit, PDF parity audit |
+
+The five originals still open as Phase 2 umbrellas (work mostly outside backend or strategically deferred):
+- [#244](https://github.com/bbengt1/3d-print-sales/issues/244) — email send: WeasyPrint PDF, Resend transport+webhook, editable templates, password encryption, frontend modal
+- [#256](https://github.com/bbengt1/3d-print-sales/issues/256) — multi-currency Phase 1 (overlaps with #319; pick one umbrella when implementing)
+- [#257](https://github.com/bbengt1/3d-print-sales/issues/257) — customer portal Phase 1
+- [#262](https://github.com/bbengt1/3d-print-sales/issues/262) — kits + find-and-merge + starting-balances import (kits piece landed; remainder open)
+- [#263](https://github.com/bbengt1/3d-print-sales/issues/263) — late fees + billable expenses + withholding (delivery notes piece landed; remainder open)
+
+---
+
 ## Recently landed (last 30 days)
 
 | Issue / PR | Merged | Notes |
