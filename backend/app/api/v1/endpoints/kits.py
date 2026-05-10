@@ -66,6 +66,23 @@ async def get_kit(kit_product_id: uuid.UUID, user: CurrentUser, db: DB):
 @router.put("/{kit_product_id}", response_model=KitResponse, summary="Define or replace the kit's component list")
 async def upsert_kit(kit_product_id: uuid.UUID, body: KitDefinitionRequest, user: CurrentUser, db: DB):
     kit = await _ensure_product(db, kit_product_id)
+    # Reject duplicate component_product_id values up front; otherwise the
+    # uq_kit_components_kit_component unique constraint would surface as a 500
+    # on flush (and the existing rows would already have been deleted).
+    seen: set[uuid.UUID] = set()
+    duplicates: list[uuid.UUID] = []
+    for c in body.components:
+        if c.component_product_id in seen:
+            if c.component_product_id not in duplicates:
+                duplicates.append(c.component_product_id)
+        else:
+            seen.add(c.component_product_id)
+    if duplicates:
+        dup_list = ", ".join(str(d) for d in duplicates)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Duplicate component_product_id values in components: {dup_list}",
+        )
     # Validate component products exist + none is the kit itself (no self-reference)
     for c in body.components:
         if c.component_product_id == kit_product_id:
