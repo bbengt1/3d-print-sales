@@ -583,8 +583,16 @@ async def create_entry(body: JournalEntryCreate, admin: CurrentAdmin, db: DB):
     summary="Reverse a posted journal entry (admin only)",
 )
 async def reverse_entry(entry_id: uuid.UUID, body: JournalEntryReverse, admin: CurrentAdmin, db: DB):
+    # Lazy import: bank_reconciliation_service imports from accounting paths;
+    # keep the dependency arrow one-way at module import time.
+    from app.services.bank_reconciliation_service import JournalLineLockedError
+
     try:
         entry = await reverse_journal_entry(db, entry_id=entry_id, payload=body)
+    except JournalLineLockedError as exc:
+        # #333 Codex P1: reconciled source line blocks reversal -> 409 Conflict
+        # (operator must reopen the bank reconciliation first).
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except AccountingValidationError as exc:
         detail = str(exc)
         code = 404 if detail == "Journal entry not found." else 400
