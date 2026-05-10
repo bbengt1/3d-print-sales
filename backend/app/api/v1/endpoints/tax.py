@@ -7,7 +7,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentAdmin
+from app.api.deps import DB, CurrentAdmin, CurrentUser
 from app.models.sale import Sale
 from app.models.tax_profile import TaxProfile
 from app.models.tax_remittance import TaxRemittance
@@ -207,6 +207,7 @@ async def component_breakdown_report(
 
 @router.post("/compute", summary="Compute tax breakdown for a subtotal against a profile (#258 Phase 2)")
 async def compute_tax(
+    user: CurrentUser,
     db: DB,
     profile_id: uuid.UUID,
     subtotal: Decimal,
