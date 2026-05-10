@@ -19,6 +19,7 @@ from app.services.note_service import (
     create_debit_note,
     issue_credit_note,
     issue_debit_note,
+    refund_credit_note_in_cash,
     void_credit_note,
     void_debit_note,
 )
@@ -178,6 +179,29 @@ async def apply_cn(note_id: uuid.UUID, body: ApplyRequest, user: CurrentUser, db
         "amount": str(Decimal(app.amount)),
         "applied_on": app.applied_on.isoformat(),
     }
+
+
+class RefundInCashRequest(BaseModel):
+    cash_account_id: uuid.UUID
+    paid_on: date | None = None
+
+
+@router.post(
+    "/credit-notes/{note_id}/refund-in-cash",
+    summary="#321 P2: Refund the unapplied portion of a credit note as cash",
+)
+async def refund_in_cash(note_id: uuid.UUID, body: RefundInCashRequest, user: CurrentUser, db: DB):
+    try:
+        n = await refund_credit_note_in_cash(
+            db,
+            note_id=note_id,
+            cash_account_id=body.cash_account_id,
+            paid_on=body.paid_on,
+        )
+    except NoteError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
+    return _credit_to_dict(n)
 
 
 @router.post("/credit-notes/{note_id}/void", summary="Void a credit note (reverses issue JE)")

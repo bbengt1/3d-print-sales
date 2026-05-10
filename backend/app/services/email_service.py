@@ -30,7 +30,7 @@ from app.models.setting import Setting
 
 log = logging.getLogger(__name__)
 
-EmailScope = Literal["invoice", "quote"]
+EmailScope = Literal["invoice", "quote", "credit_note"]
 
 
 class EmailConfigError(RuntimeError):
