@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 # Canonical deploy script for web01.
 #
-# Runs the full deploy sequence:
+# Order matters. The fix below is the result of two real incidents:
+#   - 2026-05-09 (PR #271 / #239): forgetting `alembic upgrade head` crashed
+#     the backend because new code queried not-yet-created tables.
+#   - 2026-05-10 (PR #353 / #230): bringing all containers up with --build
+#     before running alembic crashed the backend on startup, which then
+#     failed the dependency healthcheck and aborted the whole `up`.
+#
+# Sequence:
 #   1. Pull latest main from origin (fast-forward only).
-#   2. Bring containers up with --build (rebuilds backend/frontend images).
-#   3. Run pending Alembic migrations against the live DB. THIS IS REQUIRED:
-#      backend startup queries tables/columns added by recent migrations, so
-#      forgetting this step will crash the backend container after a deploy
-#      that adds schema. (Real incident on 2026-05-09 with PR #271 / #239.)
+#   2. Build images and start the DB.
+#   3. Run pending Alembic migrations against the live DB. (Don't start
+#      the backend yet — its startup may query columns that this migration
+#      is creating.)
+#   4. Bring backend + frontend up. Backend can now start cleanly.
 #
-# Designed to be invoked from `/srv/3d-print-sales/deploy.sh` on web01:
-#   /srv/3d-print-sales/deploy.sh
-# That host script is a thin wrapper that cd's into the repo and calls this.
-#
-# Idempotent: re-running with no new commits is a no-op for git, a quick
-# rebuild check for compose, and a no-op for alembic (already at head).
-#
-# To skip migrations explicitly (rare — e.g. pre-flight a code-only deploy),
-# set SKIP_MIGRATIONS=1 in the environment.
+# To skip migrations explicitly (rare — e.g. pre-flight a code-only deploy
+# with no schema changes), set SKIP_MIGRATIONS=1 in the environment.
 
 set -euo pipefail
 
@@ -26,20 +26,23 @@ COMPOSE="$REPO_DIR/scripts/web01-compose.sh"
 
 cd "$REPO_DIR"
 
-echo "==> [1/3] git pull --ff-only"
+echo "==> [1/4] git pull --ff-only"
 git pull --ff-only
 
-echo "==> [2/3] compose up -d --build"
-"$COMPOSE" up -d --build
+echo "==> [2/4] build images + start DB"
+"$COMPOSE" build
+"$COMPOSE" up -d db
+"$COMPOSE" exec -T db sh -c 'until pg_isready -q -U "${POSTGRES_USER:-printuser}"; do sleep 1; done' || true
 
 if [[ "${SKIP_MIGRATIONS:-0}" == "1" ]]; then
-  echo "==> [3/3] migrations SKIPPED (SKIP_MIGRATIONS=1 set)"
+  echo "==> [3/4] migrations SKIPPED (SKIP_MIGRATIONS=1 set)"
 else
-  echo "==> [3/3] alembic upgrade head"
+  echo "==> [3/4] alembic upgrade head"
   "$COMPOSE" run --rm backend alembic upgrade head
-  echo "==> migrations applied; restarting backend to pick up schema"
-  "$COMPOSE" up -d backend
 fi
+
+echo "==> [4/4] start backend + frontend"
+"$COMPOSE" up -d
 
 echo "==> done. containers:"
 "$COMPOSE" ps
