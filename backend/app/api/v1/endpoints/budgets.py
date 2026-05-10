@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser
+from app.api.deps import DB, CurrentAdmin, CurrentUser
 from app.models.account import Account
 from app.models.account_budget import AccountBudget
 
@@ -52,7 +52,7 @@ async def list_budgets(user: CurrentUser, db: DB, year: int | None = None, accou
 
 
 @router.post("/upsert", response_model=list[BudgetResponse], status_code=status.HTTP_200_OK, summary="Upsert per (account, year, month)")
-async def upsert_budgets(body: BudgetUpsertRequest, user: CurrentUser, db: DB):
+async def upsert_budgets(body: BudgetUpsertRequest, user: CurrentAdmin, db: DB):
     # Validate all account ids exist + are income/expense (refuses balance-sheet accts)
     account_ids = {r.account_id for r in body.rows}
     accounts = (
@@ -93,7 +93,7 @@ async def upsert_budgets(body: BudgetUpsertRequest, user: CurrentUser, db: DB):
 
 
 @router.delete("/{budget_id}", status_code=204, summary="Delete a budget row")
-async def delete_budget(budget_id: uuid.UUID, user: CurrentUser, db: DB):
+async def delete_budget(budget_id: uuid.UUID, user: CurrentAdmin, db: DB):
     b = (await db.execute(select(AccountBudget).where(AccountBudget.id == budget_id))).scalar_one_or_none()
     if not b:
         raise HTTPException(status_code=404, detail="Budget row not found")
@@ -102,7 +102,7 @@ async def delete_budget(budget_id: uuid.UUID, user: CurrentUser, db: DB):
 
 
 @router.post("/copy-year", response_model=dict, summary="Copy all budgets from one year to another (idempotent — skips existing)")
-async def copy_year(user: CurrentUser, db: DB, from_year: int, to_year: int):
+async def copy_year(user: CurrentAdmin, db: DB, from_year: int, to_year: int):
     if from_year == to_year:
         raise HTTPException(status_code=400, detail="from_year and to_year must differ")
     src = (
