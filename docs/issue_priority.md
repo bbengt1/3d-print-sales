@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-10 — Manager.io gap walk substantively complete. 5 trackers open; no Tier 1 / Tier 2 items remain. Total 629 backend tests passing. 60+ PRs landed since 2026-05-09.
+> **Last reviewed:** 2026-05-10 (afternoon) — Manager.io gap walk substantively complete + 25 P1 follow-up fixes (#360–#384) landed. 5 trackers open; no Tier 1 / Tier 2 items remain. 60+ PRs landed since 2026-05-09.
 
 ---
 
@@ -74,6 +74,14 @@ PRs from today's session, in order. Total 17 today (12 features + 5 fixes/deploy
 | [#357](https://github.com/bbengt1/3d-print-sales/pull/357) | #229 | jobs — auto-discovery from watch directories |
 | [#358](https://github.com/bbengt1/3d-print-sales/pull/358) | #317 | COGS — sales-side FIFO rewrite (flag-gated, default off) |
 | [#359](https://github.com/bbengt1/3d-print-sales/pull/359) | #315 + #327 | bank-import — QFX format, persisted CSV mapping, create-tx-from-line |
+| [#379](https://github.com/bbengt1/3d-print-sales/pull/379) | #334 | P1 fix — drill-down missing account → 404 (Codex review) |
+| [#380](https://github.com/bbengt1/3d-print-sales/pull/380) | #297 | P1 fix — reject unknown tax profile on invoice creation (Codex review) |
+| [#381](https://github.com/bbengt1/3d-print-sales/pull/381) | #335 | P1 fix — validate `as_of` CSV date returns 4xx (Codex review) |
+| [#382](https://github.com/bbengt1/3d-print-sales/pull/382) | #333 | P1 fix — map `JournalLineLockedError` to 409 on JE reverse (Codex review) |
+| [#383](https://github.com/bbengt1/3d-print-sales/pull/383) | #292 | P1 fix — restrict receipts/payments summary to cash accounts (Codex review) |
+| [#384](https://github.com/bbengt1/3d-print-sales/pull/384) | #295 | P1 fix — require auth on `/tax/compute` + JE reference_sequence backfill migration (Codex review) |
+
+> **Doc gap note:** Earlier P1 follow-up fixes #360–#378 (afternoon batch — startup ORM register, banking integrity, intangibles, budgets, kits, etc.) landed but were not added to this table at the time. Recover from `git log --oneline b80bdbc..0283fb6` if a full reconstruction is needed.
 
 ---
 
