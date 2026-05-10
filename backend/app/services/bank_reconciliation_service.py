@@ -25,7 +25,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account import Account
@@ -72,6 +72,15 @@ def _signed_amount(line: JournalLine, account: Account) -> Decimal:
     return Decimal(line.amount) * (-sign)
 
 
+def _effective_date(line: JournalLine, entry: JournalEntry) -> date:
+    """Per-leg posted date. Inter-account transfers (#246) carry independent
+    `posted_on` per JournalLine so each leg reconciles against the
+    appropriate statement (Codex P1 #275). Falls back to the parent JE's
+    `entry_date` when the line has no per-leg date.
+    """
+    return line.posted_on if line.posted_on is not None else entry.entry_date
+
+
 async def compute_account_balance(
     db: AsyncSession,
     account_id: uuid.UUID,
@@ -92,7 +101,7 @@ async def compute_account_balance(
 
     total = Decimal("0")
     for line, entry in rows:
-        if through_date is not None and entry.entry_date > through_date:
+        if through_date is not None and _effective_date(line, entry) > through_date:
             continue
         if only_cleared and line.cleared_status not in (CLEARED_STATUS_CLEARED, CLEARED_STATUS_RECONCILED):
             continue
@@ -135,16 +144,23 @@ async def list_eligible_lines(
 ) -> list[tuple[JournalLine, JournalEntry]]:
     """Return (line, entry) pairs for lines posting to this account on or
     before statement_end_date and not yet reconciled.
+
+    Filters by the per-leg effective date — `JournalLine.posted_on` when
+    set (used by inter-account transfers #246 to carry paid_on/received_on
+    independently), otherwise the parent JE's `entry_date`. This keeps the
+    receiving leg of a delayed-receipt transfer invisible until its own
+    `received_on` (Codex P1 #275).
     """
+    effective = func.coalesce(JournalLine.posted_on, JournalEntry.entry_date)
     stmt = (
         select(JournalLine, JournalEntry)
         .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
         .where(
             JournalLine.account_id == account_id,
             JournalLine.cleared_status != CLEARED_STATUS_RECONCILED,
-            JournalEntry.entry_date <= statement_end_date,
+            effective <= statement_end_date,
         )
-        .order_by(JournalEntry.entry_date, JournalLine.line_number)
+        .order_by(effective, JournalLine.line_number)
     )
     return list((await db.execute(stmt)).all())
 
