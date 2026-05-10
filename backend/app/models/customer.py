@@ -23,6 +23,10 @@ class Customer(Base):
     # `late_payment_fee_rate_pct` / `late_payment_fee_grace_days` settings.
     late_payment_fee_rate_pct: Mapped[Decimal | None] = mapped_column(Numeric(6, 3), nullable=True)
     late_payment_fee_grace_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # #263 P2: optional withholding profile (NULL → no withholding on receipts).
+    withholding_profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("withholding_profiles.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
