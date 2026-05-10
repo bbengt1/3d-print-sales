@@ -54,6 +54,9 @@ class Sale(Base):
     fulfillment_location_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("inventory_locations.id"), nullable=True
     )
+    # #328 P2
+    division_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("divisions.id"), nullable=True, index=True)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"), nullable=True, index=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id"), nullable=True

@@ -94,6 +94,9 @@ class JournalEntryCreate(BaseModel):
     source_type: str | None = None
     source_id: str | None = None
     memo: str | None = None
+    # #328 P2: optional division/project tagging.
+    division_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
     lines: list[JournalLineCreate]
 
 
