@@ -122,8 +122,12 @@ async def create_invoice(body: InvoiceCreate, user: CurrentUser, db: DB):
         rows = await compute_for_line(
             db, profile_id=body.tax_profile_id, subtotal=line_subtotal
         )
-        if rows:
-            tax_amount = sum((r.amount for r in rows), Decimal("0"))
+        if not rows:
+            # #297 P1: a typo/stale tax_profile_id must surface as 404 rather
+            # than silently producing a zero-tax invoice that hides the bad
+            # reference from the operator.
+            raise HTTPException(status_code=404, detail="Tax profile not found")
+        tax_amount = sum((r.amount for r in rows), Decimal("0"))
 
     invoice = Invoice(
         invoice_number=invoice_number,
