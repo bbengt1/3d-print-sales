@@ -194,6 +194,10 @@ async def create_invoice_from_so(
                 line_total=Decimal(line.line_total),
             )
         )
+    # #261 Phase 2: auto-advance the SO to fulfilled. (Phase 3 will add
+    # partial-fulfillment tracking if a single SO produces multiple
+    # invoices; for now creating an invoice = fully invoiced.)
+    so.status = "fulfilled"
     await db.commit()
     return {"invoice_id": str(inv.id), "invoice_number": inv.invoice_number, "sales_order_id": str(so.id)}
 
@@ -342,5 +346,7 @@ async def create_bill_from_po(
         notes=f"From purchase order {po.purchase_order_number}",
     )
     db.add(bill)
+    # #261 Phase 2: auto-advance PO to fulfilled.
+    po.status = "fulfilled"
     await db.commit()
     return {"bill_id": str(bill.id), "purchase_order_id": str(po.id)}

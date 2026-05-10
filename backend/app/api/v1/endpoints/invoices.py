@@ -110,6 +110,21 @@ async def create_invoice(body: InvoiceCreate, user: CurrentUser, db: DB):
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=409, detail=f"Invoice number '{invoice_number}' already exists")
 
+    # #258 Phase 2: auto-compute tax_amount from tax_profile_id when
+    # tax_amount is 0. Operator-supplied tax_amount > 0 takes precedence.
+    tax_amount = Decimal(body.tax_amount)
+    if body.tax_profile_id is not None and tax_amount == 0:
+        from app.services.tax_service import compute_for_line
+        line_subtotal = sum(
+            (Decimal(l.quantity) * Decimal(l.unit_price) for l in body.lines),
+            Decimal("0"),
+        )
+        rows = await compute_for_line(
+            db, profile_id=body.tax_profile_id, subtotal=line_subtotal
+        )
+        if rows:
+            tax_amount = sum((r.amount for r in rows), Decimal("0"))
+
     invoice = Invoice(
         invoice_number=invoice_number,
         quote_id=body.quote_id,
@@ -117,7 +132,7 @@ async def create_invoice(body: InvoiceCreate, user: CurrentUser, db: DB):
         customer_name=body.customer_name,
         issue_date=body.issue_date,
         due_date=body.due_date,
-        tax_amount=body.tax_amount,
+        tax_amount=tax_amount,
         shipping_amount=body.shipping_amount,
         credits_applied=body.credits_applied,
         notes=body.notes,
