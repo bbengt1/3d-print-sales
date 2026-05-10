@@ -5,7 +5,10 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, status
+import csv
+import io
+
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -234,6 +237,166 @@ async def post_starting_balances_ep(body: StartingBalancesRequest, user: Current
             force=body.force,
         )
     except AccountingFoundationsError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
+    return {"journal_entry_id": str(je.id), "entry_number": je.entry_number}
+
+
+@router.post(
+    "/starting-balances.csv",
+    summary="#330 P2: Post opening balances from a CSV (account_code,amount[,as_of])",
+)
+async def post_starting_balances_csv(
+    user: CurrentUser,
+    db: DB,
+    file: UploadFile = File(...),
+    as_of: date | None = None,
+    force: bool = False,
+):
+    """Accepts a CSV with header row `account_code,amount` (and optional
+    `as_of` column to override the request param). Resolves account codes to
+    IDs server-side, then forwards to the same posting service as the JSON
+    endpoint, so the JE shape matches.
+    """
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    raw = (await file.read()).decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(raw))
+    if not reader.fieldnames or "account_code" not in reader.fieldnames or "amount" not in reader.fieldnames:
+        raise HTTPException(
+            status_code=400,
+            detail="CSV must include 'account_code' and 'amount' columns",
+        )
+    rows = list(reader)
+    if not rows:
+        raise HTTPException(status_code=400, detail="CSV had no data rows")
+
+    from app.models.account import Account
+
+    codes = sorted({(r.get("account_code") or "").strip() for r in rows if r.get("account_code")})
+    accounts = (
+        await db.execute(select(Account).where(Account.code.in_(codes)))
+    ).scalars().all()
+    by_code = {a.code: a for a in accounts}
+    missing = [c for c in codes if c not in by_code]
+    if missing:
+        raise HTTPException(
+            status_code=400, detail=f"Unknown account codes: {', '.join(missing)}"
+        )
+
+    target_as_of = as_of
+    balances: list[dict] = []
+    for r in rows:
+        code = (r.get("account_code") or "").strip()
+        if not code:
+            continue
+        try:
+            amt = Decimal(str(r.get("amount") or "0").strip())
+        except Exception:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid amount for {code}: {r.get('amount')!r}"
+            )
+        if target_as_of is None and r.get("as_of"):
+            target_as_of = date.fromisoformat(r["as_of"].strip())
+        balances.append({"account_id": by_code[code].id, "amount": amt})
+
+    if target_as_of is None:
+        raise HTTPException(
+            status_code=400,
+            detail="`as_of` query param or `as_of` CSV column required",
+        )
+
+    try:
+        je = await post_starting_balances(
+            db, as_of=target_as_of, balances=balances, force=force
+        )
+    except AccountingFoundationsError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
+    return {
+        "journal_entry_id": str(je.id),
+        "entry_number": je.entry_number,
+        "rows_processed": len(balances),
+    }
+
+
+# ---------- #330 P2: suspense reclassify inline ----------
+
+
+class SuspenseReclassifyRequest(BaseModel):
+    journal_line_id: uuid.UUID
+    target_account_id: uuid.UUID
+    posted_on: date
+    description: str | None = None
+
+
+@router.post(
+    "/suspense/reclassify",
+    summary="#330 P2: Reclassify a Suspense (1900) line by posting an offsetting JE",
+)
+async def reclassify_suspense_line(
+    body: SuspenseReclassifyRequest, user: CurrentUser, db: DB
+):
+    """Closes out a Suspense line by posting a balanced JE: offset the
+    suspense leg and post the same amount to the chosen target account.
+    Original line stays put for audit; this is additive.
+    """
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+
+    from app.models.account import Account
+    from app.models.journal_line import JournalLine
+    from app.schemas.accounting import JournalEntryCreate, JournalLineCreate
+    from app.services.accounting_service import create_journal_entry
+
+    line = (
+        await db.execute(select(JournalLine).where(JournalLine.id == body.journal_line_id))
+    ).scalar_one_or_none()
+    if line is None:
+        raise HTTPException(status_code=404, detail="Suspense line not found")
+
+    suspense = (
+        await db.execute(select(Account).where(Account.code == "1900"))
+    ).scalar_one_or_none()
+    if suspense is None or line.account_id != suspense.id:
+        raise HTTPException(
+            status_code=400, detail="Source line does not target Suspense (1900)"
+        )
+
+    target = (
+        await db.execute(select(Account).where(Account.id == body.target_account_id))
+    ).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=404, detail="Target account not found")
+
+    # Post the inverse: if suspense was credited originally, debit it now (and credit target).
+    suspense_offset = "debit" if line.entry_type == "credit" else "credit"
+    target_side = "credit" if suspense_offset == "debit" else "debit"
+    amount = Decimal(line.amount)
+
+    try:
+        je = await create_journal_entry(
+            db,
+            JournalEntryCreate(
+                entry_date=body.posted_on,
+                memo=body.description or f"Reclassify suspense → {target.code} {target.name}",
+                lines=[
+                    JournalLineCreate(
+                        account_id=suspense.id,
+                        entry_type=suspense_offset,
+                        amount=amount,
+                        description="Suspense reclassify offset",
+                    ),
+                    JournalLineCreate(
+                        account_id=target.id,
+                        entry_type=target_side,
+                        amount=amount,
+                        description=body.description or "Suspense reclassify target",
+                    ),
+                ],
+            ),
+        )
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     await db.commit()
     return {"journal_entry_id": str(je.id), "entry_number": je.entry_number}

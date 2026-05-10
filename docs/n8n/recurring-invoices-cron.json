@@ -1,0 +1,67 @@
+{
+  "name": "3D Print Sales — Recurring Invoices Cron",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ],
+          "triggerAtHour": 6,
+          "triggerAtMinute": 5
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 06:05",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 320]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.APP_BASE_URL }}/api/v1/recurring-invoices/run-due",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.APP_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": false,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "method": "POST"
+      },
+      "id": "run-due",
+      "name": "POST run-due",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 320]
+    }
+  ],
+  "connections": {
+    "Daily 06:05": {
+      "main": [[{ "node": "POST run-due", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "0",
+  "id": "ri-cron",
+  "meta": {
+    "instanceId": "3d-print-sales"
+  },
+  "tags": [
+    { "name": "billing", "createdAt": "2026-05-10T00:00:00.000Z" }
+  ]
+}
