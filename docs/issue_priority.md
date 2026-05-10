@@ -71,7 +71,7 @@ These either unblock many other issues, fix a known production risk, or establis
 
 | Issue | Why deferred |
 |---|---|
-| [#256 — multi-currency (Phase 1)](https://github.com/bbengt1/3d-print-sales/issues/256) | Only worth the surface change when international sales become a real volume. Phase 1 doesn't even cover FX revaluation; full multi-currency is a long road. |
+| ~~[#256 — multi-currency (Phase 1)](https://github.com/bbengt1/3d-print-sales/issues/256)~~ | **Closed won't-do 2026-05-10** — operations are USD-only. Reopen if expansion outside the US becomes a near-term plan. |
 | [#257 — customer portal (Phase 1)](https://github.com/bbengt1/3d-print-sales/issues/257) | Hard dep on #244, but more importantly **expands the public attack surface**. Don't ship until the customer-facing payoff is real. |
 
 ---
@@ -135,7 +135,7 @@ Phase 1 of each issue below shipped to prod. The Phase 2 follow-ups were explici
 | [#316](https://github.com/bbengt1/3d-print-sales/issues/316) | #241 | receipt/payment/IAT rule actions, dry-run preview, create-rule-from-line |
 | [#317](https://github.com/bbengt1/3d-print-sales/issues/317) | #242 | sales-side COGS FIFO rewrite, supply FIFO, hourly overhead, Job link, variance accounting |
 | [#318](https://github.com/bbengt1/3d-print-sales/issues/318) | #245 | per-location qty decrement, fulfillment_location_id, soft-warn negative, in-transit |
-| [#319](https://github.com/bbengt1/3d-print-sales/issues/319) | #246 | multi-currency: FX rates, revaluation, multi-currency JEs |
+| ~~[#319](https://github.com/bbengt1/3d-print-sales/issues/319)~~ | #246 | ~~multi-currency~~ — closed won't-do 2026-05-10 (USD-only ops). |
 | [#320](https://github.com/bbengt1/3d-print-sales/issues/320) | #247 | editable templates (Setting.value Text bump), n8n cron workflow JSON, pause/skip |
 | [#321](https://github.com/bbengt1/3d-print-sales/issues/321) | #248 | restock × #242 layers, refund-in-cash, email scope, marketplace settlement |
 | [#322](https://github.com/bbengt1/3d-print-sales/issues/322) | #249 | period comparison, AR-aging consolidation, drill-down endpoints, PDF export |
@@ -151,7 +151,7 @@ Phase 1 of each issue below shipped to prod. The Phase 2 follow-ups were explici
 
 The five originals still open as Phase 2 umbrellas (work mostly outside backend or strategically deferred):
 - [#244](https://github.com/bbengt1/3d-print-sales/issues/244) — email send: WeasyPrint PDF, Resend transport+webhook, editable templates, password encryption, frontend modal
-- [#256](https://github.com/bbengt1/3d-print-sales/issues/256) — multi-currency Phase 1 (overlaps with #319; pick one umbrella when implementing)
+- ~~[#256](https://github.com/bbengt1/3d-print-sales/issues/256)~~ — multi-currency Phase 1, **closed won't-do 2026-05-10** (USD-only ops)
 - [#257](https://github.com/bbengt1/3d-print-sales/issues/257) — customer portal Phase 1
 - [#262](https://github.com/bbengt1/3d-print-sales/issues/262) — kits + find-and-merge + starting-balances import (kits piece landed; remainder open)
 - [#263](https://github.com/bbengt1/3d-print-sales/issues/263) — late fees + billable expenses + withholding (delivery notes piece landed; remainder open)
