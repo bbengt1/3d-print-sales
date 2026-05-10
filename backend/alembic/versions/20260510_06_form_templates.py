@@ -21,7 +21,7 @@ def upgrade() -> None:
     op.create_table(
         "form_templates",
         sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("scope", sa.String(40), nullable=False, index=True),
+        sa.Column("scope", sa.String(40), nullable=False),
         sa.Column("name", sa.String(120), nullable=False),
         sa.Column("is_default", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("defaults", sa.JSON(), nullable=False, server_default="{}"),
