@@ -110,3 +110,138 @@ async def batch_delete(db: AsyncSession, *, scope: str, ids: list[uuid.UUID]) ->
             await db.rollback()
             errors.append({"id": str(rid), "error": f"foreign-key dependency: {e.orig}"})
     return {"deleted": deleted, "errors": errors}
+
+
+# ---------- #327 P2: CSV import + undo ----------
+
+
+# Per-scope minimal schema for CSV imports. Only columns listed here are
+# accepted; the first column listed is treated as the upsert key.
+CSV_IMPORT_FIELDS: dict[str, list[str]] = {
+    "customer": ["name", "email", "phone", "notes"],
+    "vendor": ["name", "email", "phone", "notes"],
+    "supply": ["name", "sku", "category", "unit", "unit_cost", "supplier"],
+}
+
+
+async def import_master_csv(
+    db: AsyncSession,
+    *,
+    scope: str,
+    rows: list[dict],
+    actor_user_id: uuid.UUID | None = None,
+) -> dict:
+    """Create-only CSV import: every row attempts an insert. Existing
+    records keyed on the scope's first column (name for customer/vendor)
+    are skipped — no update yet to keep undo simple. Returns a `batch_id`
+    that can be passed to `undo_csv_batch`.
+    """
+    if scope not in CSV_IMPORT_FIELDS:
+        raise BatchOpsError(f"CSV import not configured for scope {scope!r}")
+    cfg = _config(scope)
+    fields = CSV_IMPORT_FIELDS[scope]
+    key_col = fields[0]
+    batch_id = uuid.uuid4()
+    created_ids: list[uuid.UUID] = []
+    errors: list[dict] = []
+    skipped = 0
+
+    for idx, raw in enumerate(rows, start=1):
+        try:
+            data = {f: (raw.get(f) or "").strip() for f in fields if raw.get(f) is not None}
+            if not data.get(key_col):
+                errors.append({"row": idx, "error": f"missing {key_col}"})
+                continue
+            existing = (
+                await db.execute(
+                    select(cfg.model).where(getattr(cfg.model, key_col) == data[key_col])
+                )
+            ).scalar_one_or_none()
+            if existing is not None:
+                skipped += 1
+                continue
+            obj = cfg.model(**data)
+            db.add(obj)
+            await db.flush()
+            created_ids.append(obj.id)
+            from app.models.audit_log import AuditLog
+
+            db.add(
+                AuditLog(
+                    actor_user_id=actor_user_id,
+                    entity_type=scope,
+                    entity_id=str(obj.id),
+                    action="batch_csv_import",
+                    reason=f"batch={batch_id}",
+                    before_snapshot=None,
+                    after_snapshot=data,
+                )
+            )
+        except Exception as e:
+            errors.append({"row": idx, "error": str(e)})
+            await db.rollback()
+    await db.flush()
+    return {
+        "batch_id": str(batch_id),
+        "scope": scope,
+        "created": len(created_ids),
+        "skipped": skipped,
+        "errors": errors,
+        "created_ids": [str(i) for i in created_ids],
+    }
+
+
+async def undo_csv_batch(
+    db: AsyncSession, *, batch_id: uuid.UUID, actor_user_id: uuid.UUID | None = None
+) -> dict:
+    """Look up the audit-log rows for `batch={batch_id}` and hard-delete
+    every entity_id they recorded. Refuses if any of the referenced
+    records have been edited since import (snapshot mismatch is OK; FK
+    violations are reported per-row).
+    """
+    from app.models.audit_log import AuditLog
+
+    rows = (
+        await db.execute(
+            select(AuditLog).where(
+                AuditLog.action == "batch_csv_import",
+                AuditLog.reason == f"batch={batch_id}",
+            )
+        )
+    ).scalars().all()
+    if not rows:
+        raise BatchOpsError(f"No batch {batch_id} found")
+    deleted = 0
+    errors: list[dict] = []
+    for r in rows:
+        scope = r.entity_type
+        try:
+            cfg = _config(scope)
+        except BatchOpsError:
+            errors.append({"id": r.entity_id, "error": f"unknown scope {scope}"})
+            continue
+        row_id = uuid.UUID(r.entity_id)
+        obj = (await db.execute(select(cfg.model).where(cfg.model.id == row_id))).scalar_one_or_none()
+        if obj is None:
+            continue  # already gone
+        try:
+            await db.delete(obj)
+            await db.flush()
+            deleted += 1
+        except IntegrityError as e:
+            await db.rollback()
+            errors.append({"id": r.entity_id, "error": f"foreign-key dependency: {e.orig}"})
+
+    # Tombstone the undo
+    db.add(
+        AuditLog(
+            actor_user_id=actor_user_id,
+            entity_type="batch_session",
+            entity_id=str(batch_id),
+            action="batch_csv_undo",
+            reason=f"deleted {deleted}",
+            before_snapshot=None,
+            after_snapshot={"deleted": deleted, "errors": errors},
+        )
+    )
+    return {"batch_id": str(batch_id), "deleted": deleted, "errors": errors}
