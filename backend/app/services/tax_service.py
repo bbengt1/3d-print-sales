@@ -85,3 +85,50 @@ async def compute_for_line(
         )
 
     return out
+
+
+# ---------- #329 P2: per-component remittance breakdown ----------
+
+
+@dataclass
+class ComponentBreakdownRow:
+    profile_id: uuid.UUID
+    profile_name: str
+    component_name: str
+    rate: Decimal
+    sales_subtotal: Decimal
+    estimated_tax: Decimal
+
+
+async def compute_component_breakdown(
+    db: AsyncSession,
+    *,
+    profile_id: uuid.UUID,
+    sales_subtotal: Decimal,
+) -> list[ComponentBreakdownRow]:
+    """Decomposes the per-period total `sales_subtotal` for a single profile
+    across its components. For single-rate profiles returns one row.
+
+    The result is the **estimated** tax — the actual `Sale.tax_collected`
+    column may differ if components were stacked compound-style at the time
+    of sale, since we don't store the per-component split per-sale today.
+    For seller-collected single-rate or non-compound profiles, the estimate
+    is the actual.
+    """
+    rows = await compute_for_line(db, profile_id=profile_id, subtotal=sales_subtotal)
+    if not rows:
+        return []
+    profile = (
+        await db.execute(select(TaxProfile).where(TaxProfile.id == profile_id))
+    ).scalar_one()
+    return [
+        ComponentBreakdownRow(
+            profile_id=profile.id,
+            profile_name=profile.name,
+            component_name=r.component_name,
+            rate=r.rate,
+            sales_subtotal=Decimal(sales_subtotal),
+            estimated_tax=r.amount,
+        )
+        for r in rows
+    ]

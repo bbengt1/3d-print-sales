@@ -73,6 +73,14 @@ class TaxLiabilityRow(BaseModel):
     marketplace_facilitated: Decimal
     remitted: Decimal
     outstanding_liability: Decimal
+    # #329 P2: reverse-charge bookkeeping. For an active reverse-charge
+    # profile, `reverse_charged_in` is the customer-side notional tax
+    # (collected as if outbound) and `reverse_charged_out` is the matching
+    # vendor-side notional tax (paid). They net to zero on the books — but
+    # operators still need to see them separately for reporting.
+    is_reverse_charge: bool = False
+    reverse_charged_in: Decimal = Decimal("0")
+    reverse_charged_out: Decimal = Decimal("0")
 
 
 class TaxLiabilitySummary(BaseModel):
@@ -83,3 +91,21 @@ class TaxLiabilitySummary(BaseModel):
     total_marketplace_facilitated: Decimal
     total_remitted: Decimal
     total_outstanding_liability: Decimal
+    total_reverse_charged_in: Decimal = Decimal("0")
+    total_reverse_charged_out: Decimal = Decimal("0")
+
+
+class TaxComponentBreakdownRow(BaseModel):
+    profile_id: uuid.UUID
+    profile_name: str
+    component_name: str
+    rate: Decimal
+    sales_subtotal: Decimal
+    estimated_tax: Decimal
+
+
+class TaxComponentBreakdownSummary(BaseModel):
+    date_from: datetime.date | None = None
+    date_to: datetime.date | None = None
+    rows: list[TaxComponentBreakdownRow]
+    total_estimated_tax: Decimal
