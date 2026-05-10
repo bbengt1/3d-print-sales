@@ -14,7 +14,8 @@ class Setting(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     key: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    value: Mapped[str] = mapped_column(String(255))
+    # #320 P2: TEXT (was VARCHAR(255)) so editable email/PDF templates fit.
+    value: Mapped[str] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

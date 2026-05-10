@@ -57,7 +57,8 @@ async def test_load_smtp_config_missing_host_raises(db_session):
         await load_smtp_config(db_session)
 
 
-def test_render_invoice_template_substitutes_fields():
+@pytest.mark.asyncio
+async def test_render_invoice_template_substitutes_fields():
     invoice = Invoice(
         id=None,
         invoice_number="INV-2026-0001",
@@ -70,7 +71,7 @@ def test_render_invoice_template_substitutes_fields():
         total_due=Decimal("108"),
         amount_paid=Decimal("0"),
     )
-    subject, body_text, body_html = render_invoice_template(invoice, "Test Shop", "Alice")
+    subject, body_text, body_html = await render_invoice_template(invoice, "Test Shop", "Alice")
     assert "INV-2026-0001" in subject
     assert "Test Shop" in subject
     assert "Alice" in body_text

@@ -146,8 +146,8 @@ async def _send_recurring_invoice_email(db, ri, invoice) -> None:
     ).scalar_one_or_none()
     business_name = (biz_row.value if biz_row else "").strip() or "Your Business"
 
-    subject, body_text, body_html = render_invoice_template(
-        invoice, business_name, customer.name
+    subject, body_text, body_html = await render_invoice_template(
+        invoice, business_name, customer.name, db=db
     )
     try:
         await send_email(
