@@ -37,3 +37,4 @@ from app.models.division import Division, Project  # noqa: F401
 from app.models.reference_sequence import ReferenceSequence  # noqa: F401
 from app.models.supply import Supply  # noqa: F401
 from app.models.withholding_profile import WithholdingProfile  # noqa: F401
+from app.models.billable_expense import BillableExpense  # noqa: F401
