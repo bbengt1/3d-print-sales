@@ -21,7 +21,7 @@ def upgrade() -> None:
     with op.batch_alter_table("materials") as batch:
         batch.add_column(sa.Column("discovered_via", sa.String(40), nullable=True))
         batch.add_column(sa.Column("discovery_metadata", sa.JSON(), nullable=True))
-        batch.add_column(sa.Column("needs_review", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+        batch.add_column(sa.Column("needs_review", sa.Boolean(), nullable=False, server_default=sa.text("false")))
     op.create_index("ix_materials_discovered_via", "materials", ["discovered_via"])
     op.create_index("ix_materials_needs_review", "materials", ["needs_review"])
 
