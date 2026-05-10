@@ -126,3 +126,39 @@ async def tax_liability_report(admin: CurrentAdmin, db: DB, date_from: datetime.
         total_remitted=total_remitted,
         total_outstanding_liability=total_outstanding,
     )
+
+
+@router.post("/compute", summary="Compute tax breakdown for a subtotal against a profile (#258 Phase 2)")
+async def compute_tax(
+    db: DB,
+    profile_id: uuid.UUID,
+    subtotal: Decimal,
+):
+    """Returns one row per layer for compound profiles, one for single-rate.
+    Each row carries `component_name`, `base`, `rate`, `amount`,
+    `account_id`, and `is_reverse_charge`. Operators (and future invoice
+    creation flows) can use this to preview compound + reverse-charge
+    treatment before posting.
+    """
+    from app.services.tax_service import compute_for_line
+
+    rows = await compute_for_line(db, profile_id=profile_id, subtotal=subtotal)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Tax profile not found")
+    total = sum((r.amount for r in rows), Decimal("0"))
+    return {
+        "profile_id": str(profile_id),
+        "subtotal": str(subtotal),
+        "total_tax": str(total),
+        "is_reverse_charge": rows[0].is_reverse_charge,
+        "components": [
+            {
+                "component_name": r.component_name,
+                "base": str(r.base),
+                "rate": str(r.rate),
+                "amount": str(r.amount),
+                "account_id": str(r.account_id) if r.account_id else None,
+            }
+            for r in rows
+        ],
+    }
