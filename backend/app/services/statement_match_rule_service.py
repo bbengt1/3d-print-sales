@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 import uuid
 from decimal import Decimal
+from typing import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,17 +52,37 @@ def _matches_sign(rule: StatementMatchRule, amount: Decimal) -> bool:
     return False
 
 
-async def evaluate_rules_for_line(
-    db: AsyncSession, line: StatementLine
-) -> StatementMatchRule | None:
-    """Return the highest-priority active rule that matches the line, or None."""
-    rules = (
+async def _load_active_rules(db: AsyncSession) -> Sequence[StatementMatchRule]:
+    """Single ordered SELECT of all active rules (Codex P1 on #281).
+
+    Hoisted out of `evaluate_rules_for_line` so per-import passes can fetch
+    the rule set once and reuse it across every unmatched line, instead of
+    re-running the SELECT for each line (N+1).
+    """
+    return (
         await db.execute(
             select(StatementMatchRule).where(
                 StatementMatchRule.is_active == True,  # noqa: E712
             ).order_by(StatementMatchRule.priority.asc(), StatementMatchRule.created_at.asc())
         )
     ).scalars().all()
+
+
+async def evaluate_rules_for_line(
+    db: AsyncSession,
+    line: StatementLine,
+    rules: Sequence[StatementMatchRule] | None = None,
+) -> StatementMatchRule | None:
+    """Return the highest-priority active rule that matches the line, or None.
+
+    `rules` is an optional pre-fetched ordered list of active rules. When
+    omitted, the function falls back to executing the SELECT itself so
+    standalone single-line callers keep working unchanged. Bulk callers
+    (e.g. `apply_rules_to_import`) should pass a cached list to avoid the
+    N+1 query that the Codex P1 review on #281 flagged.
+    """
+    if rules is None:
+        rules = await _load_active_rules(db)
     for rule in rules:
         if rule.account_id is not None and rule.account_id != line.account_id:
             continue
@@ -98,11 +119,16 @@ async def apply_rules_to_import(
         )
     ).scalars().all()
 
+    # Codex P1 on #281: load active rules once and reuse across every line,
+    # instead of re-running the SELECT inside `evaluate_rules_for_line` per
+    # line (N+1 on large imports).
+    active_rules = await _load_active_rules(db)
+
     auto_ignored = 0
     auto_je = 0
     skipped_unsupported = 0
     for line in lines:
-        rule = await evaluate_rules_for_line(db, line)
+        rule = await evaluate_rules_for_line(db, line, rules=active_rules)
         if rule is None:
             continue
         if rule.action == "ignore":
@@ -183,9 +209,12 @@ async def preview_rules_for_import(
         )
     ).scalars().all()
 
+    # Same N+1 cache as `apply_rules_to_import` (Codex P1 on #281).
+    active_rules = await _load_active_rules(db)
+
     out = []
     for line in lines:
-        rule = await evaluate_rules_for_line(db, line)
+        rule = await evaluate_rules_for_line(db, line, rules=active_rules)
         if rule is None:
             out.append(
                 {
