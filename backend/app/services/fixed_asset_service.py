@@ -185,7 +185,11 @@ async def post_depreciation(
         ).scalars().all()
     )
 
-    new_entries: list[DepreciationEntry] = []
+    # #273 Codex P1: `create_journal_entry` commits each call immediately, so
+    # any per-month validation failure mid-loop would persist earlier months
+    # and leave the asset partially depreciated. Pre-validate every month's
+    # closed-period guard up front so the whole post is all-or-nothing.
+    months_to_post: list[tuple[date, Decimal, AccountingPeriod | None]] = []
     for period_end, amount in schedule:
         if period_end > through:
             break
@@ -209,7 +213,10 @@ async def post_depreciation(
                 f"Accounting period containing {period_end.isoformat()} is closed; "
                 f"cannot post depreciation"
             )
+        months_to_post.append((period_end, amount, period_row))
 
+    new_entries: list[DepreciationEntry] = []
+    for period_end, amount, period_row in months_to_post:
         entry = await create_journal_entry(
             db,
             JournalEntryCreate(
