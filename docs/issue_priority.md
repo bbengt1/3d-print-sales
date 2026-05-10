@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-10 (Tier 1 done; Tier 2 done — #240/#242/#245/#246/#249/#250; Tier 3 #241/#247/#248/#251/#252/#260/#261 done; Tier 4 done — #253/#254/#255/#258/#259/#262-kits/#263-delivery/#264-foundation)
+> **Last reviewed:** 2026-05-10 (Tier 1 done; Tier 2 done — #240/#242/#245/#246/#249/#250; Tier 3 #241/#247/#248/#251/#252/#260/#261 done; Tier 4 done — #253/#254/#255/#258/#259/#262-kits/#263-delivery/#264-foundation; **8 Phase-2 wins** shipped across PRs #295/#296/#297)
 >
 > **How to use this doc:**
 > - Tiers are ordered top-to-bottom — start with Tier 1 unless there's a specific business reason to jump.
@@ -119,6 +119,9 @@ These issues pre-date the Manager.io gap analysis and don't fit the tier structu
 | [#263](https://github.com/bbengt1/3d-print-sales/issues/263) — delivery notes Phase 1 (PR #291) | 2026-05-10 | Squash `d7c8abf`. Delivery-note piece only. Late fees, billable expenses, withholding tax remain ❌ as deferred sub-features. |
 | [#249](https://github.com/bbengt1/3d-print-sales/issues/249) — reporting parity Phase 1 (PR #292) | 2026-05-10 | Squash `385d0be`. Audit-then-fill: Trial Balance + Receipts & Payments Summary added; rest was already shipped via #37. Doc `docs/financial_reporting_parity.md` catalogs the full set. |
 | [#242](https://github.com/bbengt1/3d-print-sales/issues/242) — production orders Phase 1 (PR #293) | 2026-05-10 | Squash `5aa33ab`. Document + FIFO consume from material_receipts + balanced JE on close + FinishedGoodsLayer creation. **Sales-side COGS rewrite deferred to Phase 2** to keep this PR's behavior-shift risk low. |
+| Phase 2 batch 1 (PR #295) | 2026-05-10 | Squash `6646092`. #258 P2: `POST /tax/compute` exposes compound + reverse-charge service. #260 P2: JE numbering migrated to #243 allocator (incl. inter-account transfers). #249 P2: cash-flow vs. balance-sheet invariant tests. |
+| Phase 2 batch 2 (PR #296) | 2026-05-10 | Squash `5bab154`. #247+#244 P2: auto-email on recurring invoice generation. #261 P2: SO→invoice + PO→bill conversion endpoints. #246 P2: edit endpoint for inter-account transfers. |
+| Phase 2 batch 3 (PR #297) | 2026-05-10 | Squash `c894d2a`. #258 P2 deeper: invoice creation auto-computes tax_amount from `tax_profile_id` (compound + reverse-charge). #261 P2 deeper: SO/PO auto-advance to `fulfilled` on conversion. |
 | [#264](https://github.com/bbengt1/3d-print-sales/issues/264) — consistency-pass foundation (PR #294) | 2026-05-10 | Squash `92d954f`. Shared `app/api/list_query.py` helper for endpoint consistency. **No existing endpoints modified** — incremental adoption. Form templates + archive flag audit + PDF parity deferred to Phase 2. |
 | [#266 / #267 / #268](https://github.com/bbengt1/3d-print-sales/issues/265) — Dependabot remediation | 2026-05-09 | Closed #265. axios 1.15.2, vite 8.0.5, python-multipart 0.0.27, Pillow 12.2.0, pytest 9.0.3. Deployed to web01 (`33b4e3e`). |
 
