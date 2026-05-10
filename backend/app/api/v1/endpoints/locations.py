@@ -231,3 +231,127 @@ async def cancel_ep(transfer_id: uuid.UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=400, detail=str(e)) from e
     await db.commit()
     return await _hydrate(db, transfer)
+
+
+# ---------- #318 P2: per-location stock snapshot + default fulfillment location ----------
+
+
+@router.get(
+    "/locations/{location_id}/stock-snapshot",
+    summary="#318 P2: per-location product stock derived from completed transfers",
+)
+async def location_stock_snapshot(location_id: uuid.UUID, user: CurrentUser, db: DB):
+    """Returns net qty of each product currently sitting at this location,
+    computed from completed transfers (incoming - outgoing). Locations with
+    `kind=internal` typically also receive opening stock via the operator's
+    starting balance flow; the snapshot reflects only what's been moved.
+
+    For Phase 2-deeper, replace with a real per-location SoT.
+    """
+    loc = (
+        await db.execute(select(InventoryLocation).where(InventoryLocation.id == location_id))
+    ).scalar_one_or_none()
+    if loc is None:
+        raise HTTPException(status_code=404, detail="Location not found")
+
+    incoming = (
+        await db.execute(
+            select(InventoryTransferLine, InventoryTransfer)
+            .join(InventoryTransfer, InventoryTransfer.id == InventoryTransferLine.transfer_id)
+            .where(
+                InventoryTransfer.to_location_id == location_id,
+                InventoryTransfer.status == "completed",
+                InventoryTransferLine.kind == "product",
+            )
+        )
+    ).all()
+    outgoing = (
+        await db.execute(
+            select(InventoryTransferLine, InventoryTransfer)
+            .join(InventoryTransfer, InventoryTransfer.id == InventoryTransferLine.transfer_id)
+            .where(
+                InventoryTransfer.from_location_id == location_id,
+                InventoryTransfer.status == "completed",
+                InventoryTransferLine.kind == "product",
+            )
+        )
+    ).all()
+
+    by_product: dict[uuid.UUID, Decimal] = {}
+    for line, _ in incoming:
+        if line.product_id is None:
+            continue
+        by_product[line.product_id] = by_product.get(line.product_id, Decimal(0)) + Decimal(line.quantity)
+    for line, _ in outgoing:
+        if line.product_id is None:
+            continue
+        by_product[line.product_id] = by_product.get(line.product_id, Decimal(0)) - Decimal(line.quantity)
+
+    return {
+        "location_id": str(loc.id),
+        "location_name": loc.name,
+        "products": [
+            {"product_id": str(pid), "qty": str(qty)} for pid, qty in by_product.items()
+        ],
+    }
+
+
+# ---------- #318 P2: default fulfillment location setting ----------
+
+
+_DEFAULT_FULFILLMENT_KEY = "inventory.default_fulfillment_location_id"
+
+
+class DefaultFulfillmentLocationResponse(BaseModel):
+    location_id: uuid.UUID | None
+
+
+class DefaultFulfillmentLocationUpdate(BaseModel):
+    location_id: uuid.UUID | None = None
+
+
+@router.get(
+    "/default-fulfillment-location",
+    response_model=DefaultFulfillmentLocationResponse,
+    summary="#318 P2: Get the default sale fulfillment location",
+)
+async def get_default_fulfillment_location(user: CurrentUser, db: DB):
+    from app.models.setting import Setting
+
+    row = (
+        await db.execute(select(Setting).where(Setting.key == _DEFAULT_FULFILLMENT_KEY))
+    ).scalar_one_or_none()
+    if row is None or not row.value:
+        return DefaultFulfillmentLocationResponse(location_id=None)
+    try:
+        return DefaultFulfillmentLocationResponse(location_id=uuid.UUID(row.value))
+    except ValueError:
+        return DefaultFulfillmentLocationResponse(location_id=None)
+
+
+@router.put(
+    "/default-fulfillment-location",
+    response_model=DefaultFulfillmentLocationResponse,
+    summary="#318 P2: Set or clear the default sale fulfillment location",
+)
+async def set_default_fulfillment_location(
+    body: DefaultFulfillmentLocationUpdate, user: CurrentUser, db: DB
+):
+    from app.models.setting import Setting
+
+    if body.location_id is not None:
+        loc = (
+            await db.execute(select(InventoryLocation).where(InventoryLocation.id == body.location_id))
+        ).scalar_one_or_none()
+        if loc is None:
+            raise HTTPException(status_code=404, detail="Location not found")
+    row = (
+        await db.execute(select(Setting).where(Setting.key == _DEFAULT_FULFILLMENT_KEY))
+    ).scalar_one_or_none()
+    new_val = str(body.location_id) if body.location_id else ""
+    if row is None:
+        db.add(Setting(key=_DEFAULT_FULFILLMENT_KEY, value=new_val, notes="Default location used when a sale's fulfillment_location_id is null"))
+    else:
+        row.value = new_val
+    await db.commit()
+    return DefaultFulfillmentLocationResponse(location_id=body.location_id)

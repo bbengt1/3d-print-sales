@@ -49,6 +49,11 @@ class Sale(Base):
     shipping_label_last_printed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     shipping_label_print_count: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # #318 P2: optional location chosen at fulfillment time. Falls back to
+    # `inventory.default_fulfillment_location_id` from settings.
+    fulfillment_location_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("inventory_locations.id"), nullable=True
+    )
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
