@@ -174,6 +174,26 @@ async def apply_credit_note(
     if invoice.customer_id and invoice.customer_id != note.customer_id:
         raise NoteError("Invoice belongs to a different customer")
 
+    # Reject applications larger than the invoice's current outstanding so we
+    # don't push credits_applied past the gross — that would later trip
+    # `_recalculate_invoice` ("Credits cannot exceed invoice gross amount").
+    # Outstanding mirrors `_recalculate_invoice`'s balance_due semantics:
+    # gross - credits_applied - amount_paid.
+    invoice_gross = (
+        Decimal(invoice.subtotal)
+        + Decimal(invoice.tax_amount)
+        + Decimal(invoice.shipping_amount)
+    )
+    invoice_outstanding = (
+        invoice_gross
+        - Decimal(invoice.credits_applied)
+        - Decimal(invoice.amount_paid)
+    )
+    if amt > invoice_outstanding:
+        raise NoteError(
+            f"amount exceeds invoice outstanding balance ({invoice_outstanding})"
+        )
+
     ar = await _account_by_code(db, "1100")
     sales_returns = await _account_by_code(db, "4800")
 
@@ -381,6 +401,19 @@ async def apply_debit_note(
     bill = (await db.execute(select(Bill).where(Bill.id == bill_id))).scalar_one_or_none()
     if bill is None:
         raise NoteError("Bill not found")
+    # Mirror the customer-consistency check in apply_credit_note: a debit note
+    # for vendor A must not be applied to vendor B's bill.
+    if bill.vendor_id and bill.vendor_id != note.vendor_id:
+        raise NoteError("Bill belongs to a different vendor")
+
+    # Reject applications larger than the bill's current outstanding so we
+    # don't push amount_paid past the bill amount, which would break AP aging
+    # and later payment-validation paths.
+    bill_outstanding = Decimal(bill.amount) - Decimal(bill.amount_paid)
+    if amt > bill_outstanding:
+        raise NoteError(
+            f"amount exceeds bill outstanding balance ({bill_outstanding})"
+        )
 
     ap = await _account_by_code(db, "2000")
     purchase_returns = await _account_by_code(db, "5400")
@@ -425,6 +458,19 @@ async def apply_debit_note(
         note.status = "applied"
     else:
         note.status = "partially_applied"
+
+    # Reduce the bill's outstanding the same way apply_credit_note reduces the
+    # invoice's outstanding. AP aging and payment validation derive remaining
+    # balance from `bill.amount - bill.amount_paid`, so we must roll the
+    # debit-note application into amount_paid (and reflect status) here.
+    bill.amount_paid = Decimal(bill.amount_paid) + amt
+    if bill.status != "void":
+        if Decimal(bill.amount_paid) >= Decimal(bill.amount):
+            bill.status = "paid"
+        elif Decimal(bill.amount_paid) > 0:
+            bill.status = "partially_paid"
+        else:
+            bill.status = "open"
     await db.flush()
     return application
 
