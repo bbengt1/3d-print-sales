@@ -309,6 +309,24 @@ async def match_line(
     if jl.account_id != sl.account_id:
         raise StatementImportError("Journal line account does not match the statement account")
 
+    # P1 #280: a journal line can only ever back ONE statement line. Without
+    # this guard an operator could match multiple statement rows to the same
+    # journal line and all would flip to `matched`, which silently hides
+    # un-reconciled activity. Reject if any other StatementLine already
+    # claims this journal line.
+    existing = (
+        await db.execute(
+            select(StatementLine.id).where(
+                StatementLine.matched_journal_line_id == jl.id,
+                StatementLine.id != sl.id,
+            )
+        )
+    ).first()
+    if existing is not None:
+        raise StatementImportError(
+            "Journal line is already matched to another statement line"
+        )
+
     sl.matched_journal_line_id = jl.id
     sl.match_status = "matched"
     # Promote the journal line to cleared (#239's vocabulary) so the
@@ -323,6 +341,22 @@ async def ignore_line(db: AsyncSession, statement_line_id: uuid.UUID) -> Stateme
     sl = (await db.execute(select(StatementLine).where(StatementLine.id == statement_line_id))).scalar_one_or_none()
     if sl is None:
         raise StatementImportError("Statement line not found")
+    # P1 #280: if the line was previously matched, the prior match must be
+    # rolled back BEFORE we flip status to `ignored`. Otherwise the journal
+    # line stays `cleared` and the FK linkage stays intact, so the wrong
+    # journal line silently keeps showing up on the reconciliation
+    # worksheet. Revert the journal-line promotion only if it's still
+    # `cleared` (don't touch a `reconciled` line — that's an irreversible
+    # downstream state).
+    if sl.matched_journal_line_id is not None:
+        prior_jl = (
+            await db.execute(
+                select(JournalLine).where(JournalLine.id == sl.matched_journal_line_id)
+            )
+        ).scalar_one_or_none()
+        if prior_jl is not None and prior_jl.cleared_status == "cleared":
+            prior_jl.cleared_status = "uncleared"
+        sl.matched_journal_line_id = None
     sl.match_status = "ignored"
     await db.flush()
     return sl
