@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
@@ -37,8 +37,19 @@ class DNCreate(BaseModel):
 class DNUpdate(BaseModel):
     shipped_on: date | None = None
     tracking_number: str | None = Field(None, max_length=120)
+    # `status` is optional-by-omission, but if the client sends the key it
+    # must be a valid non-null value. The underlying column is non-nullable,
+    # so accepting `null` here would surface as a 500 at commit time
+    # (Codex P1 review on PR #291).
     status: Literal["draft", "shipped", "delivered", "cancelled"] | None = None
     notes: str | None = None
+
+    @field_validator("status")
+    @classmethod
+    def _status_not_null(cls, v):
+        if v is None:
+            raise ValueError("status may not be null")
+        return v
 
 
 def _to_dict(dn: DeliveryNote) -> dict:
