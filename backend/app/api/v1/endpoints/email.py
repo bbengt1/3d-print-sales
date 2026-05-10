@@ -116,7 +116,10 @@ async def email_invoice(invoice_id: uuid.UUID, body: EmailSendRequest, user: Cur
     except EmailConfigError as e:
         raise HTTPException(status_code=400, detail=f"Email transport not configured: {e}") from e
     except EmailSendError as e:
-        # send_email already persisted the failed delivery row; surface 502 to caller.
+        # send_email already flushed the failed delivery row; commit it so the
+        # audit trail survives the 502 response (otherwise the get_db session
+        # close rolls it back and we lose the status='failed' record).
+        await db.commit()
         raise HTTPException(status_code=502, detail=f"SMTP send failed: {e}") from e
 
     await db.commit()
@@ -160,6 +163,10 @@ async def email_quote(quote_id: uuid.UUID, body: EmailSendRequest, user: Current
     except EmailConfigError as e:
         raise HTTPException(status_code=400, detail=f"Email transport not configured: {e}") from e
     except EmailSendError as e:
+        # send_email already flushed the failed delivery row; commit it so the
+        # audit trail survives the 502 response (otherwise the get_db session
+        # close rolls it back and we lose the status='failed' record).
+        await db.commit()
         raise HTTPException(status_code=502, detail=f"SMTP send failed: {e}") from e
 
     await db.commit()
