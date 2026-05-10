@@ -96,7 +96,27 @@ async def post_cogs_for_sale(db: AsyncSession, sale: Sale, items: list[SaleItem]
 
     finished_goods = await _get_account_by_code(db, "1400")
     material_cogs = await _get_account_by_code(db, "5000")
-    total_cogs = sum(Decimal(item.unit_cost or 0) * item.quantity for item in items if item.product_id)
+
+    # #317 P2: when the FIFO flag is on, draw from FinishedGoodsLayer rows
+    # in FIFO order at actual layer cost. Fall back to snapshot unit_cost
+    # only for items not covered by layers (un-produced products / kits).
+    from app.services.cogs_fifo_service import compute_sale_cogs, is_fifo_enabled
+
+    fifo_on = await is_fifo_enabled(db)
+    memo_suffix = ""
+    if fifo_on:
+        breakdown = await compute_sale_cogs(db, items, apply=True)
+        total_cogs = breakdown["total_cogs"]
+        if breakdown["from_layers"] > 0:
+            memo_suffix = (
+                f" (FIFO ${breakdown['from_layers']:.2f}"
+                f" + snapshot ${breakdown['from_snapshot']:.2f})"
+            )
+    else:
+        total_cogs = sum(
+            Decimal(item.unit_cost or 0) * item.quantity for item in items if item.product_id
+        )
+
     if total_cogs <= 0:
         return
 
@@ -106,7 +126,7 @@ async def post_cogs_for_sale(db: AsyncSession, sale: Sale, items: list[SaleItem]
             entry_date=sale.date,
             source_type="sale_cogs",
             source_id=source_id,
-            memo=f"COGS recognition for sale {sale.sale_number}",
+            memo=f"COGS recognition for sale {sale.sale_number}{memo_suffix}",
             lines=[
                 JournalLineCreate(account_id=material_cogs.id, entry_type="debit", amount=total_cogs),
                 JournalLineCreate(account_id=finished_goods.id, entry_type="credit", amount=total_cogs),
