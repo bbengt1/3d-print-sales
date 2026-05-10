@@ -771,6 +771,16 @@ async def generate_receipts_payments_summary_report(
     """Categorized cash-movement view grouped by GL account over the
     selected date range (#249). One row per account with `inflows`,
     `outflows`, `net`, `transaction_count`.
+
+    Codex P1 on PR #292: this report describes cash receipts and
+    payments, so the underlying query must be scoped to cash/bank
+    accounts only. Aggregating every posted journal line conflates
+    non-cash double-entry activity (e.g. revenue↔COGS, AR↔revenue)
+    with actual cash movement; in any balanced ledger the totals then
+    mirror each other and `net_change` collapses toward zero, while
+    non-cash accounts are emitted as bogus "receipts/payments" rows.
+    Restrict to lines whose account has ``is_bank_account=True`` so
+    a debit to cash/bank is an inflow and a credit is an outflow.
     """
     stmt = (
         select(
@@ -785,6 +795,7 @@ async def generate_receipts_payments_summary_report(
         .join(JournalLine, JournalLine.account_id == Account.id)
         .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
         .where(JournalEntry.status == "posted")
+        .where(Account.is_bank_account.is_(True))
     )
     if date_from:
         stmt = stmt.where(JournalEntry.entry_date >= date_from)

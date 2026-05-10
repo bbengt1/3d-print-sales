@@ -38,6 +38,15 @@ async def _post_je(db_session, *, date, lines):
     await db_session.flush()
 
 
+async def _flag_cash_as_bank(db_session):
+    """Promote the seeded 1000 (Cash) account to ``is_bank_account=True``
+    so the receipts/payments summary (cash-only by design after the
+    PR #292 P1 fix) can pick up cash postings."""
+    accts = {a.code: a for a in (await db_session.execute(select(Account))).scalars().all()}
+    accts["1000"].is_bank_account = True
+    await db_session.flush()
+
+
 @pytest.mark.asyncio
 async def test_trial_balance_empty(db_session):
     rep = await generate_trial_balance_report(db_session, datetime.date(2026, 12, 31))
@@ -103,6 +112,7 @@ async def test_receipts_payments_summary_empty(db_session):
 
 @pytest.mark.asyncio
 async def test_receipts_payments_summary_groups_by_account(db_session):
+    await _flag_cash_as_bank(db_session)
     await _post_je(db_session, date=datetime.date(2026, 5, 1), lines=[
         ("1000", "debit", "500"),
         ("4000", "credit", "500"),
@@ -123,6 +133,7 @@ async def test_receipts_payments_summary_groups_by_account(db_session):
 
 @pytest.mark.asyncio
 async def test_receipts_payments_summary_period_bounds(db_session):
+    await _flag_cash_as_bank(db_session)
     await _post_je(db_session, date=datetime.date(2026, 1, 1), lines=[
         ("1000", "debit", "1000"),
         ("4000", "credit", "1000"),
