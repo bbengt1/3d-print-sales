@@ -1,0 +1,83 @@
+{
+  "name": "3D Print Sales — Recurring Journal Entries Cron",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ],
+          "triggerAtHour": 6,
+          "triggerAtMinute": 0
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 320]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.APP_BASE_URL }}/api/v1/accounting/recurring-journal-entries/run-due",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.APP_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": false,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "method": "POST"
+      },
+      "id": "run-due",
+      "name": "POST run-due",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 320]
+    },
+    {
+      "parameters": {
+        "channel": "#bookkeeping",
+        "text": "=RJE cron complete: {{ $json.processed }} run, {{ $json.errors }} errors"
+      },
+      "id": "slack",
+      "name": "Slack notify (optional)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [820, 320]
+    }
+  ],
+  "connections": {
+    "Daily 06:00": {
+      "main": [[{ "node": "POST run-due", "type": "main", "index": 0 }]]
+    },
+    "POST run-due": {
+      "main": [[{ "node": "Slack notify (optional)", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "0",
+  "id": "rje-cron",
+  "meta": {
+    "instanceId": "3d-print-sales"
+  },
+  "tags": [
+    { "name": "accounting", "createdAt": "2026-05-10T00:00:00.000Z" }
+  ]
+}
