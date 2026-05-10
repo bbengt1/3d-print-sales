@@ -45,6 +45,11 @@ class InvoiceCreate(BaseModel):
     issue_date: datetime.date
     due_date: datetime.date | None = None
     tax_amount: Decimal = Field(0, ge=0)
+    # Optional tax profile (#258 Phase 2). When supplied AND tax_amount is 0,
+    # tax_amount is auto-computed from the profile against subtotal via
+    # tax_service.compute_for_line. Single-rate, compound, and reverse-charge
+    # profiles all supported. Operator-supplied tax_amount > 0 takes precedence.
+    tax_profile_id: uuid.UUID | None = None
     shipping_amount: Decimal = Field(0, ge=0)
     credits_applied: Decimal = Field(0, ge=0)
     notes: str | None = None
