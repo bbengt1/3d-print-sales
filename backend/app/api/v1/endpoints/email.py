@@ -96,7 +96,7 @@ async def email_invoice(invoice_id: uuid.UUID, body: EmailSendRequest, user: Cur
         raise HTTPException(status_code=400, detail="No to_email supplied and customer has no email on file")
 
     business_name = await _business_name(db)
-    subject, body_text, body_html = render_invoice_template(invoice, business_name, customer_name)
+    subject, body_text, body_html = await render_invoice_template(invoice, business_name, customer_name, db=db)
     if body.subject_override:
         subject = body.subject_override
 
@@ -140,7 +140,7 @@ async def email_quote(quote_id: uuid.UUID, body: EmailSendRequest, user: Current
         raise HTTPException(status_code=400, detail="No to_email supplied and customer has no email on file")
 
     business_name = await _business_name(db)
-    subject, body_text, body_html = render_quote_template(quote, business_name, customer_name)
+    subject, body_text, body_html = await render_quote_template(quote, business_name, customer_name, db=db)
     if body.subject_override:
         subject = body.subject_override
 

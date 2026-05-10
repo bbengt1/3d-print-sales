@@ -201,7 +201,36 @@ def _name_clause(name: str | None) -> str:
     return f" {name}" if name and name.strip() else ""
 
 
-def render_invoice_template(invoice: Invoice, business_name: str, customer_name: str | None) -> tuple[str, str, str]:
+async def _maybe_override(db: AsyncSession | None, key: str, default: str) -> str:
+    """#320 P2: optional Settings-table override for an email template part.
+
+    The setting key conventions are:
+      email.invoice.subject / email.invoice.body_text / email.invoice.body_html
+      email.quote.subject / email.quote.body_text / email.quote.body_html
+    Operators leave them unset to keep defaults; setting them to a non-empty
+    value substitutes that string. The same `{placeholders}` are available
+    as in the defaults — `format(**ctx)` is applied after lookup.
+    """
+    if db is None:
+        return default
+    from app.models.setting import Setting
+
+    row = (
+        await db.execute(select(Setting).where(Setting.key == key))
+    ).scalar_one_or_none()
+    if row is None:
+        return default
+    val = (row.value or "").strip()
+    return val if val else default
+
+
+async def render_invoice_template(
+    invoice: Invoice,
+    business_name: str,
+    customer_name: str | None,
+    *,
+    db: AsyncSession | None = None,
+) -> tuple[str, str, str]:
     ctx = {
         "invoice_number": invoice.invoice_number,
         "issue_date": invoice.issue_date.isoformat() if invoice.issue_date else "",
@@ -210,14 +239,23 @@ def render_invoice_template(invoice: Invoice, business_name: str, customer_name:
         "business_name": business_name,
         "name_clause": _name_clause(customer_name),
     }
+    subject_t = await _maybe_override(db, "email.invoice.subject", INVOICE_SUBJECT)
+    text_t = await _maybe_override(db, "email.invoice.body_text", INVOICE_BODY_TEXT)
+    html_t = await _maybe_override(db, "email.invoice.body_html", INVOICE_BODY_HTML)
     return (
-        INVOICE_SUBJECT.format(**ctx),
-        INVOICE_BODY_TEXT.format(**ctx),
-        INVOICE_BODY_HTML.format(**ctx),
+        subject_t.format(**ctx),
+        text_t.format(**ctx),
+        html_t.format(**ctx),
     )
 
 
-def render_quote_template(quote: Quote, business_name: str, customer_name: str | None) -> tuple[str, str, str]:
+async def render_quote_template(
+    quote: Quote,
+    business_name: str,
+    customer_name: str | None,
+    *,
+    db: AsyncSession | None = None,
+) -> tuple[str, str, str]:
     ctx = {
         "quote_number": quote.quote_number,
         "product_name": quote.product_name or "",
@@ -226,10 +264,13 @@ def render_quote_template(quote: Quote, business_name: str, customer_name: str |
         "business_name": business_name,
         "name_clause": _name_clause(customer_name),
     }
+    subject_t = await _maybe_override(db, "email.quote.subject", QUOTE_SUBJECT)
+    text_t = await _maybe_override(db, "email.quote.body_text", QUOTE_BODY_TEXT)
+    html_t = await _maybe_override(db, "email.quote.body_html", QUOTE_BODY_HTML)
     return (
-        QUOTE_SUBJECT.format(**ctx),
-        QUOTE_BODY_TEXT.format(**ctx),
-        QUOTE_BODY_HTML.format(**ctx),
+        subject_t.format(**ctx),
+        text_t.format(**ctx),
+        html_t.format(**ctx),
     )
 
 
