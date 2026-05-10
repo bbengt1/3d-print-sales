@@ -26,6 +26,7 @@ FORMATS: Final[dict[str, str]] = {
     "sales_order": "SO-{year}-{value:04d}",
     "purchase_order": "PO-{year}-{value:04d}",
     "delivery_note": "DLV-{year}-{value:04d}",
+    "production_order": "PRD-{year}-{value:04d}",
 }
 
 
