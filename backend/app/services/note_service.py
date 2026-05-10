@@ -455,6 +455,70 @@ async def void_debit_note(db: AsyncSession, note_id: uuid.UUID) -> DebitNote:
     return note
 
 
+async def refund_credit_note_in_cash(
+    db: AsyncSession,
+    *,
+    note_id: uuid.UUID,
+    cash_account_id: uuid.UUID,
+    paid_on: date | None = None,
+) -> CreditNote:
+    """#321 P2: pay out the unapplied portion of a credit note as cash.
+
+    Posts: Dr Sales Returns (4800)  /  Cr Cash account (chosen).
+    Adjusts the credit note's `applied_amount` (so it can no longer be
+    applied to an invoice for that portion) and flips status to `applied`
+    when the full amount has been paid out.
+    """
+    from app.models.account import Account
+
+    note = await _require_credit_note(db, note_id)
+    if note.status not in ("issued", "partially_applied"):
+        raise NoteError(f"Cannot refund a credit note in status {note.status}")
+    remaining = Decimal(note.total_amount) - Decimal(note.applied_amount)
+    if remaining <= 0:
+        raise NoteError("No remaining credit to refund")
+
+    cash = (
+        await db.execute(select(Account).where(Account.id == cash_account_id))
+    ).scalar_one_or_none()
+    if cash is None:
+        raise NoteError("Cash account not found")
+    sales_returns = await _account_by_code(db, "4800")
+
+    try:
+        entry = await create_journal_entry(
+            db,
+            JournalEntryCreate(
+                entry_date=paid_on or datetime.now(timezone.utc).date(),
+                source_type="credit_note_refund",
+                source_id=str(note.id),
+                memo=f"Cash refund credit note {note.credit_note_number}",
+                lines=[
+                    JournalLineCreate(
+                        account_id=sales_returns.id,
+                        entry_type="debit",
+                        amount=remaining,
+                        description=f"Cash refund credit note {note.credit_note_number}",
+                    ),
+                    JournalLineCreate(
+                        account_id=cash.id,
+                        entry_type="credit",
+                        amount=remaining,
+                        description=f"Refund paid for credit note {note.credit_note_number}",
+                    ),
+                ],
+            ),
+        )
+    except AccountingValidationError as e:
+        raise NoteError(str(e)) from e
+
+    note.applied_amount = Decimal(note.applied_amount) + remaining
+    note.status = "applied"
+    await db.flush()
+    _ = entry  # JE id captured in source_id linkage
+    return note
+
+
 async def _require_debit_note(db: AsyncSession, note_id: uuid.UUID) -> DebitNote:
     note = (await db.execute(select(DebitNote).where(DebitNote.id == note_id))).scalar_one_or_none()
     if note is None:
