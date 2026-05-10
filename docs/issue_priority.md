@@ -90,6 +90,40 @@ These issues pre-date the Manager.io gap analysis and don't fit the tier structu
 
 ---
 
+## Frontend backlog (deferred from Phase 1 of every backend issue)
+
+Each backend Phase 1 in production today has been deferred frontend until these issues are picked up. Backend APIs are stable and documented per issue. Recommended sequencing: pick whichever surface causes the most operational pain first.
+
+| Issue | Surface | Backend backing |
+|---|---|---|
+| [#298](https://github.com/bbengt1/3d-print-sales/issues/298) | Invoice + quote create forms with email-send modal | #243 + #244 + #258 P2 |
+| [#299](https://github.com/bbengt1/3d-print-sales/issues/299) | Banking suite — accounts dashboard, reconciliation, statement import, match rules, transfers | #239 + #240 + #241 + #246 |
+| [#300](https://github.com/bbengt1/3d-print-sales/issues/300) | Fixed asset + intangible asset registers | #238 + #252 |
+| [#301](https://github.com/bbengt1/3d-print-sales/issues/301) | Production orders dashboard with FIFO consumption + finished-goods layers | #242 |
+| [#302](https://github.com/bbengt1/3d-print-sales/issues/302) | Credit notes + debit notes (issue, apply, void) | #248 |
+| [#303](https://github.com/bbengt1/3d-print-sales/issues/303) | Sales orders + purchase orders with conversion to invoice/bill | #261 |
+| [#304](https://github.com/bbengt1/3d-print-sales/issues/304) | Delivery notes | #263 |
+| [#305](https://github.com/bbengt1/3d-print-sales/issues/305) | Recurring sales invoices admin | #247 + #244 P2 wired |
+| [#306](https://github.com/bbengt1/3d-print-sales/issues/306) | Expense claims (owner-paid reimbursable) | #251 |
+| [#307](https://github.com/bbengt1/3d-print-sales/issues/307) | Inventory locations + transfers + kit editor | #245 + #262 |
+| [#308](https://github.com/bbengt1/3d-print-sales/issues/308) | Trial balance + receipts/payments + period-comparison reports | #249 |
+| [#309](https://github.com/bbengt1/3d-print-sales/issues/309) | Master-data admin (divisions, projects, budgets, custom fields, batch operations) | #255 + #259 + #253 + #254 |
+| [#310](https://github.com/bbengt1/3d-print-sales/issues/310) | Tax profile form (compound + reverse-charge) | #258 |
+| [#311](https://github.com/bbengt1/3d-print-sales/issues/311) | Accounting foundations admin (recurring JEs, suspense, starting balances) | #260 |
+| [#312](https://github.com/bbengt1/3d-print-sales/issues/312) | Reusable AttachmentsPanel component | #250 |
+| [#313](https://github.com/bbengt1/3d-print-sales/issues/313) | useListQuery hook + retrofit existing list pages | #264 |
+
+**Suggested rough order** based on operational value:
+1. #298 (invoice/quote — most-used document creation)
+2. #299 (banking — daily reconciliation)
+3. #312 (attachments — drops into every detail page; multiplier effect)
+4. #305 (recurring invoices — passive revenue automation)
+5. #308 (trial balance + receipts/payments — accountant-grade reports)
+6. #311 (accounting foundations — period-end ergonomics)
+7. The rest in any order — each is independently shippable.
+
+---
+
 ## Recently landed (last 30 days)
 
 | Issue / PR | Merged | Notes |
