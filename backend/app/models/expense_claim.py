@@ -38,6 +38,11 @@ class ExpenseClaim(Base):
     reimbursement_journal_entry_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("journal_entries.id"), nullable=True
     )
+    # #324 P2: when reimbursed via the bill path, the linked Bill row that
+    # tracks the AP balance owed to the payer.
+    bill_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("bills.id"), nullable=True
+    )
     # #328 P2
     division_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("divisions.id"), nullable=True, index=True)
     project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"), nullable=True, index=True)

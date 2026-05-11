@@ -17,8 +17,11 @@ from app.services.expense_claim_service import (
     approve_claim,
     cancel_claim,
     create_claim,
+    is_approval_required_to_approve,
     reimburse_claim,
+    reimburse_claim_as_bill,
     submit_claim,
+    submit_claim_for_approval,
 )
 
 
@@ -63,6 +66,7 @@ class ClaimResponse(BaseModel):
     total_amount: Decimal
     journal_entry_id: uuid.UUID | None
     reimbursement_journal_entry_id: uuid.UUID | None
+    bill_id: uuid.UUID | None = None
     notes: str | None
     created_at: datetime
     lines: list[LineOut]
@@ -75,6 +79,12 @@ class ApproveRequest(BaseModel):
 class ReimburseRequest(BaseModel):
     cash_account_id: uuid.UUID
     paid_on: date | None = None
+
+
+class ReimburseAsBillRequest(BaseModel):
+    vendor_id: uuid.UUID
+    due_date: date | None = None
+    description: str | None = Field(None, max_length=255)
 
 
 async def _hydrate(db, claim: ExpenseClaim) -> ClaimResponse:
@@ -93,6 +103,7 @@ async def _hydrate(db, claim: ExpenseClaim) -> ClaimResponse:
         total_amount=Decimal(claim.total_amount),
         journal_entry_id=claim.journal_entry_id,
         reimbursement_journal_entry_id=claim.reimbursement_journal_entry_id,
+        bill_id=claim.bill_id,
         notes=claim.notes,
         created_at=claim.created_at,
         lines=[
@@ -164,18 +175,55 @@ async def get_one(claim_id: uuid.UUID, user: CurrentUser, db: DB):
     return await _hydrate(db, claim)
 
 
-@router.post("/{claim_id}/submit", response_model=ClaimResponse, summary="Submit a draft claim")
+@router.post("/{claim_id}/submit", response_model=ClaimResponse, summary="Submit a draft claim (creates an ApprovalRequest when the approval-required setting is on)")
 async def submit_ep(claim_id: uuid.UUID, user: CurrentUser, db: DB):
     try:
-        claim = await submit_claim(db, claim_id)
+        if await is_approval_required_to_approve(db):
+            # #324 P2: instead of going straight to "submitted", create an
+            # ApprovalRequest so an admin must approve via /approvals before
+            # the GL posting runs.
+            await submit_claim_for_approval(db, claim_id, requested_by_user_id=user.id)
+            claim = (
+                await db.execute(select(ExpenseClaim).where(ExpenseClaim.id == claim_id))
+            ).scalar_one()
+        else:
+            claim = await submit_claim(db, claim_id)
     except ExpenseClaimError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     await db.commit()
     return await _hydrate(db, claim)
 
 
+@router.post(
+    "/{claim_id}/request-approval",
+    response_model=ClaimResponse,
+    summary="#324 P2: explicitly route a claim through the central approvals queue",
+)
+async def request_approval_ep(claim_id: uuid.UUID, user: CurrentUser, db: DB):
+    try:
+        await submit_claim_for_approval(db, claim_id, requested_by_user_id=user.id)
+    except ExpenseClaimError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
+    claim = (
+        await db.execute(select(ExpenseClaim).where(ExpenseClaim.id == claim_id))
+    ).scalar_one()
+    return await _hydrate(db, claim)
+
+
 @router.post("/{claim_id}/approve", response_model=ClaimResponse, summary="Approve a claim and post the JE")
 async def approve_ep(claim_id: uuid.UUID, body: ApproveRequest, user: CurrentUser, db: DB):
+    # #324 P2: when the approval-required setting is on, the canonical path
+    # is via the /approvals queue. Refuse this direct call so the audit
+    # trail stays single-source.
+    if await is_approval_required_to_approve(db):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "expense_claims.require_approval_to_approve is enabled; "
+                "approve via /approvals/{approval_id}/approve instead"
+            ),
+        )
     try:
         claim = await approve_claim(db, claim_id, approve_date=body.approve_date)
     except ExpenseClaimError as e:
@@ -189,6 +237,28 @@ async def reimburse_ep(claim_id: uuid.UUID, body: ReimburseRequest, user: Curren
     try:
         claim = await reimburse_claim(
             db, claim_id, cash_account_id=body.cash_account_id, paid_on=body.paid_on
+        )
+    except ExpenseClaimError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    await db.commit()
+    return await _hydrate(db, claim)
+
+
+@router.post(
+    "/{claim_id}/reimburse-as-bill",
+    response_model=ClaimResponse,
+    summary="#324 P2: alternative reimbursement — convert owner liability to a vendor bill",
+)
+async def reimburse_as_bill_ep(
+    claim_id: uuid.UUID, body: ReimburseAsBillRequest, user: CurrentUser, db: DB
+):
+    try:
+        claim = await reimburse_claim_as_bill(
+            db,
+            claim_id,
+            vendor_id=body.vendor_id,
+            due_date=body.due_date,
+            description=body.description,
         )
     except ExpenseClaimError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

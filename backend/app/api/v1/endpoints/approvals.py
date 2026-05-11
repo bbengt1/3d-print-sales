@@ -64,6 +64,32 @@ async def approve_request(approval_id: uuid.UUID, body: ApprovalDecisionBody, ad
             after_snapshot={"product_id": str(product.id), **snapshot_model(product, ["stock_qty", "unit_cost", "reorder_point"])},
             reason=request.reason,
         )
+    elif request.action_type == "expense_claim_approval":
+        # #324 P2: route the central approval action to expense_claim_service
+        # so the underlying GL posting + status transition happen in one place.
+        from app.services.expense_claim_service import (
+            ExpenseClaimError,
+            approve_claim,
+        )
+
+        claim_id_raw = request.request_payload.get("claim_id")
+        try:
+            claim_uuid = uuid.UUID(str(claim_id_raw))
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="Approval request contains an invalid claim reference") from exc
+        try:
+            claim = await approve_claim(db, claim_uuid)
+        except ExpenseClaimError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        await create_audit_log(
+            db,
+            actor_user_id=admin.id,
+            entity_type="expense_claim",
+            entity_id=str(claim.id),
+            action="approve_via_approval_request",
+            after_snapshot={"status": claim.status, "claim_number": claim.claim_number},
+            reason=request.reason,
+        )
     elif request.action_type == "sale_refund":
         sale_id = request.request_payload.get("sale_id")
         try:
