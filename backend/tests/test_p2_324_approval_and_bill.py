@@ -124,6 +124,31 @@ async def test_approval_request_approve_runs_approve_claim(client: AsyncClient, 
 
 
 @pytest.mark.asyncio
+async def test_submit_for_approval_is_idempotent(db_session):
+    """Codex P2: repeated submits for the same claim must reuse the existing
+    pending ApprovalRequest, not create duplicates that would rot in the
+    admin queue after the first one is approved.
+    """
+    expense = await _seed_accounts(db_session)
+    claim = await _make_claim(db_session, expense)
+    from app.models.user import User
+    db_session.add(User(email="rb@x.com", hashed_password="x", role="admin", full_name="RB"))
+    await db_session.flush()
+    admin = (await db_session.execute(select(User).where(User.email == "rb@x.com"))).scalar_one()
+
+    a1 = await submit_claim_for_approval(db_session, claim.id, requested_by_user_id=admin.id)
+    a2 = await submit_claim_for_approval(db_session, claim.id, requested_by_user_id=admin.id)
+    assert a1.id == a2.id
+
+    rows = (
+        await db_session.execute(
+            select(ApprovalRequest).where(ApprovalRequest.entity_id == str(claim.id))
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+
+
+@pytest.mark.asyncio
 async def test_reimburse_as_bill_posts_je_and_creates_bill(db_session):
     expense = await _seed_accounts(db_session)
     claim = await _make_claim(db_session, expense)

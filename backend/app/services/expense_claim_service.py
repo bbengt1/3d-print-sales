@@ -353,6 +353,23 @@ async def submit_claim_for_approval(
             f"Cannot request approval for claim in status {claim.status}"
         )
 
+    # Codex P2 on #324: if a pending approval already exists for this claim,
+    # reuse it rather than enqueuing duplicates that would linger as stale
+    # `pending` items after the first one is approved and the claim moves
+    # to `approved` (subsequent `approve_claim` calls would fail the
+    # status check and just rot the admin queue).
+    existing = (
+        await db.execute(
+            select(ApprovalRequest).where(
+                ApprovalRequest.action_type == "expense_claim_approval",
+                ApprovalRequest.entity_id == str(claim.id),
+                ApprovalRequest.status == "pending",
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+
     request = ApprovalRequest(
         action_type="expense_claim_approval",
         entity_type="expense_claim",
