@@ -25,10 +25,14 @@ class DefinitionCreate(BaseModel):
     scope: str = Field(..., min_length=1, max_length=40)
     key: str = Field(..., min_length=1, max_length=64)
     name: str = Field(..., min_length=1, max_length=120)
-    field_type: Literal["text", "long_text", "number", "date", "dropdown", "checkbox"]
+    field_type: Literal[
+        "text", "long_text", "number", "date", "dropdown", "checkbox",
+        "multi_select", "computed",
+    ]
     options: list[str] | None = None
     is_required: bool = False
     sort_order: int = 100
+    formula: str | None = Field(None, max_length=120)
 
 
 class DefinitionUpdate(BaseModel):
@@ -37,6 +41,7 @@ class DefinitionUpdate(BaseModel):
     is_required: bool | None = None
     sort_order: int | None = None
     is_active: bool | None = None
+    formula: str | None = Field(None, max_length=120)
 
 
 class DefinitionResponse(BaseModel):
@@ -49,6 +54,7 @@ class DefinitionResponse(BaseModel):
     is_required: bool
     sort_order: int
     is_active: bool
+    formula: str | None = None
 
 
 def _to_response(d: CustomFieldDefinition) -> DefinitionResponse:
@@ -62,6 +68,7 @@ def _to_response(d: CustomFieldDefinition) -> DefinitionResponse:
         is_required=d.is_required,
         sort_order=d.sort_order,
         is_active=d.is_active,
+        formula=d.formula,
     )
 
 
@@ -78,7 +85,8 @@ async def list_defs_ep(scope: str, user: CurrentUser, db: DB, include_inactive: 
 async def create_def(body: DefinitionCreate, user: CurrentUser, db: DB):
     try:
         validate_definition(
-            scope=body.scope, key=body.key, field_type=body.field_type, options=body.options,
+            scope=body.scope, key=body.key, field_type=body.field_type,
+            options=body.options, formula=body.formula,
         )
     except CustomFieldError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -103,6 +111,7 @@ async def create_def(body: DefinitionCreate, user: CurrentUser, db: DB):
         options=body.options,
         is_required=body.is_required,
         sort_order=body.sort_order,
+        formula=body.formula,
     )
     db.add(d)
     await db.commit()
@@ -117,10 +126,15 @@ async def update_def(def_id: uuid.UUID, body: DefinitionUpdate, user: CurrentUse
     payload = body.model_dump(exclude_unset=True)
     for k, v in payload.items():
         setattr(d, k, v)
-    # Re-validate dropdown options if they changed
-    if "options" in payload and d.field_type == "dropdown":
+    # Re-validate when options/formula change on a type that uses them.
+    if ("options" in payload and d.field_type in ("dropdown", "multi_select")) or (
+        "formula" in payload and d.field_type == "computed"
+    ):
         try:
-            validate_definition(scope=d.scope, key=d.key, field_type=d.field_type, options=d.options)
+            validate_definition(
+                scope=d.scope, key=d.key, field_type=d.field_type,
+                options=d.options, formula=d.formula,
+            )
         except CustomFieldError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
     await db.commit()
