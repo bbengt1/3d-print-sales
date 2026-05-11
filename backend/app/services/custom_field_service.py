@@ -26,9 +26,27 @@ class CustomFieldError(RuntimeError):
 VALID_SCOPES = {
     "customer", "vendor", "product", "material", "supply",
     "job", "sale", "invoice", "quote", "bill",
+    # #326 P2: per-line scopes. record_id refers to the child line's id.
+    "sale_item", "invoice_line", "quote_line", "bill_line",
+    "purchase_order_line", "sales_order_line",
 }
 
-FIELD_TYPES = {"text", "long_text", "number", "date", "dropdown", "checkbox"}
+FIELD_TYPES = {
+    "text", "long_text", "number", "date", "dropdown", "checkbox",
+    # #326 P2:
+    "multi_select",  # list of strings drawn from `options`
+    "computed",      # evaluated at read time via the formula registry
+}
+
+# Computed-field formula registry. Each entry maps a formula key to a
+# resolver `(db, scope, record_id, arg) -> Any`. Keep the registry small
+# and pure — no business rules, just calculator-style derivations.
+COMPUTED_FORMULAS: dict[str, str] = {
+    # days_since:<scope-specific source date column>
+    # Currently supports any scope whose record exposes one of the well-known
+    # date columns: invoice_date, sale_date, date, issue_date, posted_date.
+    "days_since": "Whole days from <arg> column on the record to today.",
+}
 
 _KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
@@ -39,6 +57,7 @@ def validate_definition(
     key: str,
     field_type: str,
     options: list | None,
+    formula: str | None = None,
 ) -> None:
     if scope not in VALID_SCOPES:
         raise CustomFieldError(f"Unsupported scope: {scope!r}")
@@ -48,9 +67,24 @@ def validate_definition(
         )
     if field_type not in FIELD_TYPES:
         raise CustomFieldError(f"Unknown field_type: {field_type!r}")
-    if field_type == "dropdown":
+    if field_type in ("dropdown", "multi_select"):
         if not options or not isinstance(options, list) or not all(isinstance(o, str) and o for o in options):
-            raise CustomFieldError("dropdown field_type requires non-empty options: list[str]")
+            raise CustomFieldError(
+                f"{field_type} field_type requires non-empty options: list[str]"
+            )
+    if field_type == "computed":
+        if not formula:
+            raise CustomFieldError("computed field_type requires a formula")
+        # Format: `<formula_key>:<arg>` (arg required for all current formulas).
+        head, _, arg = formula.partition(":")
+        if head not in COMPUTED_FORMULAS:
+            raise CustomFieldError(
+                f"Unknown formula {head!r}; supported: {sorted(COMPUTED_FORMULAS)}"
+            )
+        if not arg:
+            raise CustomFieldError(
+                f"formula {head!r} requires an argument; got {formula!r}"
+            )
 
 
 def coerce_value(field_type: str, raw: Any, options: list | None) -> str | None:
@@ -85,6 +119,34 @@ def coerce_value(field_type: str, raw: Any, options: list | None) -> str | None:
         if not options or str(raw) not in options:
             raise CustomFieldError(f"Value {raw!r} is not in the configured options")
         return str(raw)
+    if field_type == "multi_select":
+        # Accept list[str] or comma-separated string; store as JSON-array
+        # string so we round-trip cleanly and avoid ambiguity around
+        # commas inside option labels.
+        import json
+        if isinstance(raw, str):
+            items = [p.strip() for p in raw.split(",") if p.strip()]
+        elif isinstance(raw, (list, tuple, set)):
+            items = [str(x).strip() for x in raw if str(x).strip()]
+        else:
+            raise CustomFieldError(f"multi_select expects list or comma-string, got {type(raw).__name__}")
+        if not options:
+            raise CustomFieldError("multi_select requires options on the definition")
+        unknown = [i for i in items if i not in options]
+        if unknown:
+            raise CustomFieldError(
+                f"multi_select values not in options: {unknown}"
+            )
+        # Deduplicate while preserving order.
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for i in items:
+            if i not in seen:
+                seen.add(i)
+                deduped.append(i)
+        return json.dumps(deduped)
+    if field_type == "computed":
+        raise CustomFieldError("computed fields are read-only and cannot be set directly")
     raise CustomFieldError(f"Unhandled field_type: {field_type}")
 
 
@@ -100,6 +162,12 @@ def decode_value(field_type: str, stored: str | None) -> Any:
         return stored  # ISO string
     if field_type == "checkbox":
         return stored == "true"
+    if field_type == "multi_select":
+        import json
+        try:
+            return json.loads(stored)
+        except json.JSONDecodeError:
+            return []
     return stored
 
 
@@ -148,6 +216,9 @@ async def upsert_values(
     for d in defs:
         if not d.is_required:
             continue
+        if d.field_type == "computed":
+            # Computed values are always derived; required-check is N/A.
+            continue
         if d.key in values:
             if _is_empty(values[d.key]):
                 raise CustomFieldError(
@@ -163,6 +234,11 @@ async def upsert_values(
             # Unknown key — silently ignore so client API stays loose
             continue
         d = by_key[key]
+        if d.field_type == "computed":
+            # Computed fields are derived at read time; ignore writes silently
+            # rather than raising, so a generic upsert payload that includes
+            # the field doesn't fail on an otherwise-unrelated record save.
+            continue
         canonical = coerce_value(d.field_type, raw, d.options)
         existing = (
             await db.execute(
@@ -221,8 +297,111 @@ async def read_values(
             )
         )
     ).scalars().all()
-    return {
+    out: dict[str, Any] = {
         by_id[r.definition_id].key: decode_value(by_id[r.definition_id].field_type, r.value)
         for r in rows
         if r.definition_id in by_id
     }
+    # #326 P2: evaluate computed defs (no stored value, computed at read).
+    for d in defs:
+        if d.field_type != "computed":
+            continue
+        out[d.key] = await _evaluate_formula(db, scope=scope, record_id=record_id, formula=d.formula)
+    return out
+
+
+# ---------- #326 P2: computed-field evaluator ----------
+
+
+def _scope_model(scope: str):
+    """Lazy-import the ORM model class for a given scope. Lazy to avoid
+    bootstrap-order coupling and to keep the registry trivially editable."""
+    if scope == "customer":
+        from app.models.customer import Customer
+        return Customer
+    if scope == "vendor":
+        from app.models.vendor import Vendor
+        return Vendor
+    if scope == "product":
+        from app.models.product import Product
+        return Product
+    if scope == "material":
+        from app.models.material import Material
+        return Material
+    if scope == "supply":
+        from app.models.supply import Supply
+        return Supply
+    if scope == "job":
+        from app.models.job import Job
+        return Job
+    if scope == "sale":
+        from app.models.sale import Sale
+        return Sale
+    if scope == "invoice":
+        from app.models.invoice import Invoice
+        return Invoice
+    if scope == "quote":
+        from app.models.quote import Quote
+        return Quote
+    if scope == "bill":
+        from app.models.bill import Bill
+        return Bill
+    if scope == "sale_item":
+        from app.models.sale_item import SaleItem
+        return SaleItem
+    if scope == "invoice_line":
+        from app.models.invoice_line import InvoiceLine
+        return InvoiceLine
+    if scope == "quote_line":
+        from app.models.quote import QuoteLine
+        return QuoteLine
+    if scope == "bill_line":
+        from app.models.bill import BillLine
+        return BillLine
+    if scope == "purchase_order_line":
+        from app.models.purchase_order import PurchaseOrderLine
+        return PurchaseOrderLine
+    if scope == "sales_order_line":
+        from app.models.sales_order import SalesOrderLine
+        return SalesOrderLine
+    return None
+
+
+async def _evaluate_formula(
+    db: AsyncSession,
+    *,
+    scope: str,
+    record_id: uuid.UUID,
+    formula: str | None,
+) -> Any:
+    """Evaluate a computed-field formula on a specific record.
+
+    Returns None when the formula is malformed, the scope has no
+    registered ORM model, or the source column is missing on the row,
+    rather than raising — a computed field is a display affordance and
+    a transient evaluator error should never surface as an API failure
+    on an otherwise valid record read.
+    """
+    if not formula:
+        return None
+    head, _, arg = formula.partition(":")
+    if head not in COMPUTED_FORMULAS or not arg:
+        return None
+    Model = _scope_model(scope)
+    if Model is None or not hasattr(Model, arg):
+        return None
+    if head == "days_since":
+        from datetime import date
+
+        row = (
+            await db.execute(select(Model).where(Model.id == record_id))
+        ).scalar_one_or_none()
+        if row is None:
+            return None
+        source = getattr(row, arg, None)
+        if isinstance(source, datetime):
+            source = source.date()
+        if not isinstance(source, date):
+            return None
+        return (date.today() - source).days
+    return None

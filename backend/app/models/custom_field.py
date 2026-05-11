@@ -33,10 +33,13 @@ class CustomFieldDefinition(Base):
     scope: Mapped[str] = mapped_column(String(40), index=True)
     key: Mapped[str] = mapped_column(String(64))  # slug used in API + filters
     name: Mapped[str] = mapped_column(String(120))  # display label
-    # text | long_text | number | date | dropdown | checkbox
+    # text | long_text | number | date | dropdown | checkbox | multi_select | computed
     field_type: Mapped[str] = mapped_column(String(20))
-    options: Mapped[list | None] = mapped_column(JSON, nullable=True)  # for dropdown
+    options: Mapped[list | None] = mapped_column(JSON, nullable=True)  # for dropdown / multi_select
     is_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    # #326 P2: computed fields evaluate a registered formula at read time
+    # (no stored value). Format: `<formula_key>:<arg>` — e.g. `days_since:invoice_date`.
+    formula: Mapped[str | None] = mapped_column(String(120), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=100)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
