@@ -137,7 +137,22 @@ async def ensure_accounting_period(
     return period
 
 
-async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) -> JournalEntry:
+async def create_journal_entry(
+    db: AsyncSession,
+    payload: JournalEntryCreate,
+    *,
+    commit: bool = True,
+) -> JournalEntry:
+    """Create a posted journal entry.
+
+    By default the call commits internally so the JE is durable on return.
+    Callers that need to bundle the JE write into a larger atomic unit
+    (e.g. `production_order_service.close_order`, where a later
+    finished-goods layer insert must not leave the JE persisted on its own
+    if the layer step fails) can pass ``commit=False`` — the entry is
+    flushed (so its id is available) but the surrounding transaction is
+    left open for the caller to commit or roll back.
+    """
     if not payload.lines or len(payload.lines) < 2:
         raise AccountingValidationError("Journal entries require at least two lines.")
 
@@ -196,7 +211,10 @@ async def create_journal_entry(db: AsyncSession, payload: JournalEntryCreate) ->
             )
         )
 
-    await db.commit()
+    if commit:
+        await db.commit()
+    else:
+        await db.flush()
     result = await db.execute(
         select(JournalEntry)
         .options(selectinload(JournalEntry.lines))
