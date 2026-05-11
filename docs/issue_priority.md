@@ -81,6 +81,7 @@ PRs from today's session, in order. Total 17 today (12 features + 5 fixes/deploy
 | [#383](https://github.com/bbengt1/3d-print-sales/pull/383) | #292 | P1 fix — restrict receipts/payments summary to cash accounts (Codex review) |
 | [#384](https://github.com/bbengt1/3d-print-sales/pull/384) | #295 | P1 fix — require auth on `/tax/compute` + JE reference_sequence backfill migration (Codex review) |
 | [#385](https://github.com/bbengt1/3d-print-sales/pull/385) | #293 | P1 fix — atomic production-order close (`create_journal_entry` `commit=False` + `with_for_update`) (Codex review) |
+| [#388](https://github.com/bbengt1/3d-print-sales/pull/388) | #386 + #387 | ops — n8n deploy workflow runs alembic against the new image + polls container health |
 
 > **Doc gap note:** Earlier P1 follow-up fixes #360–#378 (afternoon batch — startup ORM register, banking integrity, intangibles, budgets, kits, etc.) landed but were not added to this table at the time. Recover from `git log --oneline b80bdbc..0283fb6` if a full reconstruction is needed.
 
