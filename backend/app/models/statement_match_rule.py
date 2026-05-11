@@ -40,6 +40,18 @@ class StatementMatchRule(Base):
         ForeignKey("accounts.id"), nullable=True
     )
     counterparty_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # #316 P2 deeper: AR/AP/IAT targets so the rule can post against a
+    # specific customer, vendor, or transfer destination instead of a
+    # raw P&L category. Exactly one of these is consulted per action.
+    customer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("customers.id"), nullable=True
+    )
+    vendor_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("vendors.id"), nullable=True
+    )
+    transfer_to_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("accounts.id"), nullable=True
+    )
     priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
