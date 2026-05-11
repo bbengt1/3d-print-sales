@@ -242,7 +242,7 @@
     {
       "parameters": {
         "resource": "command",
-        "command": "cd /srv/3d-print-sales/repo && scripts/web01-compose.sh exec -T backend alembic upgrade head"
+        "command": "cd /srv/3d-print-sales/repo && scripts/web01-compose.sh build backend && scripts/web01-compose.sh run --rm --no-deps -T backend alembic upgrade head"
       },
       "id": "11111111-1111-1111-1111-111111111013",
       "name": "SSH: Run Migrations",
@@ -283,7 +283,7 @@
     },
     {
       "parameters": {
-        "amount": 15,
+        "amount": 5,
         "unit": "seconds"
       },
       "id": "11111111-1111-1111-1111-111111111015",
@@ -299,7 +299,7 @@
     {
       "parameters": {
         "resource": "command",
-        "command": "cd /srv/3d-print-sales/repo && scripts/web01-compose.sh ps --format json"
+        "command": "cd /srv/3d-print-sales/repo && out=''; for i in $(seq 1 15); do out=$(scripts/web01-compose.sh ps --format json 2>&1); healthy=$(echo \"$out\" | grep -oE '\"Health\":\"healthy\"' | wc -l | tr -d ' '); if [ \"$healthy\" -ge 3 ]; then break; fi; sleep 2; done; echo \"$out\""
       },
       "id": "11111111-1111-1111-1111-111111111016",
       "name": "SSH: Compose ps",
@@ -376,7 +376,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Assemble the success response body.\nconst context = $('Validate Input').item.json.context;\nconst before = ($('SSH: Capture before SHA').item.json.stdout || '').trim();\nconst after = ($('SSH: Capture after SHA').item.json.stdout || '').trim();\nconst migrations = $('Detect Migrations').item.json;\nconst containers = $('Parse Compose ps').item.json.containers;\nconst healthOut = ($('SSH: GET /health').item.json.stdout || '').trim();\nconst frontendOut = ($('SSH: GET / (frontend)').item.json.stdout || '').trim();\n\nconst startedAt = context.started_at;\nconst finishedAt = new Date().toISOString();\nconst durationSeconds = Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000);\n\nreturn {\n  json: {\n    ok: true,\n    branch: context.branch,\n    before_sha: before.slice(0, 40),\n    after_sha: after.slice(0, 40),\n    migrations_run: migrations.needs_migration === true,\n    migration_files: migrations.migration_files || [],\n    duration_seconds: durationSeconds,\n    containers,\n    health_endpoint: healthOut,\n    frontend_endpoint: frontendOut,\n    triggered_by: context.triggered_by,\n    started_at: startedAt,\n    finished_at: finishedAt,\n  }\n};"
+        "jsCode": "// Assemble the success response body.\nconst context = $('Validate Input').item.json.context;\nconst before = ($('SSH: Capture before SHA').item.json.stdout || '').trim();\nconst after = ($('SSH: Capture after SHA').item.json.stdout || '').trim();\nconst migrations = $('Detect Migrations').item.json;\nconst containers = $('Parse Compose ps').item.json.containers;\nconst healthOut = ($('SSH: GET /health').item.json.stdout || '').trim();\nconst frontendOut = ($('SSH: GET / (frontend)').item.json.stdout || '').trim();\n\n// Parse alembic output for revisions that were actually upgraded. Alembic\n// emits a line like:\n//   INFO  [alembic.runtime.migration] Running upgrade 20260510_12 -> 20260510_13, <doc>\n// per applied revision (usually on stderr). When no upgrade was needed,\n// no such line is emitted, even if `needs_migration` flagged the run.\nlet migrationsApplied = [];\ntry {\n  const runMigItem = $('SSH: Run Migrations').item;\n  if (runMigItem && runMigItem.json) {\n    const combined = ((runMigItem.json.stderr || '') + '\\n' + (runMigItem.json.stdout || ''));\n    const re = /Running upgrade \\S+\\s*->\\s*([^,\\s]+)/g;\n    let m;\n    while ((m = re.exec(combined)) !== null) {\n      migrationsApplied.push(m[1]);\n    }\n  }\n} catch (e) {\n  // Run Migrations node didn't execute (e.g. needs_migration was false). Leave list empty.\n}\n\nconst startedAt = context.started_at;\nconst finishedAt = new Date().toISOString();\nconst durationSeconds = Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000);\n\nreturn {\n  json: {\n    ok: true,\n    branch: context.branch,\n    before_sha: before.slice(0, 40),\n    after_sha: after.slice(0, 40),\n    // True only when alembic actually upgraded at least one revision.\n    // Old field; kept for back-compat with notification consumers.\n    migrations_run: migrationsApplied.length > 0,\n    // Actual list of revisions upgraded, parsed from alembic output.\n    migrations_applied: migrationsApplied,\n    // Migration files detected in the diff (intent — may not match what was applied\n    // if alembic was a no-op because the DB was already at head).\n    migration_files: migrations.migration_files || [],\n    duration_seconds: durationSeconds,\n    containers,\n    health_endpoint: healthOut,\n    frontend_endpoint: frontendOut,\n    triggered_by: context.triggered_by,\n    started_at: startedAt,\n    finished_at: finishedAt,\n  }\n};"
       },
       "id": "11111111-1111-1111-1111-111111111020",
       "name": "Build Success Summary",
