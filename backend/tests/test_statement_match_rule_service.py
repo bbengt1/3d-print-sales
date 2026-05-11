@@ -49,7 +49,18 @@ def test_validate_rule_invalid_regex():
 
 def test_validate_rule_unsupported_action():
     with pytest.raises(StatementMatchRuleError):
-        validate_rule(match_type="contains", match_pattern="x", match_amount_sign="any", action="create_receipt")
+        validate_rule(match_type="contains", match_pattern="x", match_amount_sign="any", action="create_bogus")
+
+
+def test_validate_rule_create_receipt_requires_customer():
+    # The action is supported, but its required target field is missing.
+    with pytest.raises(StatementMatchRuleError):
+        validate_rule(
+            match_type="contains",
+            match_pattern="x",
+            match_amount_sign="any",
+            action="create_receipt",
+        )
 
 
 @pytest.mark.asyncio

@@ -28,7 +28,13 @@ class StatementMatchRuleError(RuntimeError):
     pass
 
 
-SUPPORTED_ACTIONS = {"ignore", "create_journal_entry"}  # #316 P2
+SUPPORTED_ACTIONS = {
+    "ignore",
+    "create_journal_entry",
+    "create_receipt",  # #316 P2 deeper: AR customer payment
+    "create_payment",  # #316 P2 deeper: AP vendor payment
+    "create_inter_account_transfer",  # #316 P2 deeper: own-account transfer
+}
 
 
 def _matches_pattern(rule: StatementMatchRule, description: str) -> bool:
@@ -107,8 +113,13 @@ async def apply_rules_to_import(
     Returns a summary dict of counts.
     """
     from app.models.account import Account
+    from app.models.payment import Payment
     from app.schemas.accounting import JournalEntryCreate, JournalLineCreate
     from app.services.accounting_service import create_journal_entry as _create_je
+    from app.services.inter_account_transfer_service import (
+        InterAccountTransferError,
+        create_inter_account_transfer,
+    )
 
     lines = (
         await db.execute(
@@ -126,7 +137,26 @@ async def apply_rules_to_import(
 
     auto_ignored = 0
     auto_je = 0
+    auto_receipt = 0
+    auto_payment = 0
+    auto_iat = 0
     skipped_unsupported = 0
+
+    async def _link_bank_line(line, je, bank_account_id):
+        """Link the bank-side JournalLine of the JE to the statement line so
+        reconciliation pulls the new posting in."""
+        from app.models.journal_line import JournalLine
+
+        bank_line = (
+            await db.execute(
+                select(JournalLine).where(
+                    JournalLine.journal_entry_id == je.id,
+                    JournalLine.account_id == bank_account_id,
+                )
+            )
+        ).scalar_one()
+        line.matched_journal_line_id = bank_line.id
+
     for line in lines:
         rule = await evaluate_rules_for_line(db, line, rules=active_rules)
         if rule is None:
@@ -166,19 +196,122 @@ async def apply_rules_to_import(
                 ),
             )
             line.match_status = "matched"
-            # Link the bank-side JE line so reconciliation pulls it
+            await _link_bank_line(line, je, bank.id)
+            auto_je += 1
+        elif rule.action == "create_receipt":
+            # AR customer payment: Dr bank, Cr Accounts Receivable. Create a
+            # `Payment` row tied to the customer with the full amount sitting
+            # in `unapplied_amount` so the operator can later apply it to one
+            # or more invoices.
+            if rule.customer_id is None or Decimal(line.amount) <= 0:
+                skipped_unsupported += 1
+                continue
+            ar = (
+                await db.execute(select(Account).where(Account.code == "1100"))
+            ).scalar_one_or_none()
+            bank = (
+                await db.execute(select(Account).where(Account.id == line.account_id))
+            ).scalar_one_or_none()
+            if ar is None or bank is None:
+                skipped_unsupported += 1
+                continue
+            amt = abs(Decimal(line.amount))
+            je = await _create_je(
+                db,
+                JournalEntryCreate(
+                    entry_date=line.posted_date,
+                    memo=f"[rule:{rule.name}] receipt {line.description[:140]}",
+                    lines=[
+                        JournalLineCreate(account_id=bank.id, entry_type="debit", amount=amt),
+                        JournalLineCreate(account_id=ar.id, entry_type="credit", amount=amt),
+                    ],
+                ),
+            )
+            payment = Payment(
+                customer_id=rule.customer_id,
+                payment_date=line.posted_date,
+                amount=amt,
+                unapplied_amount=amt,
+                notes=f"Auto-receipt from bank rule '{rule.name}' (line {line.id})",
+            )
+            db.add(payment)
+            line.match_status = "matched"
+            await _link_bank_line(line, je, bank.id)
+            auto_receipt += 1
+        elif rule.action == "create_payment":
+            # AP vendor payment: Dr Accounts Payable, Cr bank. We don't have
+            # an "unapplied BillPayment" concept, so just post the JE and
+            # leave the AP balance available for an operator to reconcile
+            # against bills manually.
+            if rule.vendor_id is None or Decimal(line.amount) >= 0:
+                skipped_unsupported += 1
+                continue
+            ap = (
+                await db.execute(select(Account).where(Account.code == "2000"))
+            ).scalar_one_or_none()
+            bank = (
+                await db.execute(select(Account).where(Account.id == line.account_id))
+            ).scalar_one_or_none()
+            if ap is None or bank is None:
+                skipped_unsupported += 1
+                continue
+            amt = abs(Decimal(line.amount))
+            je = await _create_je(
+                db,
+                JournalEntryCreate(
+                    entry_date=line.posted_date,
+                    memo=f"[rule:{rule.name}] payment {line.description[:140]}",
+                    lines=[
+                        JournalLineCreate(account_id=ap.id, entry_type="debit", amount=amt),
+                        JournalLineCreate(account_id=bank.id, entry_type="credit", amount=amt),
+                    ],
+                ),
+            )
+            line.match_status = "matched"
+            await _link_bank_line(line, je, bank.id)
+            auto_payment += 1
+        elif rule.action == "create_inter_account_transfer":
+            if rule.transfer_to_account_id is None:
+                skipped_unsupported += 1
+                continue
+            if rule.transfer_to_account_id == line.account_id:
+                skipped_unsupported += 1
+                continue
+            amt = abs(Decimal(line.amount))
+            # Direction: an outflow on this statement (negative amount) is
+            # the "from" leg; an inflow is the "to" leg. The IAT service
+            # always takes (from, to, amount, paid_on); flip accordingly.
+            if Decimal(line.amount) < 0:
+                from_acct, to_acct = line.account_id, rule.transfer_to_account_id
+            else:
+                from_acct, to_acct = rule.transfer_to_account_id, line.account_id
+            try:
+                iat = await create_inter_account_transfer(
+                    db,
+                    from_account_id=from_acct,
+                    to_account_id=to_acct,
+                    amount=amt,
+                    paid_on=line.posted_date,
+                    notes=f"Auto-IAT from bank rule '{rule.name}' (line {line.id})",
+                )
+            except InterAccountTransferError:
+                skipped_unsupported += 1
+                continue
+            line.match_status = "matched"
+            # Link this statement line to its own side of the IAT's JE so
+            # reconciliation pulls the matching leg.
             from app.models.journal_line import JournalLine
 
-            bank_line = (
+            own_leg = (
                 await db.execute(
                     select(JournalLine).where(
-                        JournalLine.journal_entry_id == je.id,
-                        JournalLine.account_id == bank.id,
+                        JournalLine.journal_entry_id == iat.journal_entry_id,
+                        JournalLine.account_id == line.account_id,
                     )
                 )
             ).scalar_one()
-            line.matched_journal_line_id = bank_line.id
-            auto_je += 1
+            line.matched_journal_line_id = own_leg.id
+            auto_iat += 1
         else:
             skipped_unsupported += 1
 
@@ -187,6 +320,9 @@ async def apply_rules_to_import(
         "considered": len(lines),
         "auto_ignored": auto_ignored,
         "auto_journal_entries": auto_je,
+        "auto_receipts": auto_receipt,
+        "auto_payments": auto_payment,
+        "auto_inter_account_transfers": auto_iat,
         "skipped_unsupported_actions": skipped_unsupported,
     }
 
@@ -232,6 +368,34 @@ async def preview_rules_for_import(
             ).scalar_one_or_none()
             if cat is not None:
                 cat_label = f"{cat.code} {cat.name}"
+        # #316 P2 deeper: also surface customer/vendor/transfer-to so the
+        # operator can sanity-check the post target before applying.
+        target_label = None
+        if rule.action == "create_receipt" and rule.customer_id is not None:
+            from app.models.customer import Customer
+            c = (
+                await db.execute(select(Customer).where(Customer.id == rule.customer_id))
+            ).scalar_one_or_none()
+            if c is not None:
+                target_label = f"customer: {c.name}"
+        elif rule.action == "create_payment" and rule.vendor_id is not None:
+            from app.models.vendor import Vendor
+            v = (
+                await db.execute(select(Vendor).where(Vendor.id == rule.vendor_id))
+            ).scalar_one_or_none()
+            if v is not None:
+                target_label = f"vendor: {v.name}"
+        elif (
+            rule.action == "create_inter_account_transfer"
+            and rule.transfer_to_account_id is not None
+        ):
+            other = (
+                await db.execute(
+                    select(Account).where(Account.id == rule.transfer_to_account_id)
+                )
+            ).scalar_one_or_none()
+            if other is not None:
+                target_label = f"transfer to: {other.code} {other.name}"
         out.append(
             {
                 "statement_line_id": str(line.id),
@@ -242,6 +406,7 @@ async def preview_rules_for_import(
                     "name": rule.name,
                     "action": rule.action,
                     "category_account": cat_label,
+                    "target": target_label,
                 },
             }
         )
@@ -260,12 +425,18 @@ async def create_rule_from_line(
     name: str,
     action: str,
     category_account_id: uuid.UUID | None = None,
+    customer_id: uuid.UUID | None = None,
+    vendor_id: uuid.UUID | None = None,
+    transfer_to_account_id: uuid.UUID | None = None,
+    counterparty_name: str | None = None,
     match_type: str = "contains",
 ) -> StatementMatchRule:
     """#316 P2: derive a starter rule from a staged statement line.
 
     Defaults to a "contains" pattern using a sanitized prefix of the line's
-    description. Operator can edit later.
+    description. Operator can edit later. The receipt/payment/IAT
+    actions accept their respective target (customer/vendor/account) so
+    the resulting rule is immediately apply-able.
     """
     line = (
         await db.execute(select(StatementLine).where(StatementLine.id == statement_line_id))
@@ -279,6 +450,10 @@ async def create_rule_from_line(
         match_pattern=pattern,
         match_amount_sign=sign,
         action=action,
+        category_account_id=category_account_id,
+        customer_id=customer_id,
+        vendor_id=vendor_id,
+        transfer_to_account_id=transfer_to_account_id,
     )
     rule = StatementMatchRule(
         name=name,
@@ -288,6 +463,10 @@ async def create_rule_from_line(
         match_amount_sign=sign,
         action=action,
         category_account_id=category_account_id,
+        customer_id=customer_id,
+        vendor_id=vendor_id,
+        transfer_to_account_id=transfer_to_account_id,
+        counterparty_name=counterparty_name,
     )
     db.add(rule)
     await db.flush()
@@ -300,6 +479,10 @@ def validate_rule(
     match_pattern: str,
     match_amount_sign: str,
     action: str,
+    category_account_id: uuid.UUID | None = None,
+    customer_id: uuid.UUID | None = None,
+    vendor_id: uuid.UUID | None = None,
+    transfer_to_account_id: uuid.UUID | None = None,
 ) -> None:
     if match_type not in ("contains", "regex"):
         raise StatementMatchRuleError(f"Unknown match_type: {match_type}")
@@ -314,6 +497,20 @@ def validate_rule(
         raise StatementMatchRuleError(f"Unknown match_amount_sign: {match_amount_sign}")
     if action not in SUPPORTED_ACTIONS:
         raise StatementMatchRuleError(
-            f"Action {action!r} is declared but not implemented in Phase 1; "
-            f"supported actions: {sorted(SUPPORTED_ACTIONS)}"
+            f"Unknown action {action!r}; supported actions: {sorted(SUPPORTED_ACTIONS)}"
+        )
+    # Per-action field requirements. The DB-level FKs are nullable to keep
+    # the rule editable across action changes, but a rule that *will fire*
+    # must have its target column populated.
+    if action == "create_journal_entry" and category_account_id is None:
+        raise StatementMatchRuleError(
+            "create_journal_entry requires category_account_id"
+        )
+    if action == "create_receipt" and customer_id is None:
+        raise StatementMatchRuleError("create_receipt requires customer_id")
+    if action == "create_payment" and vendor_id is None:
+        raise StatementMatchRuleError("create_payment requires vendor_id")
+    if action == "create_inter_account_transfer" and transfer_to_account_id is None:
+        raise StatementMatchRuleError(
+            "create_inter_account_transfer requires transfer_to_account_id"
         )
