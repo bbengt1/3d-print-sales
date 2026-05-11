@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
 from app.models.account import Account
+from app.models.accounting_period import AccountingPeriod
 from app.models.intangible_asset import AmortizationEntry, IntangibleAsset
 from app.services.intangible_asset_service import (
     IntangibleAssetError,
@@ -215,6 +216,49 @@ async def post_amort(body: AmortizationPostRequest, user: CurrentUser, db: DB):
         assets = (
             await db.execute(select(IntangibleAsset).where(IntangibleAsset.status == "active"))
         ).scalars().all()
+
+    # #279 Codex P1: `post_amortization` calls `create_journal_entry`, which
+    # commits internally. If we just looped and let a later asset raise, any
+    # earlier asset's JEs would already be persisted — partial bulk postings
+    # are unsafe for retries and reconciliation. Pre-validate every asset's
+    # plan against closed periods / disposal status before any writes, so a
+    # request either posts every asset's pending months or none of them.
+    for a in assets:
+        if a.status == "disposed":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot post amortization on a disposed asset ({a.name})",
+            )
+        posted_periods = set(
+            (
+                await db.execute(
+                    select(AmortizationEntry.period_end).where(
+                        AmortizationEntry.intangible_asset_id == a.id
+                    )
+                )
+            ).scalars().all()
+        )
+        for period_end, amount in planned_schedule(a):
+            if period_end > body.period_end:
+                break
+            if period_end in posted_periods or amount <= 0:
+                continue
+            period_row = (
+                await db.execute(
+                    select(AccountingPeriod).where(
+                        AccountingPeriod.start_date <= period_end,
+                        AccountingPeriod.end_date >= period_end,
+                    )
+                )
+            ).scalar_one_or_none()
+            if period_row is not None and period_row.status != "open":
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Accounting period containing {period_end.isoformat()} "
+                        f"is closed (asset '{a.name}')"
+                    ),
+                )
 
     posted_count = 0
     for a in assets:

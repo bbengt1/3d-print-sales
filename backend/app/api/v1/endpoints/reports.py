@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime
 import uuid
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import DB
@@ -219,7 +219,10 @@ async def account_drill_down(
     date_to: datetime.date | None = Query(None),
 ):
     from app.services.report_service import drill_down_account
-    payload = await drill_down_account(db, account_id=account_id, date_from=date_from, date_to=date_to)
+    try:
+        payload = await drill_down_account(db, account_id=account_id, date_from=date_from, date_to=date_to)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return AccountDrillDownResponse(**payload)
 
 

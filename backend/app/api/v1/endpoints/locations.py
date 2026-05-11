@@ -102,8 +102,9 @@ async def delete_location(location_id: uuid.UUID, user: CurrentUser, db: DB):
     if referenced:
         raise HTTPException(status_code=400, detail="Location is referenced by transfers; deactivate it instead")
     # #318 P2: also block when this location is the SoT for any product
-    # on-hand. The FK is ondelete=CASCADE so a raw delete would silently
-    # drop the rows and leave Product.stock_qty out of sync.
+    # on-hand. The FK is ondelete=RESTRICT so the DB would reject it
+    # anyway, but raising 400 with a clear message beats a generic
+    # IntegrityError at the operator.
     stocked = (
         await db.execute(
             select(ProductLocationStock.id).where(
@@ -202,6 +203,25 @@ async def list_transfers(user: CurrentUser, db: DB, status_filter: str | None = 
 
 @router.post("/transfers", response_model=TransferResponse, status_code=status.HTTP_201_CREATED, summary="Create a transfer")
 async def create_transfer_ep(body: TransferCreate, user: CurrentUser, db: DB):
+    # #274 P1 (Codex): pre-validate location FKs so a missing from_/to_location_id
+    # surfaces as a 404 instead of a Postgres IntegrityError -> 500 on commit.
+    requested_ids = {body.from_location_id, body.to_location_id}
+    found_ids = set(
+        (
+            await db.execute(
+                select(InventoryLocation.id).where(InventoryLocation.id.in_(requested_ids))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    missing = requested_ids - found_ids
+    if missing:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Location(s) not found: {', '.join(str(i) for i in sorted(missing, key=str))}",
+        )
+
     try:
         transfer = await create_transfer(
             db,

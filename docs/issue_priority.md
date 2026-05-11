@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-11 — #318 multi-location Phase 2 deeper SoT shipping (ProductLocationStock + per-location sale decrement + soft-warn + in-transit hold). 4 P2 trackers remain. 638 backend tests passing.
+> **Last reviewed:** 2026-05-11 — #318 multi-location Phase 2 deeper SoT in flight (ProductLocationStock + per-location decrement + soft-warn + in-transit, PR #389). Prior: 2026-05-10 afternoon Manager.io gap walk + 25 P1 follow-ups (#360–#384) + ops fix #388.
 
 ---
 
@@ -74,6 +74,16 @@ PRs from today's session, in order. Total 17 today (12 features + 5 fixes/deploy
 | [#357](https://github.com/bbengt1/3d-print-sales/pull/357) | #229 | jobs — auto-discovery from watch directories |
 | [#358](https://github.com/bbengt1/3d-print-sales/pull/358) | #317 | COGS — sales-side FIFO rewrite (flag-gated, default off) |
 | [#359](https://github.com/bbengt1/3d-print-sales/pull/359) | #315 + #327 | bank-import — QFX format, persisted CSV mapping, create-tx-from-line |
+| [#379](https://github.com/bbengt1/3d-print-sales/pull/379) | #334 | P1 fix — drill-down missing account → 404 (Codex review) |
+| [#380](https://github.com/bbengt1/3d-print-sales/pull/380) | #297 | P1 fix — reject unknown tax profile on invoice creation (Codex review) |
+| [#381](https://github.com/bbengt1/3d-print-sales/pull/381) | #335 | P1 fix — validate `as_of` CSV date returns 4xx (Codex review) |
+| [#382](https://github.com/bbengt1/3d-print-sales/pull/382) | #333 | P1 fix — map `JournalLineLockedError` to 409 on JE reverse (Codex review) |
+| [#383](https://github.com/bbengt1/3d-print-sales/pull/383) | #292 | P1 fix — restrict receipts/payments summary to cash accounts (Codex review) |
+| [#384](https://github.com/bbengt1/3d-print-sales/pull/384) | #295 | P1 fix — require auth on `/tax/compute` + JE reference_sequence backfill migration (Codex review) |
+| [#385](https://github.com/bbengt1/3d-print-sales/pull/385) | #293 | P1 fix — atomic production-order close (`create_journal_entry` `commit=False` + `with_for_update`) (Codex review) |
+| [#388](https://github.com/bbengt1/3d-print-sales/pull/388) | #386 + #387 | ops — n8n deploy workflow runs alembic against the new image + polls container health |
+
+> **Doc gap note:** Earlier P1 follow-up fixes #360–#378 (afternoon batch — startup ORM register, banking integrity, intangibles, budgets, kits, etc.) landed but were not added to this table at the time. Recover from `git log --oneline b80bdbc..0283fb6` if a full reconstruction is needed.
 
 ---
 

@@ -26,10 +26,10 @@ In order:
 6. `git fetch` and `git pull` the target branch.
 7. Captures the new commit SHA (`after_sha`).
 8. Diffs `backend/alembic/versions/` between the two SHAs to decide whether migrations are needed (or honours an explicit `run_migrations: true|false`).
-9. If migrations needed: runs `scripts/web01-compose.sh exec -T backend alembic upgrade head`.
-10. Runs `scripts/web01-compose.sh up -d --build` to rebuild and restart containers.
-11. Waits 15 seconds for containers to settle.
-12. Verifies all three containers (`db`, `backend`, `frontend`) are healthy via `scripts/web01-compose.sh ps`.
+9. If migrations needed: builds the new backend image (`compose build backend`) and runs migrations as a one-shot container from that new image (`compose run --rm --no-deps -T backend alembic upgrade head`). Running against the **new** image is critical — the old running container does not have the new migration files in its `/app/alembic/versions/`, so executing alembic inside it would silently no-op. See #387 for the historical bug this fixes.
+10. Runs `scripts/web01-compose.sh up -d --build` to bring up (or rebuild and restart) all containers with the new image.
+11. Waits 5 seconds for containers to start initializing.
+12. Polls `scripts/web01-compose.sh ps --format json` every 2 seconds for up to 30 seconds, exiting as soon as all three required containers (`db`, `backend`, `frontend`) report `Health: healthy`. If the budget is exhausted with at least one container still not healthy, the workflow fails with the latest observed state (see #386).
 13. Verifies `GET /health` returns 200.
 14. Verifies `GET /` returns 200.
 15. Builds a success summary and fires the success notification webhook (if configured).
@@ -187,6 +187,7 @@ Store `N8N_WEBHOOK` and `N8N_DEPLOY_TOKEN` in whatever env/keychain Claude has a
   "before_sha": "30e19bf74f84fd21a86f225512234b16c6a60d25",
   "after_sha": "c3decb32cbbf765723a1bd2192ad6a64c5e75d5a",
   "migrations_run": true,
+  "migrations_applied": ["20260412_01"],
   "migration_files": ["backend/alembic/versions/20260412_01_add_cameras.py"],
   "duration_seconds": 142,
   "containers": [
@@ -245,7 +246,7 @@ This can be wired to Slack/Discord/Mattermost inbound webhooks, a custom relay, 
 Every step is a discrete node. Common changes:
 
 - **Add a post-deploy smoke test** — add an SSH node between `SSH: GET / (frontend)` and `Build Success Summary` that hits another endpoint (e.g. `curl /api/v1/auth/me` with a known token).
-- **Change the wait time** — edit the `Wait for containers` node's duration.
+- **Change the wait time** — edit the `Wait for containers` node's duration (initial settle delay) and/or the `SSH: Compose ps` loop (the `seq 1 15` upper bound is the max number of 2-second polls before failing).
 - **Extend the branch allowlist** — edit the `ALLOWED_BRANCHES` array in the `Validate Input` node.
 - **Change the notification destination** — set the `DEPLOY_NOTIFICATION_URL` n8n variable.
 - **Run a pre-deploy DB backup** — insert a new SSH node before `SSH: Compose up --build` that runs `pg_dump` into a dated file on the host.

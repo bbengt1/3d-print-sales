@@ -25,7 +25,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account import Account
@@ -72,6 +72,15 @@ def _signed_amount(line: JournalLine, account: Account) -> Decimal:
     return Decimal(line.amount) * (-sign)
 
 
+def _effective_date(line: JournalLine, entry: JournalEntry) -> date:
+    """Per-leg posted date. Inter-account transfers (#246) carry independent
+    `posted_on` per JournalLine so each leg reconciles against the
+    appropriate statement (Codex P1 #275). Falls back to the parent JE's
+    `entry_date` when the line has no per-leg date.
+    """
+    return line.posted_on if line.posted_on is not None else entry.entry_date
+
+
 async def compute_account_balance(
     db: AsyncSession,
     account_id: uuid.UUID,
@@ -92,7 +101,7 @@ async def compute_account_balance(
 
     total = Decimal("0")
     for line, entry in rows:
-        if through_date is not None and entry.entry_date > through_date:
+        if through_date is not None and _effective_date(line, entry) > through_date:
             continue
         if only_cleared and line.cleared_status not in (CLEARED_STATUS_CLEARED, CLEARED_STATUS_RECONCILED):
             continue
@@ -135,16 +144,23 @@ async def list_eligible_lines(
 ) -> list[tuple[JournalLine, JournalEntry]]:
     """Return (line, entry) pairs for lines posting to this account on or
     before statement_end_date and not yet reconciled.
+
+    Filters by the per-leg effective date — `JournalLine.posted_on` when
+    set (used by inter-account transfers #246 to carry paid_on/received_on
+    independently), otherwise the parent JE's `entry_date`. This keeps the
+    receiving leg of a delayed-receipt transfer invisible until its own
+    `received_on` (Codex P1 #275).
     """
+    effective = func.coalesce(JournalLine.posted_on, JournalEntry.entry_date)
     stmt = (
         select(JournalLine, JournalEntry)
         .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
         .where(
             JournalLine.account_id == account_id,
             JournalLine.cleared_status != CLEARED_STATUS_RECONCILED,
-            JournalEntry.entry_date <= statement_end_date,
+            effective <= statement_end_date,
         )
-        .order_by(JournalEntry.entry_date, JournalLine.line_number)
+        .order_by(effective, JournalLine.line_number)
     )
     return list((await db.execute(stmt)).all())
 
@@ -157,13 +173,30 @@ async def include_line(
 ) -> BankReconciliationLine:
     recon = await _get_in_progress_recon(db, reconciliation_id)
 
-    line = (await db.execute(select(JournalLine).where(JournalLine.id == journal_line_id))).scalar_one_or_none()
-    if line is None:
+    line_row = (
+        await db.execute(
+            select(JournalLine, JournalEntry)
+            .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+            .where(JournalLine.id == journal_line_id)
+        )
+    ).first()
+    if line_row is None:
         raise BankReconciliationError(f"Journal line {journal_line_id} not found")
+    line, entry = line_row
     if line.account_id != recon.account_id:
         raise BankReconciliationError("Journal line account does not match reconciliation account")
     if line.cleared_status == CLEARED_STATUS_RECONCILED:
         raise BankReconciliationError("Journal line is already reconciled in another recon")
+    # #271 P1: enforce statement-end-date bound — `/toggle-line` accepts an
+    # arbitrary journal_line_id, so without this guard a client could fold a
+    # future-dated transaction into an older statement reconciliation and
+    # still finalize if totals happened to balance. Mirror the predicate
+    # used in `list_eligible_lines`.
+    if entry.entry_date > recon.statement_end_date:
+        raise BankReconciliationError(
+            f"Journal line entry date {entry.entry_date} is after statement end date "
+            f"{recon.statement_end_date}; cannot include in this reconciliation"
+        )
 
     existing = (
         await db.execute(
@@ -175,6 +208,30 @@ async def include_line(
     ).scalar_one_or_none()
     if existing:
         return existing
+
+    # #271 P1: cross-reconciliation guard — a journal line must not be linked
+    # to more than one active (non-finalized) reconciliation at a time, or
+    # overlapping drafts/reopens would double-count the same transaction and
+    # could leave one line represented in multiple finalized reconciliations.
+    other_active = (
+        await db.execute(
+            select(BankReconciliationLine.reconciliation_id)
+            .join(
+                BankReconciliation,
+                BankReconciliation.id == BankReconciliationLine.reconciliation_id,
+            )
+            .where(
+                BankReconciliationLine.journal_line_id == journal_line_id,
+                BankReconciliationLine.reconciliation_id != reconciliation_id,
+                BankReconciliation.status == STATUS_IN_PROGRESS,
+            )
+        )
+    ).first()
+    if other_active is not None:
+        raise BankReconciliationError(
+            f"Journal line {journal_line_id} is already linked to another "
+            f"active reconciliation ({other_active[0]})"
+        )
 
     rline = BankReconciliationLine(
         reconciliation_id=reconciliation_id,

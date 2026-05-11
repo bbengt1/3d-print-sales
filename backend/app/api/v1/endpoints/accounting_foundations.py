@@ -161,6 +161,10 @@ async def update_rje(rje_id: uuid.UUID, body: RJEUpdate, user: CurrentUser, db: 
         credit_total = sum((Decimal(str(l["amount"])) for l in payload["lines_template"] if l["entry_type"] == "credit"), Decimal("0"))
         if debit_total != credit_total:
             raise HTTPException(status_code=400, detail="Template debits must equal credits")
+        # #282 P1 (Codex review): JSON column needs JSON-safe primitives — UUID/Decimal
+        # would otherwise reach SQLAlchemy's JSON serializer and 500 at commit. Mirror
+        # create_rje by re-dumping each line in JSON mode before persisting.
+        payload["lines_template"] = [l.model_dump(mode="json") for l in body.lines_template]
     for k, v in payload.items():
         setattr(r, k, v)
     await db.commit()
@@ -297,7 +301,17 @@ async def post_starting_balances_csv(
                 status_code=400, detail=f"Invalid amount for {code}: {r.get('amount')!r}"
             )
         if target_as_of is None and r.get("as_of"):
-            target_as_of = date.fromisoformat(r["as_of"].strip())
+            as_of_value = r["as_of"].strip()
+            try:
+                target_as_of = date.fromisoformat(as_of_value)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Invalid as_of for {code}: {as_of_value!r}; "
+                        "expected ISO 8601 date (YYYY-MM-DD)"
+                    ),
+                )
         balances.append({"account_id": by_code[code].id, "amount": amt})
 
     if target_as_of is None:

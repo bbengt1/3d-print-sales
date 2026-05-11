@@ -131,10 +131,30 @@ async def upsert_values(
     defs = await list_definitions(db, scope=scope, include_inactive=False)
     by_key = {d.key: d for d in defs}
 
-    # Required-field check
+    # Required-field check: a required field must have a non-empty value.
+    # Either the caller submits a non-empty value in this payload, or there
+    # must already be a non-empty value stored. Submitting None / "" / [] for
+    # a required key is rejected so required fields cannot be silently
+    # cleared (or created empty).
+    def _is_empty(v: Any) -> bool:
+        if v is None:
+            return True
+        if isinstance(v, str) and v == "":
+            return True
+        if isinstance(v, (list, tuple, set, dict)) and len(v) == 0:
+            return True
+        return False
+
     for d in defs:
-        if d.is_required:
-            if d.key not in values and not await _has_existing_value(db, d.id, record_id):
+        if not d.is_required:
+            continue
+        if d.key in values:
+            if _is_empty(values[d.key]):
+                raise CustomFieldError(
+                    f"Required custom field cannot be empty: {d.key}"
+                )
+        else:
+            if not await _has_existing_value(db, d.id, record_id):
                 raise CustomFieldError(f"Required custom field missing: {d.key}")
 
     # Coerce + upsert
@@ -168,15 +188,24 @@ async def upsert_values(
 
 
 async def _has_existing_value(db: AsyncSession, definition_id: uuid.UUID, record_id: uuid.UUID) -> bool:
+    """Return True iff a non-empty value is already stored for this definition/record.
+
+    A row whose stored ``value`` is NULL or an empty string is treated as
+    missing so that required-field validation cannot be satisfied by an
+    empty placeholder row left behind from a previous write.
+    """
     row = (
         await db.execute(
-            select(CustomFieldValue.id).where(
+            select(CustomFieldValue.value).where(
                 CustomFieldValue.definition_id == definition_id,
                 CustomFieldValue.record_id == record_id,
             )
         )
     ).first()
-    return row is not None
+    if row is None:
+        return False
+    stored = row[0]
+    return stored is not None and stored != ""
 
 
 async def read_values(
