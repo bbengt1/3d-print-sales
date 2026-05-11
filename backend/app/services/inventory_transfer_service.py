@@ -1,19 +1,19 @@
-"""Inventory transfer lifecycle (#245 Phase 1).
+"""Inventory transfer lifecycle (#245 Phase 1 → #318 Phase 2).
 
-Phase 1 covers location CRUD + the transfer state machine. It does not
-yet wire decrement of source-side qty or increment of destination-side qty
-into existing inventory tracking — material/supply/product on-hand stays
-in the existing single-bucket model. The transfer document is persisted
-and reportable, which is the operationally important step; making the
-decrements per-location is Phase 2 (and requires the per-row backfill of
-material_receipt.location_id and inventory_transaction.location_id that's
-out of scope for this PR).
+Phase 1 added the state machine without touching per-location stock.
+Phase 2 wires product lines through ``product_location_stock_service``:
+shipping decrements source on-hand, receiving increments destination
+on-hand, and cancelling while in-transit restores the source.
+
+Material and supply lines still flow through the document only; their
+per-location SoT is a separate follow-up.
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,7 @@ from app.models.inventory_location import (
     InventoryTransfer,
     InventoryTransferLine,
 )
+from app.services import product_location_stock_service as pls
 from app.services.reference_number_service import next_number
 
 
@@ -94,10 +95,36 @@ async def create_transfer(
     return transfer
 
 
+async def _product_lines(db: AsyncSession, transfer_id: uuid.UUID) -> list[InventoryTransferLine]:
+    return (
+        (
+            await db.execute(
+                select(InventoryTransferLine).where(
+                    InventoryTransferLine.transfer_id == transfer_id,
+                    InventoryTransferLine.kind == "product",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
 async def ship_transfer(db: AsyncSession, transfer_id: uuid.UUID) -> InventoryTransfer:
     transfer = await _require_transfer(db, transfer_id)
     if transfer.status != STATUS_PENDING:
         raise InventoryTransferError(f"Cannot ship transfer in status {transfer.status}")
+
+    for line in await _product_lines(db, transfer.id):
+        if not line.product_id:
+            continue
+        await pls.adjust(
+            db,
+            product_id=line.product_id,
+            location_id=transfer.from_location_id,
+            delta=-Decimal(line.quantity),
+        )
+
     transfer.status = STATUS_IN_TRANSIT
     transfer.shipped_at = datetime.now(timezone.utc)
     await db.flush()
@@ -108,6 +135,17 @@ async def receive_transfer(db: AsyncSession, transfer_id: uuid.UUID) -> Inventor
     transfer = await _require_transfer(db, transfer_id)
     if transfer.status != STATUS_IN_TRANSIT:
         raise InventoryTransferError(f"Cannot receive transfer in status {transfer.status}")
+
+    for line in await _product_lines(db, transfer.id):
+        if not line.product_id:
+            continue
+        await pls.adjust(
+            db,
+            product_id=line.product_id,
+            location_id=transfer.to_location_id,
+            delta=Decimal(line.quantity),
+        )
+
     transfer.status = STATUS_COMPLETED
     transfer.received_at = datetime.now(timezone.utc)
     await db.flush()
@@ -118,6 +156,19 @@ async def cancel_transfer(db: AsyncSession, transfer_id: uuid.UUID) -> Inventory
     transfer = await _require_transfer(db, transfer_id)
     if transfer.status not in (STATUS_PENDING, STATUS_IN_TRANSIT):
         raise InventoryTransferError(f"Cannot cancel transfer in status {transfer.status}")
+
+    if transfer.status == STATUS_IN_TRANSIT:
+        # Release the source-side hold that ship_transfer applied.
+        for line in await _product_lines(db, transfer.id):
+            if not line.product_id:
+                continue
+            await pls.adjust(
+                db,
+                product_id=line.product_id,
+                location_id=transfer.from_location_id,
+                delta=Decimal(line.quantity),
+            )
+
     transfer.status = STATUS_CANCELLED
     transfer.cancelled_at = datetime.now(timezone.utc)
     await db.flush()

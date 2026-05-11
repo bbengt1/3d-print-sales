@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -98,3 +99,47 @@ class InventoryTransferLine(Base):
     )
 
     transfer = relationship("InventoryTransfer", back_populates="lines")
+
+
+class ProductLocationStock(Base):
+    """Per-(product, location) on-hand quantity — source of truth for
+    multi-location inventory (#318 Phase 2).
+
+    `Product.stock_qty` is kept in sync as the aggregate across locations
+    for backward compatibility, but allocation decisions (which location
+    fulfills a sale, which is depleted by a transfer ship, which has free
+    stock to project a receive into) read this table.
+
+    `on_hand_qty` excludes in-transit holds: when a transfer ships, the
+    source's on-hand drops immediately; the destination's on-hand only
+    rises when the transfer is received. Projected-available at a
+    destination must add `inventory_transfers` rows in `in_transit` status
+    targeting that location.
+    """
+
+    __tablename__ = "product_location_stock"
+    __table_args__ = (
+        UniqueConstraint("product_id", "location_id", name="uq_product_location_stock"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    # Locations use RESTRICT: deleting a location should never silently
+    # discard per-location on-hand and leave the Product.stock_qty
+    # aggregate stale. The HTTP delete endpoint refuses to drop a
+    # location holding stock, and this FK is the same guarantee at the DB
+    # level.
+    location_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("inventory_locations.id", ondelete="RESTRICT"), index=True
+    )
+    on_hand_qty: Mapped[Decimal] = mapped_column(Numeric(14, 4), default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )

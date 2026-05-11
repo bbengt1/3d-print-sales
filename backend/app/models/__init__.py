@@ -16,6 +16,7 @@ from app.models.inventory_location import (  # noqa: F401
     InventoryLocation,
     InventoryTransfer,
     InventoryTransferLine,
+    ProductLocationStock,
 )
 from app.models.product_bom_item import ProductBOMItem  # noqa: F401
 from app.models.production_order import (  # noqa: F401

@@ -10,7 +10,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
-from app.models.inventory_location import InventoryLocation, InventoryTransfer, InventoryTransferLine
+from app.models.inventory_location import (
+    InventoryLocation,
+    InventoryTransfer,
+    InventoryTransferLine,
+    ProductLocationStock,
+)
+from app.services import product_location_stock_service as pls
 from app.services.inventory_transfer_service import (
     InventoryTransferError,
     cancel_transfer,
@@ -95,6 +101,23 @@ async def delete_location(location_id: uuid.UUID, user: CurrentUser, db: DB):
     ).first()
     if referenced:
         raise HTTPException(status_code=400, detail="Location is referenced by transfers; deactivate it instead")
+    # #318 P2: also block when this location is the SoT for any product
+    # on-hand. The FK is ondelete=RESTRICT so the DB would reject it
+    # anyway, but raising 400 with a clear message beats a generic
+    # IntegrityError at the operator.
+    stocked = (
+        await db.execute(
+            select(ProductLocationStock.id).where(
+                ProductLocationStock.location_id == location_id,
+                ProductLocationStock.on_hand_qty != 0,
+            ).limit(1)
+        )
+    ).first()
+    if stocked:
+        raise HTTPException(
+            status_code=400,
+            detail="Location holds product stock; transfer it out or deactivate the location instead",
+        )
     await db.delete(loc)
     await db.commit()
 
@@ -374,3 +397,102 @@ async def set_default_fulfillment_location(
         row.value = new_val
     await db.commit()
     return DefaultFulfillmentLocationResponse(location_id=body.location_id)
+
+
+# ---------- #318 P2: per-location stock SoT + prevent-negative-stock toggle ----------
+
+
+class LocationStockRow(BaseModel):
+    product_id: uuid.UUID
+    on_hand_qty: Decimal
+    in_transit_to_qty: Decimal
+    projected_qty: Decimal
+
+
+@router.get(
+    "/locations/{location_id}/product-stock",
+    response_model=list[LocationStockRow],
+    summary="#318 P2: per-product on-hand at this location from the SoT",
+)
+async def location_product_stock(location_id: uuid.UUID, user: CurrentUser, db: DB):
+    """Returns the per-(product, location) source-of-truth on-hand,
+    plus the in-transit qty arriving from `in_transit` transfers. The
+    snapshot endpoint above derives from completed transfers only and
+    is retained for back-compat; this endpoint is the authoritative
+    read.
+    """
+    loc = (
+        await db.execute(select(InventoryLocation).where(InventoryLocation.id == location_id))
+    ).scalar_one_or_none()
+    if loc is None:
+        raise HTTPException(status_code=404, detail="Location not found")
+
+    rows = await pls.stock_by_product_at_location(db, location_id=location_id)
+    out: list[LocationStockRow] = []
+    for r in rows:
+        in_transit = await pls.in_transit_to(
+            db, product_id=r.product_id, location_id=location_id
+        )
+        out.append(
+            LocationStockRow(
+                product_id=r.product_id,
+                on_hand_qty=Decimal(r.on_hand_qty),
+                in_transit_to_qty=in_transit,
+                projected_qty=Decimal(r.on_hand_qty) + in_transit,
+            )
+        )
+    return out
+
+
+_PREVENT_NEG_KEY = "inventory.prevent_negative_stock"
+
+
+class PreventNegativeStockResponse(BaseModel):
+    enabled: bool
+
+
+class PreventNegativeStockUpdate(BaseModel):
+    enabled: bool
+
+
+@router.get(
+    "/prevent-negative-stock",
+    response_model=PreventNegativeStockResponse,
+    summary="#318 P2: read the prevent-negative-stock toggle",
+)
+async def get_prevent_negative_stock(user: CurrentUser, db: DB):
+    from app.models.setting import Setting
+
+    row = (
+        await db.execute(select(Setting).where(Setting.key == _PREVENT_NEG_KEY))
+    ).scalar_one_or_none()
+    enabled = bool(row and (row.value or "").strip().lower() == "true")
+    return PreventNegativeStockResponse(enabled=enabled)
+
+
+@router.put(
+    "/prevent-negative-stock",
+    response_model=PreventNegativeStockResponse,
+    summary="#318 P2: set the prevent-negative-stock toggle (hard-block sales when on)",
+)
+async def set_prevent_negative_stock(
+    body: PreventNegativeStockUpdate, user: CurrentUser, db: DB
+):
+    from app.models.setting import Setting
+
+    row = (
+        await db.execute(select(Setting).where(Setting.key == _PREVENT_NEG_KEY))
+    ).scalar_one_or_none()
+    new_val = "true" if body.enabled else "false"
+    if row is None:
+        db.add(
+            Setting(
+                key=_PREVENT_NEG_KEY,
+                value=new_val,
+                notes="When true, sales that would drive per-location on-hand below zero are blocked; when false they are warned but allowed.",
+            )
+        )
+    else:
+        row.value = new_val
+    await db.commit()
+    return PreventNegativeStockResponse(enabled=body.enabled)

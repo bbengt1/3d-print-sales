@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-10 (afternoon) — Manager.io gap walk substantively complete + 25 P1 follow-up fixes (#360–#384) landed. 5 trackers open; no Tier 1 / Tier 2 items remain. 60+ PRs landed since 2026-05-09.
+> **Last reviewed:** 2026-05-11 — #318 multi-location Phase 2 deeper SoT in flight (ProductLocationStock + per-location decrement + soft-warn + in-transit, PR #389). Prior: 2026-05-10 afternoon Manager.io gap walk + 25 P1 follow-ups (#360–#384) + ops fix #388.
 
 ---
 
