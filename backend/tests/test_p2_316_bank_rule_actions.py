@@ -175,6 +175,39 @@ async def test_create_receipt_skipped_without_customer(db_session):
 
 
 @pytest.mark.asyncio
+async def test_from_line_rejects_oversized_counterparty(client, auth_headers, db_session):
+    """Codex P2: counterparty_name is capped at 200 chars in the DB; the
+    from-line payload must reject anything longer with a 4xx rather than
+    leak a 500 at commit time.
+    """
+    await _ensure_ar_ap(db_session)
+    bank = await _bank(db_session)
+    imp = await import_statement(
+        db_session,
+        account_id=bank.id,
+        source_format="ofx",
+        source_filename="x.ofx",
+        content=SAMPLE_OFX.encode(),
+    )
+    await db_session.commit()
+    line = (
+        await db_session.execute(select(StatementLine).where(StatementLine.import_id == imp.id))
+    ).scalars().first()
+
+    r = await client.post(
+        "/api/v1/banking/rules/from-line",
+        headers=auth_headers,
+        json={
+            "statement_line_id": str(line.id),
+            "name": "x",
+            "action": "ignore",
+            "counterparty_name": "A" * 201,
+        },
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_preview_surfaces_target_label(db_session):
     await _ensure_ar_ap(db_session)
     bank = await _bank(db_session, code="1010", name="Operating")

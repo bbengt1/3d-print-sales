@@ -58,7 +58,7 @@ class RuleUpdate(BaseModel):
         "create_inter_account_transfer",
     ] | None = None
     category_account_id: uuid.UUID | None = None
-    counterparty_name: str | None = None
+    counterparty_name: str | None = Field(None, max_length=200)
     customer_id: uuid.UUID | None = None
     vendor_id: uuid.UUID | None = None
     transfer_to_account_id: uuid.UUID | None = None
@@ -210,7 +210,7 @@ class CreateFromLineBody(BaseModel):
     customer_id: uuid.UUID | None = None
     vendor_id: uuid.UUID | None = None
     transfer_to_account_id: uuid.UUID | None = None
-    counterparty_name: str | None = None
+    counterparty_name: str | None = Field(None, max_length=200)
 
 
 @router.post(
