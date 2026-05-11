@@ -101,6 +101,22 @@ async def delete_location(location_id: uuid.UUID, user: CurrentUser, db: DB):
     ).first()
     if referenced:
         raise HTTPException(status_code=400, detail="Location is referenced by transfers; deactivate it instead")
+    # #318 P2: also block when this location is the SoT for any product
+    # on-hand. The FK is ondelete=CASCADE so a raw delete would silently
+    # drop the rows and leave Product.stock_qty out of sync.
+    stocked = (
+        await db.execute(
+            select(ProductLocationStock.id).where(
+                ProductLocationStock.location_id == location_id,
+                ProductLocationStock.on_hand_qty != 0,
+            ).limit(1)
+        )
+    ).first()
+    if stocked:
+        raise HTTPException(
+            status_code=400,
+            detail="Location holds product stock; transfer it out or deactivate the location instead",
+        )
     await db.delete(loc)
     await db.commit()
 

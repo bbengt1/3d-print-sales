@@ -282,6 +282,73 @@ async def test_product_stock_endpoint_reports_in_transit(client: AsyncClient, au
 
 
 @pytest.mark.asyncio
+async def test_refund_uses_pinned_location_even_after_default_changes(db_session):
+    """Codex P1: refund must restore to the location originally deducted
+    from, even if the default-fulfillment-location setting changes after
+    the sale.
+    """
+    import datetime as dt
+    a, b = await _two_locs(db_session)
+    p = await _product(db_session, stock=0)
+    await pls.adjust(db_session, product_id=p.id, location_id=a.id, delta=Decimal(10))
+    db_session.add(Setting(key=pls.DEFAULT_FULFILLMENT_KEY, value=str(a.id)))
+    await db_session.flush()
+
+    sale = Sale(sale_number="S-PIN-1", date=dt.date.today(), status="pending")
+    db_session.add(sale)
+    await db_session.flush()
+    item = SaleItem(
+        sale_id=sale.id,
+        product_id=p.id,
+        description="Widget",
+        quantity=3,
+        unit_price=Decimal("10"),
+        line_total=Decimal("30"),
+        unit_cost=Decimal("3"),
+    )
+    db_session.add(item)
+    await db_session.flush()
+
+    await deduct_inventory_for_sale(db_session, sale.id, [item])
+    # The deduction should have pinned the resolved location onto the sale.
+    await db_session.refresh(sale)
+    assert sale.fulfillment_location_id == a.id
+
+    # Operator flips the default to a different location.
+    setting = (
+        await db_session.execute(select(Setting).where(Setting.key == pls.DEFAULT_FULFILLMENT_KEY))
+    ).scalar_one()
+    setting.value = str(b.id)
+    await db_session.flush()
+
+    class _SaleLike:
+        def __init__(self, sale, items):
+            self.id = sale.id
+            self.sale_number = sale.sale_number
+            self.fulfillment_location_id = sale.fulfillment_location_id
+            self.items = items
+
+    await restore_inventory_for_refund(db_session, _SaleLike(sale, [item]))
+    assert await pls.get_on_hand(db_session, product_id=p.id, location_id=a.id) == Decimal(10)
+    assert await pls.get_on_hand(db_session, product_id=p.id, location_id=b.id) == Decimal(0)
+
+
+@pytest.mark.asyncio
+async def test_delete_stocked_location_blocked(client: AsyncClient, auth_headers, db_session):
+    """Codex P1: deleting a location holding SoT stock must be refused,
+    not silently cascade and orphan Product.stock_qty.
+    """
+    a, _ = await _two_locs(db_session)
+    p = await _product(db_session, stock=0)
+    await pls.adjust(db_session, product_id=p.id, location_id=a.id, delta=Decimal(5))
+    await db_session.commit()
+
+    r = await client.delete(f"/api/v1/inventory/locations/{a.id}", headers=auth_headers)
+    assert r.status_code == 400
+    assert "stock" in r.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
 async def test_prevent_negative_stock_toggle_round_trip(client: AsyncClient, auth_headers, db_session):
     r0 = await client.get("/api/v1/inventory/prevent-negative-stock", headers=auth_headers)
     assert r0.status_code == 200

@@ -254,6 +254,11 @@ async def deduct_inventory_for_sale(
     location_id = await pls.resolve_fulfillment_location_id(
         db, sale_fulfillment_location_id=sale.fulfillment_location_id if sale else None
     )
+    # Pin the resolved location to the sale so refunds restore inventory to
+    # exactly the location it was deducted from, even if the operator later
+    # changes the default-fulfillment-location setting.
+    if sale and sale.fulfillment_location_id is None:
+        sale.fulfillment_location_id = location_id
 
     warnings: list[pls.StockWarning] = []
     for item in items:

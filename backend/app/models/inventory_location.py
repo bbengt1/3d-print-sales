@@ -126,8 +126,13 @@ class ProductLocationStock(Base):
     product_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("products.id", ondelete="CASCADE"), index=True
     )
+    # Locations use RESTRICT: deleting a location should never silently
+    # discard per-location on-hand and leave the Product.stock_qty
+    # aggregate stale. The HTTP delete endpoint refuses to drop a
+    # location holding stock, and this FK is the same guarantee at the DB
+    # level.
     location_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("inventory_locations.id", ondelete="CASCADE"), index=True
+        ForeignKey("inventory_locations.id", ondelete="RESTRICT"), index=True
     )
     on_hand_qty: Mapped[Decimal] = mapped_column(Numeric(14, 4), default=0)
     created_at: Mapped[datetime] = mapped_column(

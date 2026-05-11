@@ -29,7 +29,10 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(["product_id"], ["products.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["location_id"], ["inventory_locations.id"], ondelete="CASCADE"),
+        # RESTRICT on locations: deleting a stocked location must be an
+        # explicit operator action via the API path that also keeps
+        # Product.stock_qty in sync (#318 P2).
+        sa.ForeignKeyConstraint(["location_id"], ["inventory_locations.id"], ondelete="RESTRICT"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("product_id", "location_id", name="uq_product_location_stock"),
     )
