@@ -2,7 +2,7 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-10 — Manager.io gap walk substantively complete. 5 trackers open; no Tier 1 / Tier 2 items remain. Total 629 backend tests passing. 60+ PRs landed since 2026-05-09.
+> **Last reviewed:** 2026-05-11 — #318 multi-location Phase 2 deeper SoT shipping (ProductLocationStock + per-location sale decrement + soft-warn + in-transit hold). 4 P2 trackers remain. 638 backend tests passing.
 
 ---
 

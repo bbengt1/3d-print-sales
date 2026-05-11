@@ -13,6 +13,7 @@ from app.models.sale_item import SaleItem
 from app.models.sales_channel import SalesChannel
 from app.models.product import Product
 from app.models.inventory_transaction import InventoryTransaction
+from app.services import product_location_stock_service as pls
 from app.services.inventory_accounting_service import post_cogs_for_sale
 
 
@@ -239,8 +240,22 @@ async def deduct_inventory_for_sale(
     sale_id: uuid.UUID,
     items: list[SaleItem],
     user_id: uuid.UUID | None = None,
-) -> None:
-    """Deduct product stock for each sale item with a product_id."""
+) -> list[pls.StockWarning]:
+    """Deduct product stock for each sale item with a product_id.
+
+    Routes the decrement through the per-(product, location) source of
+    truth (#318 P2). The location is resolved from the sale's
+    ``fulfillment_location_id`` (falling back to the global default
+    setting, then the ``Default`` location). Returns the list of stock
+    warnings emitted by the per-location adjuster so the route can
+    surface them to operators.
+    """
+    sale = (await db.execute(select(Sale).where(Sale.id == sale_id))).scalar_one_or_none()
+    location_id = await pls.resolve_fulfillment_location_id(
+        db, sale_fulfillment_location_id=sale.fulfillment_location_id if sale else None
+    )
+
+    warnings: list[pls.StockWarning] = []
     for item in items:
         if not item.product_id:
             continue
@@ -254,15 +269,28 @@ async def deduct_inventory_for_sale(
             type="sale",
             quantity=-item.quantity,
             unit_cost=item.unit_cost,
-            notes=f"Sale {sale_id}",
+            notes=f"Sale {sale_id} @ location {location_id}",
             created_by=user_id,
         )
         db.add(txn)
-        product.stock_qty = max(0, product.stock_qty - item.quantity)
 
-    sale = (await db.execute(select(Sale).where(Sale.id == sale_id))).scalar_one_or_none()
+        try:
+            _, warning = await pls.adjust(
+                db,
+                product_id=item.product_id,
+                location_id=location_id,
+                delta=Decimal(-item.quantity),
+            )
+        except pls.NegativeStockBlockedError as exc:
+            # Reuse the existing checkout-blocking exception type so route
+            # handlers don't need a separate catch.
+            raise InsufficientStockError(str(exc)) from exc
+        if warning:
+            warnings.append(warning)
+
     if sale:
         await post_cogs_for_sale(db, sale, items)
+    return warnings
 
 
 async def restore_inventory_for_refund(
@@ -270,7 +298,17 @@ async def restore_inventory_for_refund(
     sale: Sale,
     user_id: uuid.UUID | None = None,
 ) -> None:
-    """Restore product stock when a sale is refunded."""
+    """Restore product stock when a sale is refunded.
+
+    Returns inventory to the same location the sale was fulfilled from
+    (#318 P2). If the sale had no explicit fulfillment location, we use
+    the same resolver as the original decrement so the refund lands
+    where the deduction was applied.
+    """
+    location_id = await pls.resolve_fulfillment_location_id(
+        db, sale_fulfillment_location_id=sale.fulfillment_location_id
+    )
+
     for item in sale.items:
         if not item.product_id:
             continue
@@ -284,8 +322,13 @@ async def restore_inventory_for_refund(
             type="return",
             quantity=item.quantity,
             unit_cost=item.unit_cost,
-            notes=f"Refund for sale {sale.sale_number}",
+            notes=f"Refund for sale {sale.sale_number} @ location {location_id}",
             created_by=user_id,
         )
         db.add(txn)
-        product.stock_qty += item.quantity
+        await pls.adjust(
+            db,
+            product_id=item.product_id,
+            location_id=location_id,
+            delta=Decimal(item.quantity),
+        )

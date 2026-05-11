@@ -1,28 +1,67 @@
-# Inventory Locations + Transfers (Phase 1)
+# Inventory Locations + Transfers
 
-Operators can model physical/logical inventory buckets (workshop, packaging, consignment, marketplace FBA) and record transfers between them. #245.
+Operators model physical/logical inventory buckets (workshop, packaging, consignment, marketplace FBA) and record transfers between them. Originally #245 (Phase 1); per-location stock + fulfillment routing extended in #318 (Phase 2).
 
-## Phase 1 scope (this PR)
+## Phase 1 — locations + transfer document
 
-- **`InventoryLocation` model + Default seed.** Migration creates the table and seeds a `Default` location so single-location operators see no behavior change.
+- **`InventoryLocation` model + Default seed.** A `Default` location is auto-seeded so single-location operators see no behavior change.
 - **`InventoryTransfer` + `InventoryTransferLine` models.** Lines accept material/supply/product kinds with quantity.
 - **Transfer lifecycle**: `pending → in_transit (ship) → completed (receive)`. Cancellation allowed from `pending` or `in_transit`.
 - **Allocator scope**: `inventory_transfer` registered with format `IT-{year}-{value:04d}` in #243's allocator.
 - **No GL impact** — transfers are operational, not financial.
 - **CRUD endpoints**: `/api/v1/inventory/locations`, `/api/v1/inventory/transfers`, plus `ship`, `receive`, `cancel`.
 
-## Phase 2 follow-ups (deferred)
+## Phase 2 — per-location stock SoT + sale fulfillment routing
 
-Each could be its own issue when prioritized:
+### `ProductLocationStock` — source of truth
 
-1. **Per-location qty decrement.** Phase 1 records the transfer document but does not yet decrement source-side qty or increment destination-side qty in the existing inventory tracking. Material/supply/product on-hand stays in the global single-bucket model. Requires backfilling `material_receipt.location_id` and `inventory_transaction.location_id` on existing rows, plus rewiring consumption/sale paths to source from a chosen location.
-2. **Sale-side fulfillment-from-location.** `Sale.fulfillment_location_id` (with channel-level default via `SalesChannel.default_fulfillment_location_id` and a global `default_fulfillment_location_id` setting). Auto-pick on marketplace orders.
-3. **Soft-warn on negative stock** with a `prevent_negative_stock` settings toggle (default off).
-4. **Frontend**: `/inventory/transfers` route + locations CRUD UI under `/admin`. Per-location qty column on inventory list pages.
-5. **In-transit hold computation** — the available qty at a source location subtracts in-transit holds.
-6. **Multi-location reorder points / min-stock thresholds.**
-7. **Per-location physical addresses** (for shipping to/from).
+- New table `product_location_stock` keys `(product_id, location_id)` and holds the `on_hand_qty` for that pair.
+- `Product.stock_qty` is kept in sync as the aggregate sum across locations so existing single-bucket reads keep working.
+- Migration `20260511_01_product_location_stock.py` backfills each product's existing `stock_qty` to the seeded `Default` location.
+
+### Movement rules
+
+| Event | Source on-hand | Destination on-hand |
+| --- | --- | --- |
+| Transfer **ship** | decrements immediately | unchanged (in-transit only) |
+| Transfer **receive** | unchanged | increments |
+| Transfer **cancel** while `in_transit` | restored | unchanged |
+| Transfer **cancel** while `pending` | unchanged | unchanged |
+| Sale fulfillment | decrements resolved fulfillment location | — |
+| Refund / cancel | restored to original fulfillment location | — |
+
+`in_transit_to_qty` is computed live from `inventory_transfer_lines` joined to transfers in `in_transit` status; it is never stored as a separate hold.
+
+### Fulfillment location resolution
+
+`product_location_stock_service.resolve_fulfillment_location_id` returns, in order:
+
+1. `Sale.fulfillment_location_id` if set.
+2. Setting `inventory.default_fulfillment_location_id` (managed via `PUT /api/v1/inventory/default-fulfillment-location`).
+3. The auto-seeded `Default` location (created on demand).
+
+### Negative-stock policy
+
+- **Soft-warn (default).** Decrements that drive projected on-hand below zero return a `StockWarning` record from `pls.adjust`; callers may surface it. Sales still complete.
+- **Hard-block.** Setting `inventory.prevent_negative_stock = "true"` (managed via `PUT /api/v1/inventory/prevent-negative-stock`) turns the same condition into `NegativeStockBlockedError`. Sales routes raise that as the existing `InsufficientStockError`, so the route layer needs no change.
+
+### Endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/v1/inventory/locations/{id}/product-stock` | Per-product on-hand + in-transit-to + projected at this location (SoT). |
+| GET | `/api/v1/inventory/locations/{id}/stock-snapshot` | Back-compat snapshot derived from completed transfers (Phase 1). |
+| GET / PUT | `/api/v1/inventory/default-fulfillment-location` | Read/set the fallback fulfillment location. |
+| GET / PUT | `/api/v1/inventory/prevent-negative-stock` | Read/set the hard-block toggle. |
+
+## Phase 2 follow-ups (still deferred)
+
+- **Materials / supplies per-location SoT.** Transfer documents already carry material/supply lines, but only product lines feed `ProductLocationStock`. Material consumption stays single-bucket until this lands.
+- **Frontend.** Multi-location surfaces (`/inventory/transfers` UI, per-location qty column on inventory list pages, fulfillment-location picker on sale form) — backend is ready; UI is a follow-up.
+- **Multi-location reorder points / min-stock thresholds.**
+- **Per-location physical addresses** (for shipping to/from).
+- **Channel-level default fulfillment location** (`SalesChannel.default_fulfillment_location_id`) — currently the only fallback is the global setting.
 
 ## Allocator note
 
-The `inventory_transfer` scope is now registered in `app.services.reference_number_service.FORMATS`. New scopes should follow the same pattern — one line in `FORMATS` and the parser will accept it everywhere.
+The `inventory_transfer` scope is registered in `app.services.reference_number_service.FORMATS`. New scopes follow the same pattern — one line in `FORMATS` and the parser accepts it everywhere.
