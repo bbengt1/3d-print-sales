@@ -1,11 +1,15 @@
-# Divisions + Projects (Phase 1)
+# Divisions + Projects
 
-Two reporting dimensions for segmentation. Phase 1 ships the master data + CRUD; cross-table FK additions on bills/invoices/sales/journal_entries deferred to Phase 2.
+Two reporting dimensions for segmentation: a fixed cost center (`Division`) and a cross-cutting tag (`Project`). Phase 1 shipped the master data + CRUD; Phase 2 (#328) wired FKs across docs, the P&L by division/project filter, and the Job → Project rollup.
 
 ## Models
 
 - **`Division`** — fixed cost center. A record has at most one. Use cases: Wholesale / Marketplace / Custom commissions.
 - **`Project`** — cross-cutting tag, ad-hoc, time-bounded. Use cases: a specific custom commission, a launch, a one-off promo.
+
+## Cross-table FKs
+
+Optional `division_id` + `project_id` (both nullable) live on: `invoices`, `bills`, `sales`, `journal_entries`, `quotes`, `expense_claims`. `Job` carries an optional `project_id` only (no division — division is a cost-center concept that doesn't fit jobs).
 
 ## API
 
@@ -16,9 +20,13 @@ Two reporting dimensions for segmentation. Phase 1 ships the master data + CRUD;
 | `GET` | `/api/v1/projects` | List active by default; `?include_archived=true` for full. |
 | `POST/PATCH/DELETE` | `/api/v1/projects[/{id}]` | Standard CRUD; status `active|archived`. |
 
-## Phase 2 follow-ups
+## Reporting filters
 
-- **Optional FKs** (`division_id`, `project_id`) on `bill`, `invoice`, `sale`, `journal_entry`, `expense_claim`, `quote`. Each nullable.
-- **Job link** to project (`Job.project_id` — one-way, optional).
-- **Report filtering** by division and by project on P&L, Balance Sheet (#249), Sales report, Cash Flow.
-- **Frontend** master-data CRUD + record-form pickers + report filter dropdowns.
+`GET /api/v1/reports/profit-and-loss` accepts `division_id` and `project_id` query params. The filter threads through `_posted_journal_balances` so only journal entries tagged with the selected dimension(s) are aggregated.
+
+## Phase 2 follow-ups (still deferred)
+
+- **Cash-basis P&L filter** — division/project filter today applies to the accrual report only.
+- **Per-division Balance Sheet** — same dimension threading on `/reports/balance-sheet`.
+- **Sales report and Cash Flow** dimension filters.
+- **Frontend** record-form pickers + report filter dropdowns.
