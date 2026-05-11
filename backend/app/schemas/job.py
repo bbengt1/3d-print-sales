@@ -34,6 +34,7 @@ class JobCreate(BaseModel):
     target_margin_pct: Decimal = Field(Decimal(40), ge=0, le=99, examples=[40])
     product_id: uuid.UUID | None = None
     printer_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
     status: JobStatus = Field(JobStatus.completed, examples=["completed"])
 
 
@@ -54,6 +55,7 @@ class JobUpdate(BaseModel):
     target_margin_pct: Decimal | None = Field(None, ge=0, le=99)
     product_id: uuid.UUID | None = None
     printer_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
     status: JobStatus | None = None
 
 
@@ -126,6 +128,7 @@ class JobResponse(BaseModel):
     product_id: uuid.UUID | None = None
     printer_id: uuid.UUID | None = None
     printer: PrinterResponse | None = None
+    project_id: uuid.UUID | None = None
     inventory_added: bool = False
     status: str
     created_at: datetime.datetime | None = None

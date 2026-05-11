@@ -61,6 +61,11 @@ class Job(Base):
     inventory_added: Mapped[bool] = mapped_column(Boolean, default=False)
 
     status: Mapped[str] = mapped_column(String(20), default="completed")
+    # #328 P2: optional rollup link so existing Job records map onto the
+    # Project hierarchy for cost-center reporting.
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("projects.id"), nullable=True, index=True
+    )
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
