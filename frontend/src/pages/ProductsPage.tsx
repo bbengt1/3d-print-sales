@@ -11,6 +11,7 @@ import TableToolbar from '@/components/data/TableToolbar';
 import SearchInput from '@/components/data/SearchInput';
 import Pagination from '@/components/data/Pagination';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { formatCurrency } from '@/lib/utils';
@@ -25,11 +26,12 @@ export default function ProductsPage() {
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
   const labelSettings = useLabelSettings();
 
   const { data, isLoading, refetch } = useQuery<PaginatedProducts>({
-    queryKey: ['products', search, sortKey, sortDir, page, pageSize],
+    queryKey: ['products', search, sortKey, sortDir, page, pageSize, includeArchived],
     queryFn: () =>
       api
         .get('/products', {
@@ -37,6 +39,10 @@ export default function ProductsPage() {
             search: search || undefined,
             sort_by: sortKey || undefined,
             sort_dir: sortDir,
+            // Default view hides archived; the "Show archived" toggle in
+            // the toolbar drops the filter entirely so operators can see
+            // both active and archived rows in one list.
+            is_active: includeArchived ? undefined : true,
             skip: page * pageSize,
             limit: pageSize,
           },
@@ -86,9 +92,10 @@ export default function ProductsPage() {
     setPage(0);
   };
 
-  const activeFilters = [search].filter(Boolean).length;
+  const activeFilters = [search, includeArchived].filter(Boolean).length;
   const clearFilters = () => {
     setSearch('');
+    setIncludeArchived(false);
     setPage(0);
   };
 
@@ -265,6 +272,17 @@ export default function ProductsPage() {
                 }}
                 placeholder="Search by name, SKU, or UPC…"
               />
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox
+                  checked={includeArchived}
+                  onCheckedChange={(checked) => {
+                    setIncludeArchived(checked === true);
+                    setPage(0);
+                  }}
+                  aria-label="Show archived products"
+                />
+                Show archived
+              </label>
             </TableToolbar>
           }
           footer={
