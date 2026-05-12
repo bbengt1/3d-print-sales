@@ -51,7 +51,7 @@ async def list_products(
     ),
     sort_dir: str = Query("asc", description="Sort direction", pattern="^(asc|desc)$"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Max records to return"),
+    limit: int = Query(50, ge=1, le=500, description="Max records to return"),
 ):
     base = select(Product)
     if is_active is not None:
