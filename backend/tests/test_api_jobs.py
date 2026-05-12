@@ -515,3 +515,174 @@ async def test_calculate_preview(client, seed_settings, seed_rates, seed_materia
     assert data["total_pieces"] == 1
     assert data["total_cost"] > 0
     assert data["net_profit"] > 0
+
+
+@pytest.mark.asyncio
+async def test_create_job_with_mixed_plates(client, seed_settings, seed_rates, seed_material, auth_headers):
+    resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "MIX-001",
+            "date": "2026-03-30",
+            "product_name": "Multi-part assembly",
+            "material_id": str(seed_material.id),
+            "labor_mins": 15,
+            "design_time_hrs": 0.5,
+            "shipping_cost": 0,
+            "target_margin_pct": 40,
+            "plates": [
+                {"parts_count": 4, "material_g": 50, "print_time_hrs": 2.0},
+                {"parts_count": 2, "material_g": 30, "print_time_hrs": 1.5},
+                {"parts_count": 6, "material_g": 80, "print_time_hrs": 3.0},
+            ],
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    # Sums, not products
+    assert data["total_pieces"] == 12
+    assert float(data["total_material_g"]) == pytest.approx(160.0)
+    assert float(data["total_print_time_hrs"]) == pytest.approx(6.5)
+    # Uniform conveniences nulled for mixed jobs
+    assert data["qty_per_plate"] is None
+    assert data["num_plates"] is None
+    # Plate rows returned in order
+    assert len(data["plates"]) == 3
+    assert [p["parts_count"] for p in data["plates"]] == [4, 2, 6]
+
+
+@pytest.mark.asyncio
+async def test_create_job_uniform_still_generates_plate_rows(client, seed_settings, seed_rates, seed_material, auth_headers):
+    resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "UNI-001",
+            "date": "2026-03-30",
+            "product_name": "Uniform job",
+            "qty_per_plate": 5,
+            "num_plates": 3,
+            "material_id": str(seed_material.id),
+            "material_per_plate_g": 40,
+            "print_time_per_plate_hrs": 2.0,
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    assert data["total_pieces"] == 15
+    assert float(data["total_material_g"]) == pytest.approx(120.0)
+    assert float(data["total_print_time_hrs"]) == pytest.approx(6.0)
+    assert len(data["plates"]) == 3
+    assert all(p["parts_count"] == 5 for p in data["plates"])
+
+
+@pytest.mark.asyncio
+async def test_create_job_requires_plates_or_uniform(client, seed_settings, seed_rates, seed_material, auth_headers):
+    resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "BAD-001",
+            "date": "2026-03-30",
+            "product_name": "Missing inputs",
+            "material_id": str(seed_material.id),
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_update_job_replace_plates(client, seed_settings, seed_rates, seed_material, auth_headers):
+    create = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "MIX-UPD",
+            "date": "2026-03-30",
+            "product_name": "Updatable",
+            "material_id": str(seed_material.id),
+            "plates": [
+                {"parts_count": 2, "material_g": 20, "print_time_hrs": 1.0},
+                {"parts_count": 2, "material_g": 20, "print_time_hrs": 1.0},
+            ],
+        },
+        headers=auth_headers,
+    )
+    assert create.status_code == 201
+    job_id = create.json()["id"]
+
+    upd = await client.put(
+        f"/api/v1/jobs/{job_id}",
+        json={
+            "plates": [
+                {"parts_count": 7, "material_g": 100, "print_time_hrs": 4.0},
+            ]
+        },
+        headers=auth_headers,
+    )
+    assert upd.status_code == 200, upd.text
+    data = upd.json()
+    assert data["total_pieces"] == 7
+    assert float(data["total_material_g"]) == pytest.approx(100.0)
+    assert len(data["plates"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_mixed_plate_job_inventory_deduction(client, seed_settings, seed_rates, seed_material, auth_headers, db_session):
+    """End-to-end: create a mixed-plate completed job linked to a product and verify material receipts are debited by the exact plate sum."""
+    from decimal import Decimal
+    from datetime import date
+    from app.models.material_receipt import MaterialReceipt
+    from app.models.product import Product
+    from app.services.material_receipt_service import create_material_receipt
+    from app.services.accounting_service import seed_chart_of_accounts
+    from app.schemas.material_receipt import MaterialReceiptCreate
+
+    await seed_chart_of_accounts(db_session)
+    await create_material_receipt(
+        db_session,
+        material=seed_material,
+        payload=MaterialReceiptCreate(
+            vendor_name="Vendor B",
+            purchase_date=date(2026, 3, 30),
+            quantity_purchased_g=Decimal("1000"),
+            unit_cost_per_g=Decimal("0.020000"),
+            landed_cost_total=Decimal("0.00"),
+            valuation_method="lot",
+        ),
+    )
+    product = Product(
+        sku="MIX-DED-001",
+        name="Mixed Plate Product",
+        material_id=seed_material.id,
+        unit_cost=Decimal("4.00"),
+        unit_price=Decimal("12.00"),
+        stock_qty=0,
+        reorder_point=2,
+        is_active=True,
+    )
+    db_session.add(product)
+    await db_session.commit()
+    await db_session.refresh(product)
+
+    resp = await client.post(
+        "/api/v1/jobs",
+        json={
+            "job_number": "MIX-DED-001",
+            "date": "2026-03-30",
+            "product_name": product.name,
+            "product_id": str(product.id),
+            "material_id": str(seed_material.id),
+            "status": "completed",
+            "plates": [
+                {"parts_count": 3, "material_g": 50, "print_time_hrs": 2.0},
+                {"parts_count": 2, "material_g": 75, "print_time_hrs": 2.5},
+            ],
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201, resp.text
+
+    receipt = (await db_session.execute(select(MaterialReceipt).where(MaterialReceipt.material_id == seed_material.id))).scalar_one()
+    # 1000 - (50 + 75) = 875
+    assert float(receipt.quantity_remaining_g) == pytest.approx(875.0, rel=1e-5)

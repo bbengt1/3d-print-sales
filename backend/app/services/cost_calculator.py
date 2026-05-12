@@ -31,15 +31,33 @@ class CostCalculator:
     async def calculate(
         self,
         material_id: uuid.UUID,
-        qty_per_plate: int,
-        num_plates: int,
-        material_per_plate_g: Decimal,
-        print_time_per_plate_hrs: Decimal,
         labor_mins: Decimal,
         design_time_hrs: Decimal,
         shipping_cost: Decimal,
         target_margin_pct: Decimal,
+        *,
+        total_pieces: int | None = None,
+        total_material_g: Decimal | None = None,
+        total_print_time_hrs: Decimal | None = None,
+        qty_per_plate: int | None = None,
+        num_plates: int | None = None,
+        material_per_plate_g: Decimal | None = None,
+        print_time_per_plate_hrs: Decimal | None = None,
     ) -> dict:
+        # Accept either pre-computed totals or legacy uniform inputs.
+        if total_pieces is None:
+            if qty_per_plate is None or num_plates is None:
+                raise HTTPException(status_code=400, detail="total_pieces or qty_per_plate+num_plates required")
+            total_pieces = qty_per_plate * num_plates
+        if total_material_g is None:
+            if material_per_plate_g is None or num_plates is None:
+                raise HTTPException(status_code=400, detail="total_material_g or material_per_plate_g+num_plates required")
+            total_material_g = Decimal(material_per_plate_g) * num_plates
+        if total_print_time_hrs is None:
+            if print_time_per_plate_hrs is None or num_plates is None:
+                raise HTTPException(status_code=400, detail="total_print_time_hrs or print_time_per_plate_hrs+num_plates required")
+            total_print_time_hrs = Decimal(print_time_per_plate_hrs) * num_plates
+
         # Validate material exists
         result = await self.db.execute(select(Material).where(Material.id == material_id))
         material = result.scalar_one_or_none()
@@ -62,15 +80,14 @@ class CostCalculator:
         machine_rate = await self._get_rate("Machine rate")
         overhead_pct = await self._get_rate("Overhead %")
 
-        total_pieces = qty_per_plate * num_plates
         if total_pieces <= 0:
             raise HTTPException(status_code=400, detail="Total pieces must be greater than 0")
 
-        total_print_hrs = print_time_per_plate_hrs * num_plates
+        total_print_hrs = Decimal(total_print_time_hrs)
 
         # Cost calculations
         electricity_cost = (printer_watts / Decimal(1000)) * total_print_hrs * electricity_rate
-        material_cost = material_per_plate_g * num_plates * cost_per_g
+        material_cost = Decimal(total_material_g) * cost_per_g
         labor_cost = (labor_mins / Decimal(60)) * labor_rate
         design_cost = design_time_hrs * labor_rate
         machine_cost = total_print_hrs * machine_rate

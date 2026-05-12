@@ -179,17 +179,32 @@ async def promote_candidate(
     if job_number is None:
         job_number = f"DJ-{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}"
 
+    from decimal import Decimal as _D
+    from app.services.plate_service import build_uniform_plates
+    qpp = int(job_payload["qty_per_plate"])
+    npl = int(job_payload["num_plates"])
+    mpp = _D(str(job_payload["material_per_plate_g"]))
+    tpp = _D(str(job_payload["print_time_per_plate_hrs"]))
     job = Job(
         job_number=job_number,
         date=datetime.date.today(),
         product_name=job_payload["product_name"],
-        qty_per_plate=int(job_payload["qty_per_plate"]),
-        num_plates=int(job_payload["num_plates"]),
+        qty_per_plate=qpp,
+        num_plates=npl,
         material_id=job_payload["material_id"],
-        total_pieces=int(job_payload["qty_per_plate"]) * int(job_payload["num_plates"]),
-        material_per_plate_g=job_payload["material_per_plate_g"],
-        print_time_per_plate_hrs=job_payload["print_time_per_plate_hrs"],
+        total_pieces=qpp * npl,
+        material_per_plate_g=mpp,
+        print_time_per_plate_hrs=tpp,
+        total_material_g=mpp * npl,
+        total_print_time_hrs=tpp * npl,
         status="draft",
+    )
+    job.plates = build_uniform_plates(
+        qty_per_plate=qpp,
+        num_plates=npl,
+        material_per_plate_g=mpp,
+        print_time_per_plate_hrs=tpp,
+        printer_id=None,
     )
     db.add(job)
     await db.flush()

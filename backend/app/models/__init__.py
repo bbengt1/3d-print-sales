@@ -41,3 +41,4 @@ from app.models.withholding_profile import WithholdingProfile  # noqa: F401
 from app.models.billable_expense import BillableExpense  # noqa: F401
 from app.models.job_discovery import JobDiscoverySource, JobDiscoveryCandidate  # noqa: F401
 from app.models.bank_import_mapping import BankImportMapping  # noqa: F401
+from app.models.plate import Plate  # noqa: F401

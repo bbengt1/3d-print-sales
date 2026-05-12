@@ -140,11 +140,22 @@ export default function JobDetailPage() {
         </div>
         <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
           <Package className="w-5 h-5 text-muted-foreground" />
-          <div><p className="text-xs text-muted-foreground">Total Pieces</p><p className="font-medium">{job.total_pieces} ({job.qty_per_plate} x {job.num_plates} plates)</p></div>
+          <div>
+            <p className="text-xs text-muted-foreground">Total Pieces</p>
+            <p className="font-medium">
+              {job.total_pieces}
+              {job.qty_per_plate !== null && job.num_plates !== null
+                ? ` (${job.qty_per_plate} x ${job.num_plates} plates)`
+                : ` (${job.plates?.length || 0} plates, mixed)`}
+            </p>
+          </div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
           <Printer className="w-5 h-5 text-muted-foreground" />
-          <div><p className="text-xs text-muted-foreground">Print Time</p><p className="font-medium">{Number(job.print_time_per_plate_hrs).toFixed(1)}h x {job.num_plates} plates</p></div>
+          <div>
+            <p className="text-xs text-muted-foreground">Print Time</p>
+            <p className="font-medium">{Number(job.total_print_time_hrs).toFixed(1)}h total</p>
+          </div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
           <Printer className="w-5 h-5 text-muted-foreground" />
@@ -157,6 +168,38 @@ export default function JobDetailPage() {
           </div>
         </div>
       </div>
+
+      {job.plates && job.plates.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h3 className="text-base font-semibold mb-4">Plates ({job.plates.length})</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground border-b border-border">
+                <tr>
+                  <th className="text-left py-2 pr-3">#</th>
+                  <th className="text-right py-2 px-3">Parts</th>
+                  <th className="text-right py-2 px-3">Material (g)</th>
+                  <th className="text-right py-2 px-3">Time (hrs)</th>
+                  <th className="text-left py-2 pl-3">Printer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {job.plates.map((p) => (
+                  <tr key={p.id} className="border-b border-border/50">
+                    <td className="py-2 pr-3">{p.plate_number}</td>
+                    <td className="text-right py-2 px-3">{p.parts_count}</td>
+                    <td className="text-right py-2 px-3">{Number(p.material_g).toFixed(2)}</td>
+                    <td className="text-right py-2 px-3">{Number(p.print_time_hrs).toFixed(2)}</td>
+                    <td className="py-2 pl-3 text-muted-foreground">
+                      {p.printer_id ? (job.printer?.id === p.printer_id ? job.printer.name : '(other)') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cost Breakdown */}

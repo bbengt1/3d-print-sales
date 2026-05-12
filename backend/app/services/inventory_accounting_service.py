@@ -37,7 +37,7 @@ async def consume_material_receipts_for_job(db: AsyncSession, job: Job) -> None:
     if not job.material_id:
         return
 
-    total_material_g = Decimal(job.material_per_plate_g) * job.num_plates
+    total_material_g = Decimal(job.total_material_g or 0)
     if total_material_g <= 0:
         return
 

@@ -11,7 +11,14 @@ import { Label } from '@/components/ui/Label';
 import PageHeader from '@/components/layout/PageHeader';
 import { formatCurrency } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { Material, Job, CalculateResponse, PaginatedProducts, PaginatedPrinters, Product } from '@/types';
+import type { Material, Job, CalculateResponse, PaginatedProducts, PaginatedPrinters, Product, PlateInput } from '@/types';
+
+type PlateFormRow = {
+  parts_count: number;
+  material_g: number;
+  print_time_hrs: number;
+  printer_id: string;
+};
 
 interface FieldProps {
   label: string;
@@ -97,6 +104,10 @@ export default function JobFormPage() {
     status: 'completed',
   });
 
+  const [plateMode, setPlateMode] = useState<'uniform' | 'mixed'>('uniform');
+  const [plates, setPlates] = useState<PlateFormRow[]>([
+    { parts_count: 1, material_g: 0, print_time_hrs: 0, printer_id: '' },
+  ]);
   const [preview, setPreview] = useState<CalculateResponse | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -109,16 +120,17 @@ export default function JobFormPage() {
   useEffect(() => {
     if (existingJob) {
       setJobNumberTouched(true);
+      const isMixed = existingJob.qty_per_plate === null || existingJob.num_plates === null;
       setForm({
         job_number: existingJob.job_number,
         date: existingJob.date,
         customer_name: existingJob.customer_name || '',
         product_name: existingJob.product_name,
-        qty_per_plate: existingJob.qty_per_plate,
-        num_plates: existingJob.num_plates,
+        qty_per_plate: existingJob.qty_per_plate ?? 1,
+        num_plates: existingJob.num_plates ?? 1,
         material_id: existingJob.material_id,
-        material_per_plate_g: existingJob.material_per_plate_g,
-        print_time_per_plate_hrs: existingJob.print_time_per_plate_hrs,
+        material_per_plate_g: existingJob.material_per_plate_g ?? 0,
+        print_time_per_plate_hrs: existingJob.print_time_per_plate_hrs ?? 0,
         labor_mins: existingJob.labor_mins,
         design_time_hrs: existingJob.design_time_hrs || 0,
         shipping_cost: existingJob.shipping_cost,
@@ -127,6 +139,15 @@ export default function JobFormPage() {
         printer_id: existingJob.printer_id || '',
         status: existingJob.status,
       });
+      setPlateMode(isMixed ? 'mixed' : 'uniform');
+      if (existingJob.plates && existingJob.plates.length > 0) {
+        setPlates(existingJob.plates.map((p) => ({
+          parts_count: p.parts_count,
+          material_g: Number(p.material_g),
+          print_time_hrs: Number(p.print_time_hrs),
+          printer_id: p.printer_id || '',
+        })));
+      }
     }
   }, [existingJob]);
 
@@ -150,18 +171,41 @@ export default function JobFormPage() {
 
   // Live cost preview
   useEffect(() => {
-    if (!form.material_id || form.material_per_plate_g <= 0 || form.print_time_per_plate_hrs <= 0) {
+    if (!form.material_id) {
       setPreview(null);
       return;
+    }
+    let qty_per_plate = form.qty_per_plate;
+    let num_plates = form.num_plates;
+    let material_per_plate_g = form.material_per_plate_g;
+    let print_time_per_plate_hrs = form.print_time_per_plate_hrs;
+    if (plateMode === 'mixed') {
+      const totalParts = plates.reduce((s, p) => s + (Number(p.parts_count) || 0), 0);
+      const totalMaterial = plates.reduce((s, p) => s + (Number(p.material_g) || 0), 0);
+      const totalTime = plates.reduce((s, p) => s + (Number(p.print_time_hrs) || 0), 0);
+      if (totalParts <= 0 || totalMaterial <= 0 || totalTime <= 0) {
+        setPreview(null);
+        return;
+      }
+      // Use a 1-plate equivalent — the math in cost_calculator only depends on totals.
+      qty_per_plate = totalParts;
+      num_plates = 1;
+      material_per_plate_g = totalMaterial;
+      print_time_per_plate_hrs = totalTime;
+    } else {
+      if (material_per_plate_g <= 0 || print_time_per_plate_hrs <= 0) {
+        setPreview(null);
+        return;
+      }
     }
     const timer = setTimeout(async () => {
       try {
         const { data } = await api.post('/jobs/calculate', {
-          qty_per_plate: form.qty_per_plate,
-          num_plates: form.num_plates,
+          qty_per_plate,
+          num_plates,
           material_id: form.material_id,
-          material_per_plate_g: form.material_per_plate_g,
-          print_time_per_plate_hrs: form.print_time_per_plate_hrs,
+          material_per_plate_g,
+          print_time_per_plate_hrs,
           labor_mins: form.labor_mins,
           design_time_hrs: form.design_time_hrs,
           shipping_cost: form.shipping_cost,
@@ -173,7 +217,7 @@ export default function JobFormPage() {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [form.material_id, form.qty_per_plate, form.num_plates, form.material_per_plate_g, form.print_time_per_plate_hrs, form.labor_mins, form.design_time_hrs, form.shipping_cost, form.target_margin_pct]);
+  }, [plateMode, plates, form.material_id, form.qty_per_plate, form.num_plates, form.material_per_plate_g, form.print_time_per_plate_hrs, form.labor_mins, form.design_time_hrs, form.shipping_cost, form.target_margin_pct]);
 
   const update = (field: string, value: string | number) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -240,12 +284,32 @@ export default function JobFormPage() {
     if (isEdit && !form.job_number) errs.job_number = 'Required';
     if (!form.product_name) errs.product_name = 'Required';
     if (!form.material_id) errs.material_id = 'Select a material';
-    if (form.qty_per_plate < 1) errs.qty_per_plate = 'Must be at least 1';
-    if (form.num_plates < 1) errs.num_plates = 'Must be at least 1';
-    if (form.material_per_plate_g <= 0) errs.material_per_plate_g = 'Must be greater than 0';
-    if (form.print_time_per_plate_hrs <= 0) errs.print_time_per_plate_hrs = 'Must be greater than 0';
+    if (plateMode === 'uniform') {
+      if (form.qty_per_plate < 1) errs.qty_per_plate = 'Must be at least 1';
+      if (form.num_plates < 1) errs.num_plates = 'Must be at least 1';
+      if (form.material_per_plate_g <= 0) errs.material_per_plate_g = 'Must be greater than 0';
+      if (form.print_time_per_plate_hrs <= 0) errs.print_time_per_plate_hrs = 'Must be greater than 0';
+    } else {
+      if (plates.length === 0) errs.plates = 'Add at least one plate';
+      plates.forEach((p, i) => {
+        if (p.parts_count < 1) errs[`plate_${i}_parts_count`] = 'Min 1';
+        if (p.material_g <= 0) errs[`plate_${i}_material_g`] = 'Required';
+        if (p.print_time_hrs <= 0) errs[`plate_${i}_print_time_hrs`] = 'Required';
+      });
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const addPlate = () => {
+    setPlates((rows) => [...rows, { parts_count: 1, material_g: 0, print_time_hrs: 0, printer_id: '' }]);
+  };
+  const removePlate = (index: number) => {
+    setPlates((rows) => rows.filter((_, i) => i !== index));
+  };
+  const updatePlate = (index: number, field: keyof PlateFormRow, value: string | number) => {
+    setPlates((rows) => rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
+    setErrors((e) => ({ ...e, [`plate_${index}_${field}`]: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,13 +317,38 @@ export default function JobFormPage() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const payload = {
-        ...form,
+      const basePayload: Record<string, unknown> = {
+        job_number: form.job_number,
+        date: form.date,
         customer_name: form.customer_name || null,
+        product_name: form.product_name,
+        material_id: form.material_id,
+        labor_mins: form.labor_mins,
         design_time_hrs: form.design_time_hrs || 0,
+        shipping_cost: form.shipping_cost,
+        target_margin_pct: form.target_margin_pct,
         product_id: form.product_id || null,
         printer_id: form.printer_id || null,
+        status: form.status,
       };
+      let payload: Record<string, unknown>;
+      if (plateMode === 'mixed') {
+        const platePayload: PlateInput[] = plates.map((p) => ({
+          parts_count: Number(p.parts_count),
+          material_g: Number(p.material_g),
+          print_time_hrs: Number(p.print_time_hrs),
+          printer_id: p.printer_id || null,
+        }));
+        payload = { ...basePayload, plates: platePayload };
+      } else {
+        payload = {
+          ...basePayload,
+          qty_per_plate: form.qty_per_plate,
+          num_plates: form.num_plates,
+          material_per_plate_g: form.material_per_plate_g,
+          print_time_per_plate_hrs: form.print_time_per_plate_hrs,
+        };
+      }
       if (isEdit) {
         await api.put(`/jobs/${id}`, payload);
         toast.success('Job updated');
@@ -431,8 +520,26 @@ export default function JobFormPage() {
 
           {/* Print Details */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-base font-semibold mb-4">Print Details</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold">Print Details</h3>
+              <div className="inline-flex rounded-md border border-input overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPlateMode('uniform')}
+                  className={`px-3 py-1 ${plateMode === 'uniform' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                >
+                  Uniform plates
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlateMode('mixed')}
+                  className={`px-3 py-1 border-l border-input ${plateMode === 'mixed' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                >
+                  Mixed plates
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div className="space-y-1.5">
                 <Label htmlFor="job-material">Material</Label>
                 <select
@@ -448,11 +555,91 @@ export default function JobFormPage() {
                 </select>
                 {errors.material_id && <p className="text-destructive text-xs">{errors.material_id}</p>}
               </div>
-              <Field label="Qty per Plate" field="qty_per_plate" type="number" value={form.qty_per_plate} error={errors.qty_per_plate} onChange={update} min={1} />
-              <Field label="Number of Plates" field="num_plates" type="number" value={form.num_plates} error={errors.num_plates} onChange={update} min={1} />
-              <Field label="Material per Plate (g)" field="material_per_plate_g" type="number" value={form.material_per_plate_g} error={errors.material_per_plate_g} onChange={update} min={0} step="0.01" />
-              <Field label="Print Time per Plate (hrs)" field="print_time_per_plate_hrs" type="number" value={form.print_time_per_plate_hrs} error={errors.print_time_per_plate_hrs} onChange={update} min={0} step="0.01" />
             </div>
+            {plateMode === 'uniform' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Qty per Plate" field="qty_per_plate" type="number" value={form.qty_per_plate} error={errors.qty_per_plate} onChange={update} min={1} />
+                <Field label="Number of Plates" field="num_plates" type="number" value={form.num_plates} error={errors.num_plates} onChange={update} min={1} />
+                <Field label="Material per Plate (g)" field="material_per_plate_g" type="number" value={form.material_per_plate_g} error={errors.material_per_plate_g} onChange={update} min={0} step="0.01" />
+                <Field label="Print Time per Plate (hrs)" field="print_time_per_plate_hrs" type="number" value={form.print_time_per_plate_hrs} error={errors.print_time_per_plate_hrs} onChange={update} min={0} step="0.01" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Define each plate individually. Totals (pieces, material, print time) sum across plates.
+                </p>
+                {errors.plates && <p className="text-destructive text-xs">{errors.plates}</p>}
+                <div className="space-y-2">
+                  {plates.map((plate, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-end p-3 border border-border rounded-md bg-muted/30">
+                      <div className="col-span-1 text-xs text-muted-foreground self-center">#{index + 1}</div>
+                      <div className="col-span-2 space-y-1">
+                        <Label htmlFor={`plate-${index}-parts`}>Parts</Label>
+                        <Input
+                          id={`plate-${index}-parts`}
+                          type="number"
+                          min={1}
+                          value={plate.parts_count}
+                          onChange={(e) => updatePlate(index, 'parts_count', Number(e.target.value))}
+                          invalid={Boolean(errors[`plate_${index}_parts_count`])}
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <Label htmlFor={`plate-${index}-material`}>Material (g)</Label>
+                        <Input
+                          id={`plate-${index}-material`}
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={plate.material_g}
+                          onChange={(e) => updatePlate(index, 'material_g', Number(e.target.value))}
+                          invalid={Boolean(errors[`plate_${index}_material_g`])}
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <Label htmlFor={`plate-${index}-time`}>Time (hrs)</Label>
+                        <Input
+                          id={`plate-${index}-time`}
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={plate.print_time_hrs}
+                          onChange={(e) => updatePlate(index, 'print_time_hrs', Number(e.target.value))}
+                          invalid={Boolean(errors[`plate_${index}_print_time_hrs`])}
+                        />
+                      </div>
+                      <div className="col-span-4 space-y-1">
+                        <Label htmlFor={`plate-${index}-printer`}>Printer</Label>
+                        <select
+                          id={`plate-${index}-printer`}
+                          value={plate.printer_id}
+                          onChange={(e) => updatePlate(index, 'printer_id', e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="">Unassigned</option>
+                          {printersData?.items?.map((printer) => (
+                            <option key={printer.id} value={printer.id}>{printer.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => removePlate(index)}
+                          disabled={plates.length === 1}
+                          className="text-xs text-destructive hover:underline disabled:opacity-30 disabled:no-underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={addPlate}>
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add plate
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Labor & Costs */}

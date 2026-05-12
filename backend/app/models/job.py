@@ -21,12 +21,14 @@ class Job(Base):
     )
     customer_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     product_name: Mapped[str] = mapped_column(String(200))
-    qty_per_plate: Mapped[int] = mapped_column(Integer)
-    num_plates: Mapped[int] = mapped_column(Integer)
+    qty_per_plate: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    num_plates: Mapped[int | None] = mapped_column(Integer, nullable=True)
     material_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("materials.id"))
     total_pieces: Mapped[int] = mapped_column(Integer)
-    material_per_plate_g: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    print_time_per_plate_hrs: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    material_per_plate_g: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    print_time_per_plate_hrs: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    total_material_g: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0)
+    total_print_time_hrs: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0)
     labor_mins: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0)
     design_time_hrs: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 2), nullable=True, default=0
@@ -80,3 +82,9 @@ class Job(Base):
     material = relationship("Material")
     product = relationship("Product")
     printer = relationship("Printer")
+    plates = relationship(
+        "Plate",
+        back_populates="job",
+        cascade="all, delete-orphan",
+        order_by="Plate.plate_number",
+    )

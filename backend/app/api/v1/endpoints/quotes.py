@@ -132,6 +132,9 @@ async def convert_quote_to_job(quote_id: uuid.UUID, body: QuoteConvertToJob, use
     if existing_job.scalar_one_or_none():
         raise HTTPException(status_code=409, detail=f"Job number '{body.job_number}' already exists")
 
+    from app.services.plate_service import build_uniform_plates
+    total_material_g = Decimal(quote.material_per_plate_g) * quote.num_plates
+    total_print_time_hrs = Decimal(quote.print_time_per_plate_hrs) * quote.num_plates
     job = Job(
         job_number=body.job_number,
         date=body.job_date or datetime.date.today(),
@@ -144,6 +147,8 @@ async def convert_quote_to_job(quote_id: uuid.UUID, body: QuoteConvertToJob, use
         total_pieces=quote.total_pieces,
         material_per_plate_g=quote.material_per_plate_g,
         print_time_per_plate_hrs=quote.print_time_per_plate_hrs,
+        total_material_g=total_material_g,
+        total_print_time_hrs=total_print_time_hrs,
         labor_mins=quote.labor_mins,
         design_time_hrs=quote.design_time_hrs,
         electricity_cost=quote.electricity_cost,
@@ -165,6 +170,13 @@ async def convert_quote_to_job(quote_id: uuid.UUID, body: QuoteConvertToJob, use
         net_profit=quote.net_profit,
         profit_per_piece=quote.profit_per_piece,
         status=body.status,
+    )
+    job.plates = build_uniform_plates(
+        qty_per_plate=int(quote.qty_per_plate),
+        num_plates=int(quote.num_plates),
+        material_per_plate_g=Decimal(quote.material_per_plate_g),
+        print_time_per_plate_hrs=Decimal(quote.print_time_per_plate_hrs),
+        printer_id=None,
     )
     db.add(job)
     await db.flush()
