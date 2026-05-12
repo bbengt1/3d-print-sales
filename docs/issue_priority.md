@@ -2,23 +2,26 @@
 
 > **Source of truth for which issue to pick up next.** Updated as issues land, dependencies shift, or scope changes. Cross-session readers (and future Claude sessions) should start here when asked "what's next."
 >
-> **Last reviewed:** 2026-05-11 — #318 multi-location Phase 2 deeper SoT in flight (ProductLocationStock + per-location decrement + soft-warn + in-transit, PR #389). Prior: 2026-05-10 afternoon Manager.io gap walk + 25 P1 follow-ups (#360–#384) + ops fix #388.
+> **Last reviewed:** 2026-05-11 (evening) — backlog drained. All Phase 2 trackers closed, #387 deploy bug closed (fix verified across 5 deploys in this session). No open issues. Pick from the per-area deferred wishlists below when something becomes operationally painful.
 
 ---
 
 ## Open issues — current state
 
-5 issues open as of 2026-05-10. All are Phase 2 trackers with the original Phase 1 already in production; the residual scope is meaningful but lower-leverage than what's already shipped. Recommended sequence is **#318 first** (the missing piece operators feel the moment they add a second location), the others as a "pick when relevant" backlog.
+**Zero open issues.** The Phase 2 trackers (#316, #318, #321, #324, #326, #328) and ops #387 all closed during the 2026-05-11 evening session.
 
-| # | What shipped | What's left | Next-pickup priority |
-|---|---|---|---|
-| **[#318](https://github.com/bbengt1/3d-print-sales/issues/318)** multi-location | `Sale.fulfillment_location_id` field, per-location stock snapshot, default-fulfillment-location admin endpoint (PR #340) | Per-location qty decrement on sale fulfillment, soft-warn-but-allow on negative projected stock, in-transit hold computation | **High** — needs a `ProductLocationStock` SoT model; biggest of the five. |
-| **[#316](https://github.com/bbengt1/3d-print-sales/issues/316)** bank rules | `create_journal_entry` rule action, dry-run preview, create-rule-from-line, `category_account_id` + `counterparty_name` columns (PR #337) | `create_receipt` / `create_payment` / `create_inter_account_transfer` actions | Medium — the `create_journal_entry` action covers most categorize-and-post cases; these add nuance only when bank lines should flow into AR/AP rather than directly to a P&L category. |
-| **[#326](https://github.com/bbengt1/3d-print-sales/issues/326)** custom fields | Hard-delete endpoint, value-search endpoint (PR #343) | Computed/formula fields (`days_open` style), multi-value (checkbox/tags), per-line custom fields | Medium — worth doing when you start authoring lots of custom fields. |
-| **[#324](https://github.com/bbengt1/3d-print-sales/issues/324)** expense claims | Mileage line type with rate setting (PR #341); receipt attachments already work via existing `AttachmentsPanel` (scope=expense_claim) | Approval-request workflow integration, reimburse-as-Bill alternative path | Medium — approval workflow only useful when you have multiple users. |
-| **[#321](https://github.com/bbengt1/3d-print-sales/issues/321)** returns | Refund-in-cash on credit notes, `credit_note` registered as EmailScope (PR #342) | Marketplace settlement bridging | Low — marketplace settlement was paired with #127 (closed); effectively defer indefinitely unless an Etsy/Amazon flow reactivates. |
+### Per-area deferred wishlists
 
-**My take:** ship #318 next, leave the others as a known backlog. The current `/accounting` workspace + reporting suite + COGS FIFO covers the operational ground that mattered.
+Each area has documented residual scope that wasn't critical enough to keep an open issue for. Reopen the relevant tracker (or file a fresh narrow issue) when a wishlist item becomes operationally painful.
+
+| Area | Doc | Headlines still deferred |
+|---|---|---|
+| Multi-location inventory | [`inventory_locations.md`](inventory_locations.md) | Materials/supplies per-location SoT; frontend transfers UI + per-location qty column; channel-level default fulfillment location; per-location reorder points; per-location physical addresses. |
+| Bank-rule actions | [`statement_match_rules.md`](statement_match_rules.md) | `BillPayment` integration on `create_payment`; frontend rules CRUD + dry-run preview + reorder; tax-profile-aware rule actions. |
+| Custom fields | [`custom_fields.md`](custom_fields.md) | Master-data list-endpoint inline `?cf.{key}=value` filter; frontend definition CRUD + per-line column rendering; additional computed formulas beyond `days_since`; field-level validation rules. |
+| Expense claims | [`expense_claims.md`](expense_claims.md) | Per-line attachments; frontend; multi-payer / recurring claims; multi-step approver chains. |
+| Returns / restocks | [`returns_restocks.md`](returns_restocks.md) | Marketplace settlement bridging (paired with the closed #127 epic; reopen if an Etsy/Amazon flow reactivates). |
+| Divisions + projects | [`divisions_and_projects.md`](divisions_and_projects.md) | Cash-basis P&L filter, per-division Balance Sheet, Sales / Cash Flow dimension filters; frontend pickers + report filter dropdowns. |
 
 ---
 
@@ -37,6 +40,23 @@ Reasons recorded on each issue. Reopen if the trigger condition fires.
 | ~~#323~~ attachments S3 + virus scan | Local disk works. Reopen if attachment volume or compliance requirements change. |
 | ~~#329~~ tax reverse-charge JE legs | Reverse-charge only matters for cross-border B2B. US-only ops. Component breakdown + reverse-charge buckets already shipped in PR #336. |
 | ~~#331~~ list/forms — archive uniformity + PDF parity | Form templates shipped. Archive uniformity is invasive across 20+ models with mixed flag conventions and hurts nobody operationally. PDF parity blocked on the killed #244 PDF stack. |
+
+---
+
+## Recently landed (2026-05-11 evening)
+
+Phase 2 deepening + backlog drain. Six PRs (five feature + one alembic fix).
+
+| PR | Issue | What landed |
+|---|---|---|
+| [#389](https://github.com/bbengt1/3d-print-sales/pull/389) | #318 | multi-location P2 SoT — `ProductLocationStock`, per-location sale decrement, soft-warn + hard-block toggle, in-transit hold, transfer ship/receive/cancel wired to the SoT. Codex P1s addressed inline (pinned fulfillment location, RESTRICT FK + delete guard). |
+| [#391](https://github.com/bbengt1/3d-print-sales/pull/391) | — | alembic — merge divergent heads `20260510_13` + `20260511_02`. |
+| [#390](https://github.com/bbengt1/3d-print-sales/pull/390) | #316 | bank-rule actions — `create_receipt` / `create_payment` / `create_inter_account_transfer` with per-action target validation; preview surfaces a friendly target label. Codex P2 addressed inline (counterparty length cap). |
+| [#392](https://github.com/bbengt1/3d-print-sales/pull/392) | #326 | custom fields P2 — `multi_select` type, `computed`/formula type with a `days_since` registry, per-line scopes (`sale_item`, `invoice_line`, …). |
+| [#393](https://github.com/bbengt1/3d-print-sales/pull/393) | #324 | expense claims P2 — approval-workflow integration via the central `/approvals` queue + `reimburse-as-bill` alternative path (converts owner-liability into AP via JE + tracking Bill). Codex P2 addressed inline (idempotent submit). |
+| [#394](https://github.com/bbengt1/3d-print-sales/pull/394) | #328 | jobs — `Job.project_id` rollup link (final bullet on #328). |
+
+All six migrations (`20260511_01` → `_06`) applied cleanly across five sequential web01 deploys.
 
 ---
 
