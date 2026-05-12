@@ -196,6 +196,23 @@ export interface PaginatedPrinters {
   limit: number;
 }
 
+export interface Plate {
+  id: string;
+  plate_number: number;
+  printer_id: string | null;
+  parts_count: number;
+  material_g: number;
+  print_time_hrs: number;
+}
+
+export interface PlateInput {
+  plate_number?: number | null;
+  printer_id?: string | null;
+  parts_count: number;
+  material_g: number;
+  print_time_hrs: number;
+}
+
 export interface Job {
   id: string;
   job_number: string;
@@ -203,12 +220,14 @@ export interface Job {
   customer_id: string | null;
   customer_name: string | null;
   product_name: string;
-  qty_per_plate: number;
-  num_plates: number;
+  qty_per_plate: number | null;
+  num_plates: number | null;
   material_id: string;
   total_pieces: number;
-  material_per_plate_g: number;
-  print_time_per_plate_hrs: number;
+  material_per_plate_g: number | null;
+  print_time_per_plate_hrs: number | null;
+  total_material_g: number;
+  total_print_time_hrs: number;
   labor_mins: number;
   design_time_hrs: number | null;
   electricity_cost: number;
@@ -234,6 +253,7 @@ export interface Job {
   printer: Printer | null;
   inventory_added: boolean;
   status: string;
+  plates: Plate[];
 }
 
 export interface PaginatedJobs {

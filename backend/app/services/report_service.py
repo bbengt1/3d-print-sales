@@ -78,7 +78,7 @@ async def generate_inventory_report(db: AsyncSession, date_from: date | None, da
     mat_stmt = (
         select(
             Material.name,
-            func.coalesce(func.sum(Job.material_per_plate_g * Job.num_plates), 0).label("total_g"),
+            func.coalesce(func.sum(Job.total_material_g), 0).label("total_g"),
             func.coalesce(func.sum(Job.material_cost), 0).label("total_cost"),
         )
         .join(Job, Job.material_id == Material.id)

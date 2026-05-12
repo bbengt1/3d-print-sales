@@ -67,6 +67,8 @@ async def test_post_finished_goods_from_job_creates_inventory_journal_and_consum
         num_plates=3,
         material_per_plate_g=Decimal("100"),
         print_time_per_plate_hrs=Decimal("1.0"),
+        total_material_g=Decimal("300"),
+        total_print_time_hrs=Decimal("3.0"),
         labor_mins=10,
         design_time_hrs=Decimal("0"),
         shipping_cost=Decimal("0"),

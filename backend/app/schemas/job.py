@@ -5,8 +5,9 @@ import uuid
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
+from app.schemas.plate import PlateIn, PlateResponse
 from app.schemas.printer import PrinterResponse
 
 
@@ -17,17 +18,20 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
 
 
+_UNIFORM_FIELDS = ("qty_per_plate", "num_plates", "material_per_plate_g", "print_time_per_plate_hrs")
+
+
 class JobCreate(BaseModel):
     job_number: str | None = Field(None, min_length=1, max_length=50, examples=["2026.03.04.001"])
     date: datetime.date = Field(..., examples=["2026-03-04"])
     customer_id: uuid.UUID | None = None
     customer_name: str | None = Field(None, max_length=200, examples=["Sample Customer"])
     product_name: str = Field(..., min_length=1, max_length=200, examples=["Phone Stand"])
-    qty_per_plate: int = Field(..., gt=0, examples=[1])
-    num_plates: int = Field(..., gt=0, examples=[1])
+    qty_per_plate: int | None = Field(None, gt=0, examples=[1])
+    num_plates: int | None = Field(None, gt=0, examples=[1])
     material_id: uuid.UUID
-    material_per_plate_g: Decimal = Field(..., gt=0, examples=[45.0])
-    print_time_per_plate_hrs: Decimal = Field(..., gt=0, examples=[2.5])
+    material_per_plate_g: Decimal | None = Field(None, gt=0, examples=[45.0])
+    print_time_per_plate_hrs: Decimal | None = Field(None, gt=0, examples=[2.5])
     labor_mins: Decimal = Field(Decimal(0), ge=0, examples=[15])
     design_time_hrs: Decimal | None = Field(Decimal(0), ge=0, examples=[0.5])
     shipping_cost: Decimal = Field(Decimal(0), ge=0, examples=[0])
@@ -36,6 +40,18 @@ class JobCreate(BaseModel):
     printer_id: uuid.UUID | None = None
     project_id: uuid.UUID | None = None
     status: JobStatus = Field(JobStatus.completed, examples=["completed"])
+    plates: list[PlateIn] | None = Field(None, description="Per-plate breakdown for multi-part prints. If provided, supersedes uniform fields.")
+
+    @model_validator(mode="after")
+    def _validate_mode(self) -> "JobCreate":
+        if self.plates:
+            if not self.plates:
+                raise ValueError("plates must contain at least one entry")
+        else:
+            missing = [f for f in _UNIFORM_FIELDS if getattr(self, f) is None]
+            if missing:
+                raise ValueError(f"Either 'plates' or all uniform fields must be provided. Missing: {missing}")
+        return self
 
 
 class JobUpdate(BaseModel):
@@ -57,6 +73,7 @@ class JobUpdate(BaseModel):
     printer_id: uuid.UUID | None = None
     project_id: uuid.UUID | None = None
     status: JobStatus | None = None
+    plates: list[PlateIn] | None = None
 
 
 class CalculateRequest(BaseModel):
@@ -99,12 +116,14 @@ class JobResponse(BaseModel):
     customer_id: uuid.UUID | None = None
     customer_name: str | None = None
     product_name: str
-    qty_per_plate: int
-    num_plates: int
+    qty_per_plate: int | None = None
+    num_plates: int | None = None
     material_id: uuid.UUID
     total_pieces: int
-    material_per_plate_g: Decimal
-    print_time_per_plate_hrs: Decimal
+    material_per_plate_g: Decimal | None = None
+    print_time_per_plate_hrs: Decimal | None = None
+    total_material_g: Decimal
+    total_print_time_hrs: Decimal
     labor_mins: Decimal
     design_time_hrs: Decimal | None = None
     electricity_cost: Decimal
@@ -131,6 +150,7 @@ class JobResponse(BaseModel):
     project_id: uuid.UUID | None = None
     inventory_added: bool = False
     status: str
+    plates: list[PlateResponse] = []
     created_at: datetime.datetime | None = None
     updated_at: datetime.datetime | None = None
 
