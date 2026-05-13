@@ -180,15 +180,16 @@ export default function JobFormPage() {
     let material_per_plate_g = form.material_per_plate_g;
     let print_time_per_plate_hrs = form.print_time_per_plate_hrs;
     if (plateMode === 'mixed') {
-      const totalParts = plates.reduce((s, p) => s + (Number(p.parts_count) || 0), 0);
+      const partsCounts = plates.map((p) => Number(p.parts_count) || 0);
+      const assemblies = partsCounts.length > 0 ? Math.min(...partsCounts) : 0;
       const totalMaterial = plates.reduce((s, p) => s + (Number(p.material_g) || 0), 0);
       const totalTime = plates.reduce((s, p) => s + (Number(p.print_time_hrs) || 0), 0);
-      if (totalParts <= 0 || totalMaterial <= 0 || totalTime <= 0) {
+      if (assemblies <= 0 || totalMaterial <= 0 || totalTime <= 0) {
         setPreview(null);
         return;
       }
-      // Use a 1-plate equivalent — the math in cost_calculator only depends on totals.
-      qty_per_plate = totalParts;
+      // Mixed mode: total_pieces = min(parts) = number of complete assemblies.
+      qty_per_plate = assemblies;
       num_plates = 1;
       material_per_plate_g = totalMaterial;
       print_time_per_plate_hrs = totalTime;
@@ -566,8 +567,21 @@ export default function JobFormPage() {
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  Define each plate individually. Totals (pieces, material, print time) sum across plates.
+                  Define each plate as a distinct part of one assembly. Finished pieces = the smallest parts count
+                  across plates (the complete-assembly count). Material and print time sum across plates.
                 </p>
+                {(() => {
+                  const counts = plates.map((p) => Number(p.parts_count) || 0).filter((n) => n > 0);
+                  if (counts.length < 2) return null;
+                  const lo = Math.min(...counts);
+                  const hi = Math.max(...counts);
+                  if (hi === lo) return null;
+                  return (
+                    <p className="text-amber-600 text-xs">
+                      Overproduction: some plates print {hi} parts but the limiting plate prints {lo}. {hi - lo} excess part(s) won't form complete assemblies.
+                    </p>
+                  );
+                })()}
                 {errors.plates && <p className="text-destructive text-xs">{errors.plates}</p>}
                 <div className="space-y-2">
                   {plates.map((plate, index) => (
