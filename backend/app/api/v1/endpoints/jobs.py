@@ -132,7 +132,7 @@ async def create_job(body: JobCreate, user: CurrentUser, db: DB):
         raise HTTPException(status_code=409, detail=f"Job number '{job_number}' already exists")
 
     plate_rows, is_mixed = _materialize_plates(body)
-    total_pieces, total_material_g, total_print_time_hrs = aggregate_plate_totals(plate_rows)
+    total_pieces, total_material_g, total_print_time_hrs = aggregate_plate_totals(plate_rows, mixed=is_mixed)
 
     calc = CostCalculator(db)
     costs = await calc.calculate(
@@ -251,7 +251,8 @@ async def update_job(job_id: uuid.UUID, body: JobUpdate, user: CurrentUser, db: 
                 )
             )
 
-    total_pieces, total_material_g, total_print_time_hrs = aggregate_plate_totals(job.plates)
+    is_mixed_now = job.qty_per_plate is None
+    total_pieces, total_material_g, total_print_time_hrs = aggregate_plate_totals(job.plates, mixed=is_mixed_now)
     job.total_pieces = total_pieces
     job.total_material_g = total_material_g
     job.total_print_time_hrs = total_print_time_hrs
@@ -317,7 +318,8 @@ async def duplicate_job(job_id: uuid.UUID, user: CurrentUser, db: DB):
         for p in source_job.plates
     ]
 
-    total_pieces, total_material_g, total_print_time_hrs = aggregate_plate_totals(cloned_plates)
+    source_is_mixed = source_job.qty_per_plate is None
+    total_pieces, total_material_g, total_print_time_hrs = aggregate_plate_totals(cloned_plates, mixed=source_is_mixed)
 
     calc = CostCalculator(db)
     costs = await calc.calculate(

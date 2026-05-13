@@ -52,15 +52,22 @@ def build_plates_from_input(plates_in: Iterable[PlateIn]) -> list[Plate]:
     return result
 
 
-def aggregate_plate_totals(plates: Iterable[Plate]) -> tuple[int, Decimal, Decimal]:
-    """Return (total_pieces, total_material_g, total_print_time_hrs) for a plate collection."""
-    total_pieces = 0
-    total_material_g = Decimal(0)
-    total_print_hrs = Decimal(0)
-    for p in plates:
-        total_pieces += int(p.parts_count)
-        total_material_g += Decimal(p.material_g)
-        total_print_hrs += Decimal(p.print_time_hrs)
+def aggregate_plate_totals(plates: Iterable[Plate], *, mixed: bool = False) -> tuple[int, Decimal, Decimal]:
+    """Return (total_pieces, total_material_g, total_print_time_hrs) for a plate collection.
+
+    Uniform jobs (`mixed=False`): each plate is an independent duplicate, so
+    total_pieces = sum(parts_count). Mixed (multi-part assembly) jobs:
+    each plate produces a different part of one finished piece, so
+    total_pieces = min(parts_count) — the number of complete assemblies.
+    Material and print time always sum (every plate runs).
+    """
+    plates_list = list(plates)
+    if not plates_list:
+        return 0, Decimal(0), Decimal(0)
+    total_material_g = sum((Decimal(p.material_g) for p in plates_list), Decimal(0))
+    total_print_hrs = sum((Decimal(p.print_time_hrs) for p in plates_list), Decimal(0))
+    parts = [int(p.parts_count) for p in plates_list]
+    total_pieces = min(parts) if mixed else sum(parts)
     return total_pieces, total_material_g, total_print_hrs
 
 

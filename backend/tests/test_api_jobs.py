@@ -540,8 +540,9 @@ async def test_create_job_with_mixed_plates(client, seed_settings, seed_rates, s
     )
     assert resp.status_code == 201, resp.text
     data = resp.json()
-    # Sums, not products
-    assert data["total_pieces"] == 12
+    # Mixed mode: pieces = min(parts_count) = complete assemblies
+    assert data["total_pieces"] == 2
+    # Material and time still sum across plates
     assert float(data["total_material_g"]) == pytest.approx(160.0)
     assert float(data["total_print_time_hrs"]) == pytest.approx(6.5)
     # Uniform conveniences nulled for mixed jobs
@@ -622,6 +623,7 @@ async def test_update_job_replace_plates(client, seed_settings, seed_rates, seed
     )
     assert upd.status_code == 200, upd.text
     data = upd.json()
+    # Single-plate mixed job: min == sum == 7
     assert data["total_pieces"] == 7
     assert float(data["total_material_g"]) == pytest.approx(100.0)
     assert len(data["plates"]) == 1
